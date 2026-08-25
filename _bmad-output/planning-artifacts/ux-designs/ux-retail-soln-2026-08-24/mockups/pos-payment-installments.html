@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>POS Payment &amp; Installments — retail-soln</title>
+  <style>
+    /* Governs: EXPERIENCE Installment schedule editor, Pay CTA, UJ-7; DESIGN tokens */
+    :root {
+      --bg: #F4F6F8; --fg: #12181F; --muted: #5C6B7A; --card: #FFFFFF;
+      --border: #D5DCE3; --primary: #0B6E4F; --primary-fg: #F5FFF9;
+      --accent: #C45C26; --chrome: #1A2330; --chrome-fg: #E8EEF4; --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background: rgba(26, 35, 48, 0.55);
+      color: var(--fg);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .sheet {
+      width: min(720px, 100%);
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+    .sheet-h {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .sheet-h h1 {
+      margin: 0; font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 20px; font-weight: 600;
+    }
+    .sheet-h .esc { font-size: 12px; color: var(--muted); }
+    .body { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 640px) { .body { grid-template-columns: 1fr; } }
+    h2 {
+      margin: 0 0 10px; font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 14px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.04em; color: var(--muted);
+    }
+    .customer-chip {
+      background: var(--bg); border-radius: var(--radius); padding: 12px;
+      margin-bottom: 16px; font-size: 14px;
+    }
+    .customer-chip strong { display: block; }
+    .customer-chip span { color: var(--muted); font-size: 12px; }
+    .total-box {
+      background: #F0F7F4; border: 1px solid #B8D9C8; border-radius: var(--radius);
+      padding: 14px; margin-bottom: 16px;
+    }
+    .total-box .label { font-size: 12px; color: var(--muted); }
+    .total-box .amt {
+      font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 32px; font-weight: 700; color: var(--primary);
+      letter-spacing: -0.03em;
+    }
+    .tenders { display: flex; flex-direction: column; gap: 8px; }
+    .tender {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px; border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .tender.active { border-color: var(--primary); background: #F0F7F4; }
+    .tender input {
+      width: 120px; height: 36px; text-align: right;
+      font-family: "IBM Plex Mono", monospace; border: 1px solid var(--border);
+      border-radius: 4px; padding: 0 8px;
+    }
+    .schedule {
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 14px;
+    }
+    .schedule .hint {
+      font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 10px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: var(--muted); font-weight: 500; padding: 6px 4px; }
+    td { padding: 8px 4px; border-top: 1px solid var(--border); }
+    td input {
+      width: 100%; height: 32px; border: 1px solid var(--border);
+      border-radius: 4px; padding: 0 6px;
+      font-family: "IBM Plex Mono", monospace; font-size: 12px;
+    }
+    .out {
+      margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border);
+      display: flex; justify-content: space-between; font-size: 13px; font-weight: 600;
+    }
+    .footer {
+      padding: 16px 20px; border-top: 1px solid var(--border);
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+    .footer button {
+      height: 48px; padding: 0 20px; border-radius: var(--radius); font: inherit; font-weight: 600;
+    }
+    .footer .cancel { background: var(--bg); border: 1px solid var(--border); }
+    .footer .confirm {
+      background: var(--primary); color: var(--primary-fg); border: none; min-width: 180px;
+    }
+    .back { position: fixed; bottom: 12px; left: 12px; font-size: 12px; color: #E8EEF4; }
+  </style>
+</head>
+<body>
+  <div class="sheet" role="dialog" aria-labelledby="pay-title">
+    <div class="sheet-h">
+      <h1 id="pay-title">Payment</h1>
+      <span class="esc">Esc to close</span>
+    </div>
+    <div class="body">
+      <div>
+        <div class="customer-chip">
+          <strong>Chinedu Adeyemi</strong>
+          <span>CUST-10428 · Credit limit OK</span>
+        </div>
+        <div class="total-box">
+          <div class="label">Sale total</div>
+          <div class="amt">₦300,000.00</div>
+        </div>
+        <h2>Deposit now</h2>
+        <div class="tenders">
+          <div class="tender active">
+            <span>Cash</span>
+            <input value="100000.00" aria-label="Cash amount" />
+          </div>
+          <div class="tender"><span>Card / Stripe</span><input value="0.00" /></div>
+          <div class="tender"><span>Paystack</span><input value="0.00" /></div>
+        </div>
+      </div>
+      <div>
+        <h2>Installment plan</h2>
+        <div class="schedule">
+          <div class="hint">Remaining after deposit → schedule (registered customer)</div>
+          <table>
+            <thead>
+              <tr><th>#</th><th>Due</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td><input value="2026-09-24" /></td>
+                <td><input value="100000.00" /></td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td><input value="2026-10-24" /></td>
+                <td><input value="100000.00" /></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="out">
+            <span>Outstanding after deposit</span>
+            <span>₦200,000.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <button type="button" class="cancel">Cancel</button>
+      <button type="button" class="confirm">Record payment</button>
+    </div>
+  </div>
+  <a class="back" href="index.html">← Mockups</a>
+</body>
+</html>

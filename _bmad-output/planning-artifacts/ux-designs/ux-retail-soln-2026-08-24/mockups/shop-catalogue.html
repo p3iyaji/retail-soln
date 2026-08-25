@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shop — Catalogue — retail-soln</title>
+  <style>
+    /* Customer portal · Phase 7 · UJ-5 · DESIGN tokens · EXPERIENCE catalogue browse */
+    :root {
+      --bg: #F4F6F8; --fg: #12181F; --muted: #5C6B7A; --card: #FFFFFF;
+      --border: #D5DCE3; --primary: #0B6E4F; --primary-fg: #F5FFF9;
+      --accent: #C45C26; --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "IBM Plex Sans", "Segoe UI", sans-serif; color: var(--fg); background: var(--bg); }
+    .top {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 14px 28px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    .logo {
+      font-family: Outfit, "Segoe UI", sans-serif; font-weight: 700; font-size: 20px;
+      letter-spacing: -0.02em; color: var(--primary); text-decoration: none;
+    }
+    .search {
+      flex: 1; min-width: 200px; height: 44px; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0 14px; font: inherit; font-size: 15px;
+    }
+    .nav a { color: var(--muted); text-decoration: none; font-size: 14px; margin-left: 16px; }
+    .nav a.cart { color: var(--primary); font-weight: 600; }
+    .hero {
+      background: linear-gradient(120deg, #0B6E4F 0%, #1A2330 100%);
+      color: #F5FFF9; padding: 48px 28px; text-align: center;
+    }
+    .hero h1 {
+      margin: 0 0 8px; font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 36px; font-weight: 600; letter-spacing: -0.02em;
+    }
+    .hero p { margin: 0; opacity: 0.9; font-size: 16px; }
+    .layout {
+      max-width: 1100px; margin: 0 auto; padding: 28px;
+      display: grid; grid-template-columns: 200px 1fr; gap: 24px;
+    }
+    @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+    .filters h2 {
+      margin: 0 0 12px; font-size: 13px; text-transform: uppercase;
+      letter-spacing: 0.04em; color: var(--muted); font-family: Outfit, sans-serif;
+    }
+    .filters label {
+      display: block; padding: 8px 0; font-size: 14px; color: var(--fg); cursor: default;
+    }
+    .filters input { margin-right: 8px; }
+    .toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; font-size: 14px; color: var(--muted);
+    }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;
+    }
+    .product {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; text-decoration: none; color: inherit; display: block;
+    }
+    .thumb {
+      height: 140px; background: #E8ECF0;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 12px;
+    }
+    .body { padding: 12px; }
+    .sku { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); }
+    .name { font-weight: 600; margin: 4px 0 8px; font-size: 14px; }
+    .price { font-family: "IBM Plex Mono", monospace; color: var(--primary); font-weight: 600; }
+    .phase {
+      position: fixed; bottom: 12px; right: 12px; background: #1A2330; color: #E8EEF4;
+      font-size: 11px; padding: 6px 10px; border-radius: 4px;
+    }
+    .back { position: fixed; bottom: 12px; left: 12px; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="logo" href="shop-catalogue.html">retail-soln</a>
+    <input class="search" type="search" placeholder="Search products…" value="" />
+    <div class="nav">
+      <a href="#">Account</a>
+      <a href="#">Orders</a>
+      <a class="cart" href="shop-cart.html">Cart (2)</a>
+    </div>
+  </header>
+  <section class="hero">
+    <h1>Shop Ikeja Store A</h1>
+    <p>Home delivery · Store pickup · Click &amp; collect</p>
+  </section>
+  <div class="layout">
+    <aside class="filters">
+      <h2>Category</h2>
+      <label><input type="checkbox" checked /> Beverages</label>
+      <label><input type="checkbox" checked /> Snacks</label>
+      <label><input type="checkbox" /> Household</label>
+      <label><input type="checkbox" /> Electronics</label>
+      <h2 style="margin-top:20px">Availability</h2>
+      <label><input type="checkbox" checked /> In stock nearby</label>
+    </aside>
+    <div>
+      <div class="toolbar"><span>24 products</span><span>Sort: Featured ▾</span></div>
+      <div class="grid">
+        <a class="product" href="shop-product.html">
+          <div class="thumb">Product image</div>
+          <div class="body"><div class="sku">SKU-1042</div><div class="name">Peak Milk 400g</div><div class="price">₦1,850.00</div></div>
+        </a>
+        <a class="product" href="shop-product.html">
+          <div class="thumb">Product image</div>
+          <div class="body"><div class="sku">SKU-2201</div><div class="name">Indomie Chicken ×40</div><div class="price">₦8,400.00</div></div>
+        </a>
+        <a class="product" href="shop-product.html">
+          <div class="thumb">Product image</div>
+          <div class="body"><div class="sku">SKU-4412</div><div class="name">Samsung Earbuds A</div><div class="price">₦45,000.00</div></div>
+        </a>
+        <a class="product" href="shop-product.html">
+          <div class="thumb">Product image</div>
+          <div class="body"><div class="sku">SKU-1188</div><div class="name">Coca-Cola 50cl ×12</div><div class="price">₦3,600.00</div></div>
+        </a>
+        <a class="product" href="shop-product.html">
+          <div class="thumb">Product image</div>
+          <div class="body"><div class="sku">SKU-5501</div><div class="name">Dettol 750ml</div><div class="price">₦4,150.00</div></div>
+        </a>
+        <a class="product" href="shop-product.html">
+          <div class="thumb">Product image</div>
+          <div class="body"><div class="sku">SKU-3310</div><div class="name">Golden Penny Semo 1kg</div><div class="price">₦2,200.00</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+  <a class="back" href="index.html">← Mockups</a>
+  <div class="phase">Phase 7 · Customer portal</div>
+</body>
+</html>

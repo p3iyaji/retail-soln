@@ -1,0 +1,138 @@
+# generated: 08-24-2026 04:00
+# last_updated: 08-25-2026 07:20
+# project: retail-soln
+# project_key: RETAIL
+# tracking_system: file-system
+# story_location: "_bmad-output/implementation-artifacts/stories"
+
+# STATUS DEFINITIONS:
+# Epic: backlog | in-progress | done
+# Story: backlog | ready-for-dev | in-progress | review | done
+# Retrospective: optional | done
+
+generated: 08-24-2026 04:00
+last_updated: 08-25-2026 07:20
+project: retail-soln
+project_key: RETAIL
+tracking_system: file-system
+story_location: "_bmad-output/implementation-artifacts/stories"
+
+development_status:
+  epic-0: done
+  0-1-domain-model-erd: done
+  0-2-api-design-spec: done
+  0-3-offline-sync-design: done
+  0-4-security-permission-matrix: done
+  0-5-architecture-approval-gate: done
+  epic-0-retrospective: optional
+
+  epic-1: in-progress
+  1-1-laravel-scaffold: done
+  1-2-auth-fortify-sanctum: backlog
+  1-3-org-store-management: backlog
+  1-4-rbac-store-access: backlog
+  1-5-settings-audit: backlog
+  1-6-admin-portal-shell: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-product-catalog-crud: backlog
+  2-2-product-variants-barcodes: backlog
+  2-3-inventory-ledger-service: backlog
+  2-4-stock-adjustments-counts: backlog
+  2-5-stock-transfers: backlog
+  2-6-product-search-import: backlog
+  2-7-low-stock-alerts: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-supplier-management: backlog
+  3-2-purchase-order-approval: backlog
+  3-3-goods-receipt-partial: backlog
+  3-4-supplier-invoices-payments: backlog
+  3-5-purchase-returns: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-pricing-promotion-services: backlog
+  4-2-customer-records-pos: backlog
+  4-3-pos-vue-shell: backlog
+  4-4-cart-product-search: backlog
+  4-5-sale-atomic-transaction: backlog
+  4-6-hold-suspend-void: backlog
+  4-7-cashier-sessions: backlog
+  4-8-returns-refunds-pos: backlog
+  4-9-installment-plan-create: backlog
+  4-10-installment-collect: backlog
+  4-11-proforma-create-issue: backlog
+  4-12-proforma-convert: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-pwa-offline-shell: backlog
+  5-2-local-cache-sync: backlog
+  5-3-offline-sale-queue: backlog
+  5-4-push-sync-api: backlog
+  5-5-pull-sync-cursors: backlog
+  5-6-sync-status-ui: backlog
+  5-7-device-registration: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-customer-registration-auth: backlog
+  6-2-product-catalogue: backlog
+  6-3-cart-checkout: backlog
+  6-4-order-tracking-invoices: backlog
+  6-5-returns-request: backlog
+  epic-6-retrospective: optional
+
+  epic-7: backlog
+  7-1-stock-reservation: backlog
+  7-2-picking-packing: backlog
+  7-3-shipment-delivery: backlog
+  7-4-store-pickup: backlog
+  epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-sales-inventory-dashboards: backlog
+  8-2-store-performance-reports: backlog
+  8-3-notification-service: backlog
+  epic-8-retrospective: optional
+
+  epic-9: backlog
+  9-1-security-review: backlog
+  9-2-performance-optimization: backlog
+  9-3-observability: backlog
+  9-4-backup-dr-load-testing: backlog
+  9-5-e2e-offline-test-suite: backlog
+  epic-9-retrospective: optional
+
+action_items:
+  - epic: 0
+    action: "Resolve open questions OQ-1 through OQ-6 in PRD before architecture approval"
+    owner: "Paul"
+    status: done
+  - epic: 0
+    action: "Run bmad-ux before Epic 4 POS UI stories"
+    owner: "Paul"
+    status: done
+  - epic: 0
+    action: "Run bmad-project-context to seed AGENTS.md for repo"
+    owner: "Paul"
+    status: done
+  - epic: 0
+    action: "Await Paul permission before Epic 1 / bmad-build"
+    owner: "Paul"
+    status: done
+  - epic: 1
+    action: "Start new session from _bmad-output/handover-epic-1.md — Story 1.1 scaffold"
+    owner: "Paul"
+    status: done
+  - epic: 4
+    action: "Add loyalty engine stories under Epic 4 (AD-11)"
+    owner: "Paul"
+    status: open
+  - epic: 1
+    action: "Decide accounting ledger UI timing vs POS MVP (AD-12)"
+    owner: "Paul"
+    status: open

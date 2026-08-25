@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>POS Offline — retail-soln</title>
+  <style>
+    /* Governs: EXPERIENCE OFFLINE state, UJ-2; DESIGN offline/warning tokens */
+    :root {
+      --bg: #F4F6F8; --fg: #12181F; --muted: #5C6B7A; --card: #FFFFFF;
+      --border: #D5DCE3; --primary: #0B6E4F; --offline: #B45309;
+      --chrome: #1A2330; --chrome-fg: #E8EEF4; --radius: 8px;
+      --warn-bg: #FFFBEB;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; height: 100vh; display: flex; flex-direction: column;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif; color: var(--fg); background: var(--bg);
+    }
+    .chrome {
+      display: flex; align-items: center; gap: 16px;
+      padding: 10px 16px; background: var(--chrome); color: var(--chrome-fg); font-size: 13px;
+    }
+    .chrome strong { font-family: Outfit, "Segoe UI", sans-serif; }
+    .badge {
+      margin-left: auto; padding: 4px 10px; border-radius: 4px;
+      background: var(--offline); color: #fff; font-weight: 600; font-size: 12px;
+      letter-spacing: 0.03em;
+    }
+    .banner {
+      background: var(--warn-bg); color: #7A3B05;
+      border-bottom: 1px solid #F0D9A8;
+      padding: 10px 16px; font-size: 14px; font-weight: 500;
+    }
+    .workspace {
+      flex: 1; display: grid; grid-template-columns: 1fr 360px; min-height: 0;
+    }
+    .main { padding: 12px; }
+    .search input {
+      width: 100%; height: 48px; border: 2px solid var(--offline);
+      border-radius: var(--radius); padding: 0 14px; font-size: 16px; font-family: inherit;
+    }
+    .hint { margin-top: 16px; color: var(--muted); font-size: 14px; }
+    .rail {
+      background: var(--card); border-left: 1px solid var(--border);
+      padding: 14px; display: flex; flex-direction: column;
+    }
+    .rail h2 { margin: 0 0 12px; font-family: Outfit, "Segoe UI", sans-serif; font-size: 16px; }
+    .line { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .line .sku { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); }
+    .grand {
+      margin-top: auto; padding-top: 16px;
+      font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 36px; font-weight: 700; color: var(--primary); letter-spacing: -0.03em;
+    }
+    .pay {
+      margin-top: 12px; height: 56px; border: none; border-radius: var(--radius);
+      background: var(--primary); color: #F5FFF9;
+      font-family: Outfit, "Segoe UI", sans-serif; font-size: 16px; font-weight: 600; width: 100%;
+    }
+    .note { margin-top: 8px; font-size: 12px; color: var(--offline); font-weight: 600; }
+    .back { position: fixed; bottom: 12px; left: 12px; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="chrome">
+    <strong>Ikeja Store A</strong>
+    <span>Terminal POS-002</span>
+    <span>Amara Okonkwo · Session open</span>
+    <span class="badge">OFFLINE</span>
+  </div>
+  <div class="banner">Offline — sales will sync when connected</div>
+  <div class="workspace">
+    <section class="main">
+      <div class="search"><input type="search" placeholder="Scan or search (local cache)" /></div>
+      <p class="hint">Using cached products, prices, and tax. New installment plans are unavailable offline.</p>
+    </section>
+    <aside class="rail">
+      <h2>Cart</h2>
+      <div class="line"><div class="sku">SKU-1042</div>Peak Milk 400g ×2</div>
+      <div class="line"><div class="sku">SKU-1188</div>Coca-Cola 50cl ×12 ×1</div>
+      <div class="grand">₦8,477.50</div>
+      <button type="button" class="pay">Pay · save locally</button>
+      <div class="note">Queued for sync · UUID assigned on complete</div>
+    </aside>
+  </div>
+  <a class="back" href="index.html">← Mockups</a>
+</body>
+</html>

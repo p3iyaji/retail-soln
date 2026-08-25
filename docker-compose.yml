@@ -1,0 +1,105 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: retail-soln-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-retail_soln}
+      MYSQL_USER: ${DB_USERNAME:-retail}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${DB_ROOT_PASSWORD:-rootsecret}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: retail-soln-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: retail-soln-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+    environment: &app-env
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8080
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-retail_soln}
+      DB_USERNAME: ${DB_USERNAME:-retail}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php -r \"exit(@fsockopen('127.0.0.1',9000)?0:1);\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: retail-soln-queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: php artisan queue:work --sleep=1 --tries=3 --timeout=90
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      <<: *app-env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: retail-soln-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./backend:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  redis_data:

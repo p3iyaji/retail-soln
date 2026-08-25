@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Checkout — retail-soln shop</title>
+  <style>
+    :root {
+      --bg: #F4F6F8; --fg: #12181F; --muted: #5C6B7A; --card: #FFFFFF;
+      --border: #D5DCE3; --primary: #0B6E4F; --primary-fg: #F5FFF9;
+      --accent: #C45C26; --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "IBM Plex Sans", "Segoe UI", sans-serif; color: var(--fg); background: var(--bg); }
+    .top {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+    }
+    .logo { font-family: Outfit, sans-serif; font-weight: 700; color: var(--primary); text-decoration: none; font-size: 20px; }
+    .wrap {
+      max-width: 960px; margin: 28px auto; padding: 0 20px 48px;
+      display: grid; grid-template-columns: 1fr 320px; gap: 24px;
+    }
+    @media (max-width: 800px) { .wrap { grid-template-columns: 1fr; } }
+    h1 {
+      grid-column: 1 / -1; margin: 0;
+      font-family: Outfit, sans-serif; font-size: 24px; font-weight: 600;
+    }
+    .panel {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; margin-bottom: 16px;
+    }
+    .panel h2 {
+      margin: 0 0 14px; font-family: Outfit, sans-serif; font-size: 15px; font-weight: 600;
+    }
+    .option {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px; border: 1px solid var(--border); border-radius: var(--radius);
+      margin-bottom: 8px;
+    }
+    .option.active { border-color: var(--primary); background: #F0F7F4; }
+    .option strong { display: block; font-size: 14px; }
+    .option span { font-size: 12px; color: var(--muted); }
+    label.field { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    input, select {
+      width: 100%; height: 40px; border: 1px solid var(--border); border-radius: 4px;
+      padding: 0 10px; font: inherit; margin-bottom: 12px;
+    }
+    .pay-row {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .pay-row span {
+      padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 13px; font-weight: 600;
+    }
+    .pay-row span.active { border-color: var(--primary); color: var(--primary); background: #F0F7F4; }
+    .summary {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; height: fit-content; position: sticky; top: 16px;
+    }
+    .row { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+    .grand {
+      display: flex; justify-content: space-between; margin: 14px 0;
+      padding-top: 12px; border-top: 1px solid var(--border);
+      font-family: Outfit, sans-serif; font-size: 20px; font-weight: 700; color: var(--primary);
+    }
+    .reserve {
+      font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 12px;
+    }
+    .place {
+      width: 100%; height: 48px; border: none; border-radius: var(--radius);
+      background: var(--primary); color: var(--primary-fg);
+      font-family: Outfit, sans-serif; font-weight: 600; font-size: 15px;
+      text-decoration: none; display: flex; align-items: center; justify-content: center;
+    }
+    .back { position: fixed; bottom: 12px; left: 12px; font-size: 12px; color: var(--muted); }
+    .phase { position: fixed; bottom: 12px; right: 12px; background: #1A2330; color: #E8EEF4; font-size: 11px; padding: 6px 10px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header class="top"><a class="logo" href="shop-catalogue.html">retail-soln</a></header>
+  <div class="wrap">
+    <h1>Checkout</h1>
+    <div>
+      <div class="panel">
+        <h2>Fulfilment</h2>
+        <div class="option"><div>●</div><div><strong>Home delivery</strong><span>2–3 days · fee at confirm</span></div></div>
+        <div class="option active"><div>●</div><div><strong>Click &amp; collect</strong><span>Ikeja Store A · Ready same day when confirmed</span></div></div>
+        <div class="option"><div>○</div><div><strong>Store pickup</strong><span>Choose another store</span></div></div>
+      </div>
+      <div class="panel">
+        <h2>Collecting store</h2>
+        <label class="field">Store</label>
+        <select><option>Ikeja Store A</option><option>Lekki Store B</option></select>
+        <label class="field">Contact phone</label>
+        <input value="+234 801 000 0000" />
+      </div>
+      <div class="panel">
+        <h2>Payment</h2>
+        <div class="pay-row">
+          <span class="active">Paystack</span>
+          <span>Stripe</span>
+          <span>Card</span>
+        </div>
+      </div>
+    </div>
+    <aside class="summary">
+      <div class="reserve">Stock will be reserved on place order</div>
+      <div class="row"><span>Items</span><span>₦48,700.00</span></div>
+      <div class="row"><span>Tax</span><span>₦3,652.50</span></div>
+      <div class="row"><span>Collection</span><span>₦0.00</span></div>
+      <div class="grand"><span>Pay now</span><span>₦52,352.50</span></div>
+      <a class="place" href="shop-order.html">Place order</a>
+    </aside>
+  </div>
+  <a class="back" href="index.html">← Mockups</a>
+  <div class="phase">Phase 7 · Customer portal</div>
+</body>
+</html>

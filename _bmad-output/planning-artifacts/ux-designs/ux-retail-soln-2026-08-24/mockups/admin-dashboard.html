@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard — retail-soln</title>
+  <style>
+    /* Governs: EXPERIENCE Admin IA, Store switcher, Low stock state; DESIGN tokens */
+    :root {
+      --bg: #F4F6F8; --fg: #12181F; --muted: #5C6B7A; --card: #FFFFFF;
+      --border: #D5DCE3; --primary: #0B6E4F; --accent: #C45C26;
+      --chrome: #1A2330; --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid;
+      grid-template-columns: 220px 1fr;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 15px; color: var(--fg); background: var(--bg);
+    }
+    nav {
+      background: var(--chrome); color: #E8EEF4;
+      padding: 20px 0; display: flex; flex-direction: column;
+    }
+    .brand {
+      font-family: Outfit, "Segoe UI", sans-serif;
+      font-weight: 600; font-size: 18px; padding: 0 20px 20px;
+      letter-spacing: -0.02em;
+    }
+    nav a {
+      display: block; padding: 10px 20px; color: #A8B4C0;
+      text-decoration: none; font-size: 14px;
+    }
+    nav a.active { background: rgba(11,110,79,0.35); color: #fff; font-weight: 600; }
+    .main { display: flex; flex-direction: column; min-width: 0; }
+    .top {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 12px 24px; display: flex; align-items: center; gap: 16px;
+    }
+    .top h1 {
+      margin: 0; font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 20px; font-weight: 600; flex: 1;
+    }
+    .switcher {
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 8px 12px; font-size: 13px; background: var(--bg);
+    }
+    .user { font-size: 13px; color: var(--muted); }
+    .content { padding: 24px; }
+    .kpis {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) { body { grid-template-columns: 1fr; } .kpis { grid-template-columns: 1fr 1fr; } }
+    .kpi {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px;
+    }
+    .kpi .l { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .kpi .v {
+      font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 28px; font-weight: 600; margin-top: 6px;
+      letter-spacing: -0.02em;
+    }
+    .kpi .v.mono { font-family: "IBM Plex Mono", monospace; font-size: 22px; }
+    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 900px) { .panels { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .panel h2 {
+      margin: 0; padding: 14px 16px; font-size: 14px;
+      font-family: Outfit, "Segoe UI", sans-serif;
+      border-bottom: 1px solid var(--border);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      text-align: left; padding: 8px 16px; color: var(--muted);
+      font-weight: 500; background: var(--bg);
+    }
+    td { padding: 10px 16px; border-top: 1px solid var(--border); }
+    .ember { color: var(--accent); font-weight: 600; }
+    .warn { color: #B45309; font-weight: 600; }
+    .mono { font-family: "IBM Plex Mono", monospace; }
+    .back { position: fixed; bottom: 12px; right: 12px; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand">retail-soln</div>
+    <a class="active" href="#">Dashboard</a>
+    <a href="#">Products</a>
+    <a href="#">Inventory</a>
+    <a href="#">Purchasing</a>
+    <a href="#">Customers</a>
+    <a href="#">Sales</a>
+    <a href="#">Proformas</a>
+    <a href="#">Registers</a>
+    <a href="#">Pricing</a>
+    <a href="#">Settings</a>
+  </nav>
+  <div class="main">
+    <div class="top">
+      <h1>Dashboard</h1>
+      <div class="switcher">Store: Ikeja Store A ▾</div>
+      <div class="user">David Chen · Store Manager</div>
+    </div>
+    <div class="content">
+      <div class="kpis">
+        <div class="kpi"><div class="l">Today’s sales</div><div class="v mono">₦428,450.00</div></div>
+        <div class="kpi"><div class="l">Orders pending</div><div class="v">12</div></div>
+        <div class="kpi"><div class="l">Low stock</div><div class="v ember">7</div></div>
+        <div class="kpi"><div class="l">Open registers</div><div class="v">2</div></div>
+      </div>
+      <div class="panels">
+        <div class="panel">
+          <h2>Low stock</h2>
+          <table>
+            <thead><tr><th>SKU</th><th>Product</th><th>Available</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">SKU-2201</td><td>Indomie Chicken ×40</td><td class="ember">4</td></tr>
+              <tr><td class="mono">SKU-1042</td><td>Peak Milk 400g</td><td class="ember">9</td></tr>
+              <tr><td class="mono">SKU-5501</td><td>Dettol 750ml</td><td class="ember">3</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h2>Needs attention</h2>
+          <table>
+            <thead><tr><th>Item</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Oversell · Sale SAL-9821</td><td class="warn">Pending approval</td></tr>
+              <tr><td>PO-441 awaiting approval</td><td class="warn">Procurement</td></tr>
+              <tr><td>Register POS-001 variance</td><td>₦200.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <a class="back" href="index.html">← Mockups</a>
+</body>
+</html>
