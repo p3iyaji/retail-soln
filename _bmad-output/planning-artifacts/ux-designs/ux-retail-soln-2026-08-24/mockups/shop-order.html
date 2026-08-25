@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Order tracking — retail-soln shop</title>
+  <style>
+    :root {
+      --bg: #F4F6F8; --fg: #12181F; --muted: #5C6B7A; --card: #FFFFFF;
+      --border: #D5DCE3; --primary: #0B6E4F; --primary-fg: #F5FFF9; --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "IBM Plex Sans", "Segoe UI", sans-serif; color: var(--fg); background: var(--bg); }
+    .top {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 14px 28px; display: flex; gap: 16px; align-items: center;
+    }
+    .logo { font-family: Outfit, sans-serif; font-weight: 700; color: var(--primary); text-decoration: none; font-size: 20px; }
+    .top nav a { color: var(--muted); text-decoration: none; font-size: 14px; margin-left: 12px; }
+    .wrap { max-width: 640px; margin: 32px auto; padding: 0 20px 48px; }
+    h1 {
+      margin: 0 0 6px; font-family: Outfit, sans-serif; font-size: 24px; font-weight: 600;
+    }
+    .meta { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+    .meta .mono { font-family: "IBM Plex Mono", monospace; color: var(--fg); font-weight: 600; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px;
+    }
+    .status {
+      display: inline-block; background: #F0F7F4; color: var(--primary);
+      font-weight: 700; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 6px 10px; border-radius: 4px; margin-bottom: 20px;
+    }
+    .steps { list-style: none; margin: 0; padding: 0; }
+    .steps li {
+      display: grid; grid-template-columns: 28px 1fr; gap: 12px;
+      padding: 12px 0; border-left: none; position: relative;
+    }
+    .dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+    }
+    .dot.todo { background: var(--border); color: var(--muted); }
+    .steps strong { display: block; font-size: 14px; }
+    .steps span { font-size: 12px; color: var(--muted); }
+    .actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+    .actions a {
+      height: 40px; padding: 0 14px; border-radius: var(--radius);
+      display: inline-flex; align-items: center; text-decoration: none; font-size: 13px; font-weight: 600;
+    }
+    .actions .pri { background: var(--primary); color: var(--primary-fg); }
+    .actions .ghost { border: 1px solid var(--border); color: var(--fg); background: var(--bg); }
+    .back { position: fixed; bottom: 12px; left: 12px; font-size: 12px; color: var(--muted); }
+    .phase { position: fixed; bottom: 12px; right: 12px; background: #1A2330; color: #E8EEF4; font-size: 11px; padding: 6px 10px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="logo" href="shop-catalogue.html">retail-soln</a>
+    <nav>
+      <a href="shop-catalogue.html">Shop</a>
+      <a href="#">Orders</a>
+    </nav>
+  </header>
+  <div class="wrap">
+    <h1>Order confirmed</h1>
+    <p class="meta">Order <span class="mono">ORD-10482</span> · Sarah Mitchell · Click &amp; collect</p>
+    <div class="card">
+      <div class="status">Ready for pickup</div>
+      <ol class="steps">
+        <li><div class="dot">✓</div><div><strong>Pending</strong><span>Payment received via Paystack</span></div></li>
+        <li><div class="dot">✓</div><div><strong>Confirmed</strong><span>Stock reserved · Ikeja Store A</span></div></li>
+        <li><div class="dot">✓</div><div><strong>Processing</strong><span>Picked &amp; packed</span></div></li>
+        <li><div class="dot">✓</div><div><strong>Ready for pickup</strong><span>Collect at store counter · bring this order ID</span></div></li>
+        <li><div class="dot todo">5</div><div><strong>Delivered / Collected</strong><span>Waiting for collection</span></div></li>
+      </ol>
+      <div class="actions">
+        <a class="pri" href="#">Download invoice</a>
+        <a class="ghost" href="#">Request return</a>
+        <a class="ghost" href="shop-catalogue.html">Continue shopping</a>
+      </div>
+    </div>
+  </div>
+  <a class="back" href="index.html">← Mockups</a>
+  <div class="phase">Phase 7 · Customer portal · UJ-5</div>
+</body>
+</html>

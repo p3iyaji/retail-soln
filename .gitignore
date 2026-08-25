@@ -1,0 +1,28 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+.zed/
+*.log
+
+# Env / secrets — never commit
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Dependencies / build
+backend/vendor/
+backend/node_modules/
+backend/public/hot
+backend/public/build
+backend/storage/*.key
+frontend/**/node_modules/
+frontend/**/dist/
+
+# PHPUnit / caches
+.phpunit.result.cache
+backend/.phpunit.cache/
+
+# Docker volumes / local overrides
+docker-compose.override.yml

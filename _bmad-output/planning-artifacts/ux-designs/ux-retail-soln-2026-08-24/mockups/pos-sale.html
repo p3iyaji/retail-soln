@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>POS Sale — retail-soln</title>
+  <style>
+    /*
+      Governs: EXPERIENCE.md POS zones, Sync badge, Product search, Qty stepper, Pay CTA
+      DESIGN.md: colors, typography, pos-chrome, button-pos-pay
+    */
+    :root {
+      --bg: #F4F6F8;
+      --fg: #12181F;
+      --muted: #5C6B7A;
+      --card: #FFFFFF;
+      --border: #D5DCE3;
+      --primary: #0B6E4F;
+      --primary-fg: #F5FFF9;
+      --accent: #C45C26;
+      --online: #0B6E4F;
+      --chrome: #1A2330;
+      --chrome-fg: #E8EEF4;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 15px;
+      color: var(--fg);
+      background: var(--bg);
+    }
+    .chrome {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 16px;
+      background: var(--chrome);
+      color: var(--chrome-fg);
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .chrome strong { font-family: Outfit, "Segoe UI", sans-serif; font-weight: 600; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: var(--online);
+      color: #fff;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+    }
+    .badge::before {
+      content: "";
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #fff;
+    }
+    .chrome .spacer { flex: 1; }
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      min-height: 0;
+    }
+    .main {
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 12px;
+      min-height: 0;
+    }
+    .search {
+      display: flex;
+      gap: 8px;
+    }
+    .search input {
+      flex: 1;
+      height: 48px;
+      border: 2px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 0 14px;
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+    }
+    .search button {
+      height: 48px;
+      padding: 0 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      font: inherit;
+      cursor: default;
+    }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      padding: 6px 12px;
+      border-radius: 4px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .chip.active { border-color: var(--primary); color: var(--primary); font-weight: 600; }
+    .grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      overflow: auto;
+      align-content: start;
+    }
+    .product {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      min-height: 100px;
+    }
+    .product .sku {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .product .name { font-weight: 500; margin: 6px 0; font-size: 14px; }
+    .product .price {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .rail {
+      background: var(--card);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .rail-h {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .rail-h h2 {
+      margin: 0;
+      font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 16px;
+    }
+    .customer {
+      margin: 10px 14px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: var(--radius);
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .customer span { color: var(--muted); }
+    .lines { flex: 1; overflow: auto; padding: 0 14px; }
+    .line {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 8px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .line .sku { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); }
+    .line .name { font-weight: 500; }
+    .qty {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .qty button {
+      width: 36px; height: 36px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      font-size: 18px;
+    }
+    .qty b { min-width: 24px; text-align: center; font-family: "IBM Plex Mono", monospace; }
+    .line .amt {
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 600;
+      align-self: start;
+    }
+    .totals {
+      padding: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .totals row, .totals .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .grand {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 10px 0 14px;
+    }
+    .grand label { font-size: 13px; font-weight: 600; }
+    .grand .val {
+      font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--primary);
+      line-height: 1.1;
+    }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .actions .pay {
+      grid-column: 1 / -1;
+      height: 56px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--primary);
+      color: var(--primary-fg);
+      font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .actions button:not(.pay) {
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      font: inherit;
+    }
+    .actions .void { color: #B42318; }
+    .keys {
+      padding: 8px 14px 12px;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+    .back {
+      position: fixed; bottom: 12px; left: 12px;
+      font-size: 12px; color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="chrome">
+    <strong>Ikeja Store A</strong>
+    <span>Terminal POS-002</span>
+    <span>Amara Okonkwo · Session open</span>
+    <span class="spacer"></span>
+    <span class="badge" title="Sync status">ONLINE</span>
+  </div>
+  <div class="workspace">
+    <section class="main">
+      <div class="search">
+        <input type="search" value="" placeholder="Scan or search (F2) — SKU, barcode, name" autofocus />
+        <button type="button">Customer F4</button>
+      </div>
+      <div class="chips">
+        <span class="chip active">All</span>
+        <span class="chip">Beverages</span>
+        <span class="chip">Snacks</span>
+        <span class="chip">Household</span>
+        <span class="chip">Electronics</span>
+      </div>
+      <div class="grid">
+        <div class="product"><div class="sku">SKU-1042</div><div class="name">Peak Milk 400g</div><div class="price">₦1,850.00</div></div>
+        <div class="product"><div class="sku">SKU-2201</div><div class="name">Indomie Chicken ×40</div><div class="price">₦8,400.00</div></div>
+        <div class="product"><div class="sku">SKU-3310</div><div class="name">Golden Penny Semo 1kg</div><div class="price">₦2,200.00</div></div>
+        <div class="product"><div class="sku">SKU-4412</div><div class="name">Samsung Earbuds A</div><div class="price">₦45,000.00</div></div>
+        <div class="product"><div class="sku">SKU-1188</div><div class="name">Coca-Cola 50cl ×12</div><div class="price">₦3,600.00</div></div>
+        <div class="product"><div class="sku">SKU-5501</div><div class="name">Dettol 750ml</div><div class="price">₦4,150.00</div></div>
+      </div>
+    </section>
+    <aside class="rail">
+      <div class="rail-h"><h2>Cart</h2><span style="font-size:12px;color:var(--muted)">3 lines</span></div>
+      <div class="customer"><div><strong>Walk-in</strong><div style="color:var(--muted);font-size:12px">F4 to select account</div></div><span>Change</span></div>
+      <div class="lines">
+        <div class="line">
+          <div>
+            <div class="sku">SKU-1042</div>
+            <div class="name">Peak Milk 400g</div>
+            <div class="qty"><button type="button">−</button><b>2</b><button type="button">+</button></div>
+          </div>
+          <div class="amt">₦3,700.00</div>
+        </div>
+        <div class="line">
+          <div>
+            <div class="sku">SKU-2201</div>
+            <div class="name">Indomie Chicken ×40</div>
+            <div class="qty"><button type="button">−</button><b>1</b><button type="button">+</button></div>
+          </div>
+          <div class="amt">₦8,400.00</div>
+        </div>
+        <div class="line">
+          <div>
+            <div class="sku">SKU-1188</div>
+            <div class="name">Coca-Cola 50cl ×12</div>
+            <div class="qty"><button type="button">−</button><b>1</b><button type="button">+</button></div>
+          </div>
+          <div class="amt">₦3,600.00</div>
+        </div>
+      </div>
+      <div class="totals">
+        <div class="row"><span>Subtotal</span><span>₦15,700.00</span></div>
+        <div class="row"><span>Tax</span><span>₦1,177.50</span></div>
+        <div class="grand"><label>Total</label><div class="val">₦16,877.50</div></div>
+        <div class="actions">
+          <button type="button">Hold</button>
+          <button type="button" class="void">Void</button>
+          <button type="button" class="pay">Pay · F9</button>
+        </div>
+      </div>
+      <div class="keys">F2 search · F4 customer · F8 discount · F9 pay · Esc cancel</div>
+    </aside>
+  </div>
+  <a class="back" href="index.html">← Mockups</a>
+</body>
+</html>

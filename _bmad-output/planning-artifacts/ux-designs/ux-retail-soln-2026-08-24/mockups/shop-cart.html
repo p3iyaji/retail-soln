@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cart — retail-soln shop</title>
+  <style>
+    :root {
+      --bg: #F4F6F8; --fg: #12181F; --muted: #5C6B7A; --card: #FFFFFF;
+      --border: #D5DCE3; --primary: #0B6E4F; --primary-fg: #F5FFF9; --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "IBM Plex Sans", "Segoe UI", sans-serif; color: var(--fg); background: var(--bg); }
+    .top {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 14px 28px; display: flex; align-items: center;
+    }
+    .logo { font-family: Outfit, sans-serif; font-weight: 700; color: var(--primary); text-decoration: none; font-size: 20px; }
+    .wrap {
+      max-width: 900px; margin: 28px auto; padding: 0 20px;
+      display: grid; grid-template-columns: 1fr 300px; gap: 24px;
+    }
+    @media (max-width: 720px) { .wrap { grid-template-columns: 1fr; } }
+    h1 {
+      grid-column: 1 / -1; margin: 0 0 8px;
+      font-family: Outfit, sans-serif; font-size: 24px; font-weight: 600;
+    }
+    .lines {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .line {
+      display: grid; grid-template-columns: 72px 1fr auto; gap: 12px;
+      padding: 16px; border-bottom: 1px solid var(--border); align-items: center;
+    }
+    .line:last-child { border-bottom: none; }
+    .thumb { width: 72px; height: 72px; background: #E8ECF0; border-radius: 4px; }
+    .name { font-weight: 600; font-size: 14px; }
+    .sku { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); }
+    .qty { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .amt { font-family: "IBM Plex Mono", monospace; font-weight: 600; }
+    .summary {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; height: fit-content;
+    }
+    .summary h2 { margin: 0 0 14px; font-family: Outfit, sans-serif; font-size: 16px; }
+    .row { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+    .grand {
+      display: flex; justify-content: space-between; margin: 14px 0;
+      padding-top: 12px; border-top: 1px solid var(--border);
+      font-family: Outfit, sans-serif; font-size: 20px; font-weight: 700; color: var(--primary);
+    }
+    .checkout {
+      width: 100%; height: 48px; border: none; border-radius: var(--radius);
+      background: var(--primary); color: var(--primary-fg);
+      font-family: Outfit, sans-serif; font-weight: 600; font-size: 15px;
+      text-decoration: none; display: flex; align-items: center; justify-content: center;
+    }
+    .back { position: fixed; bottom: 12px; left: 12px; font-size: 12px; color: var(--muted); }
+    .phase { position: fixed; bottom: 12px; right: 12px; background: #1A2330; color: #E8EEF4; font-size: 11px; padding: 6px 10px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header class="top"><a class="logo" href="shop-catalogue.html">retail-soln</a></header>
+  <div class="wrap">
+    <h1>Your cart</h1>
+    <div class="lines">
+      <div class="line">
+        <div class="thumb"></div>
+        <div>
+          <div class="name">Peak Milk 400g</div>
+          <div class="sku">SKU-1042</div>
+          <div class="qty">Qty 2</div>
+        </div>
+        <div class="amt">₦3,700.00</div>
+      </div>
+      <div class="line">
+        <div class="thumb"></div>
+        <div>
+          <div class="name">Samsung Earbuds A</div>
+          <div class="sku">SKU-4412</div>
+          <div class="qty">Qty 1</div>
+        </div>
+        <div class="amt">₦45,000.00</div>
+      </div>
+    </div>
+    <aside class="summary">
+      <h2>Summary</h2>
+      <div class="row"><span>Subtotal</span><span>₦48,700.00</span></div>
+      <div class="row"><span>Tax (est.)</span><span>₦3,652.50</span></div>
+      <div class="row"><span>Delivery</span><span>Calculated next</span></div>
+      <div class="grand"><span>Total</span><span>₦52,352.50</span></div>
+      <a class="checkout" href="shop-checkout.html">Checkout</a>
+    </aside>
+  </div>
+  <a class="back" href="index.html">← Mockups</a>
+  <div class="phase">Phase 7 · Customer portal</div>
+</body>
+</html>

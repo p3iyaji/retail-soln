@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Proforma Invoice — retail-soln</title>
+  <style>
+    /* Governs: EXPERIENCE Proforma document, UJ-8; AD-15 non-fiscal labeling; DESIGN tokens */
+    :root {
+      --bg: #F4F6F8; --fg: #12181F; --muted: #5C6B7A; --card: #FFFFFF;
+      --border: #D5DCE3; --primary: #0B6E4F; --primary-fg: #F5FFF9;
+      --accent: #C45C26; --chrome: #1A2330; --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 15px; color: var(--fg); background: var(--bg);
+    }
+    .top {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 12px 24px; display: flex; align-items: center; gap: 12px;
+    }
+    .top h1 {
+      margin: 0; font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 18px; font-weight: 600; flex: 1;
+    }
+    .top button {
+      height: 40px; padding: 0 14px; border-radius: var(--radius);
+      font: inherit; font-weight: 600; font-size: 13px;
+    }
+    .issue { background: var(--primary); color: var(--primary-fg); border: none; }
+    .ghost { background: var(--bg); border: 1px solid var(--border); }
+    .convert { background: var(--accent); color: #FFF8F3; border: none; }
+    .wrap { max-width: 800px; margin: 24px auto; padding: 0 16px 48px; }
+    .banner {
+      background: #FFF8F3; border: 2px solid var(--accent);
+      border-radius: var(--radius); padding: 12px 16px;
+      font-weight: 700; color: var(--accent); letter-spacing: 0.04em;
+      text-transform: uppercase; font-size: 13px; margin-bottom: 16px;
+    }
+    .doc {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px; position: relative; overflow: hidden;
+    }
+    .watermark {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      pointer-events: none; font-family: Outfit, sans-serif;
+      font-size: 72px; font-weight: 700; color: rgba(196, 92, 38, 0.08);
+      transform: rotate(-18deg); letter-spacing: 0.08em;
+    }
+    .doc-h { display: flex; justify-content: space-between; margin-bottom: 24px; position: relative; }
+    .doc-h h2 {
+      margin: 0; font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 22px; font-weight: 600;
+    }
+    .meta { text-align: right; font-size: 13px; color: var(--muted); }
+    .meta .num { font-family: "IBM Plex Mono", monospace; color: var(--fg); font-weight: 600; }
+    .parties {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+      margin-bottom: 24px; font-size: 13px; position: relative;
+    }
+    .parties h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; position: relative; }
+    th {
+      text-align: left; padding: 8px; border-bottom: 2px solid var(--fg);
+      font-weight: 600; font-size: 12px;
+    }
+    th.r, td.r { text-align: right; }
+    td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    .mono { font-family: "IBM Plex Mono", monospace; }
+    .totals {
+      margin-top: 16px; margin-left: auto; width: 240px;
+      font-size: 13px; position: relative;
+    }
+    .totals .row { display: flex; justify-content: space-between; margin-bottom: 6px; color: var(--muted); }
+    .totals .grand {
+      display: flex; justify-content: space-between; margin-top: 10px;
+      padding-top: 10px; border-top: 2px solid var(--fg);
+      font-family: Outfit, "Segoe UI", sans-serif; font-size: 18px; font-weight: 700;
+      color: var(--fg);
+    }
+    .footnote {
+      margin-top: 28px; font-size: 12px; color: var(--muted);
+      border-top: 1px dashed var(--border); padding-top: 12px; position: relative;
+    }
+    .status {
+      display: inline-block; margin-top: 4px; padding: 2px 8px;
+      background: #F0F7F4; color: var(--primary); border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+    }
+    .back { display: inline-block; margin: 16px 24px; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Mockups</a>
+  <div class="top">
+    <h1>Proforma PF-IKE-0042</h1>
+    <button type="button" class="ghost">Download PDF</button>
+    <button type="button" class="ghost">Email</button>
+    <button type="button" class="issue">Issue</button>
+    <button type="button" class="convert">Convert to sale</button>
+  </div>
+  <div class="wrap">
+    <div class="banner">Proforma — Not a tax invoice</div>
+    <div class="doc">
+      <div class="watermark">PROFORMA</div>
+      <div class="doc-h">
+        <div>
+          <h2>Proforma Invoice</h2>
+          <span class="status">Issued</span>
+        </div>
+        <div class="meta">
+          <div class="num">PF-IKE-0042</div>
+          <div>24 Aug 2026</div>
+          <div>Valid until 7 Sep 2026</div>
+        </div>
+      </div>
+      <div class="parties">
+        <div>
+          <h3>From</h3>
+          <strong>retail-soln · Ikeja Store A</strong><br />
+          12 Allen Avenue, Ikeja<br />
+          VAT: NG-000000000
+        </div>
+        <div>
+          <h3>Bill to</h3>
+          <strong>Horizon Logistics Ltd</strong><br />
+          CUST-2201 · Accounts Payable<br />
+          Lagos
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Description</th>
+            <th class="r">Qty</th>
+            <th class="r">Unit</th>
+            <th class="r">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">SKU-4412</td>
+            <td>Samsung Earbuds A</td>
+            <td class="r mono">10</td>
+            <td class="r mono">₦45,000.00</td>
+            <td class="r mono">₦450,000.00</td>
+          </tr>
+          <tr>
+            <td class="mono">SKU-5501</td>
+            <td>Dettol 750ml</td>
+            <td class="r mono">24</td>
+            <td class="r mono">₦4,150.00</td>
+            <td class="r mono">₦99,600.00</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="totals">
+        <div class="row"><span>Subtotal</span><span class="mono">₦549,600.00</span></div>
+        <div class="row"><span>Tax</span><span class="mono">₦41,220.00</span></div>
+        <div class="grand"><span>Total</span><span class="mono">₦590,820.00</span></div>
+      </div>
+      <p class="footnote">
+        This document is a proforma invoice for quotation purposes only. It does not create accounts receivable,
+        transfer stock, or constitute a tax invoice until converted to a sale or issued tax invoice.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

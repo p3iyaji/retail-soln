@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Product detail — retail-soln shop</title>
+  <style>
+    :root {
+      --bg: #F4F6F8; --fg: #12181F; --muted: #5C6B7A; --card: #FFFFFF;
+      --border: #D5DCE3; --primary: #0B6E4F; --primary-fg: #F5FFF9; --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "IBM Plex Sans", "Segoe UI", sans-serif; color: var(--fg); background: var(--bg); }
+    .top {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 14px 28px; display: flex; align-items: center; gap: 16px;
+    }
+    .logo { font-family: Outfit, sans-serif; font-weight: 700; color: var(--primary); text-decoration: none; font-size: 20px; }
+    .top a { margin-left: auto; color: var(--muted); text-decoration: none; font-size: 14px; }
+    .wrap {
+      max-width: 960px; margin: 32px auto; padding: 0 20px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+    }
+    @media (max-width: 720px) { .wrap { grid-template-columns: 1fr; } }
+    .img {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      height: 360px; display: flex; align-items: center; justify-content: center; color: var(--muted);
+    }
+    .sku { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
+    h1 {
+      margin: 8px 0 12px; font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 28px; font-weight: 600; letter-spacing: -0.02em;
+    }
+    .price {
+      font-family: Outfit, sans-serif; font-size: 32px; font-weight: 700;
+      color: var(--primary); letter-spacing: -0.02em; margin-bottom: 8px;
+    }
+    .stock { color: var(--primary); font-weight: 600; font-size: 14px; margin-bottom: 20px; }
+    .desc { color: var(--muted); font-size: 15px; line-height: 1.5; margin-bottom: 24px; }
+    .qty { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .qty button {
+      width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 4px; background: var(--card); font-size: 18px;
+    }
+    .qty b { font-family: "IBM Plex Mono", monospace; min-width: 24px; text-align: center; }
+    .add {
+      width: 100%; height: 52px; border: none; border-radius: var(--radius);
+      background: var(--primary); color: var(--primary-fg);
+      font-family: Outfit, sans-serif; font-size: 16px; font-weight: 600;
+    }
+    .fulfil { margin-top: 16px; font-size: 13px; color: var(--muted); }
+    .back { position: fixed; bottom: 12px; left: 12px; font-size: 12px; color: var(--muted); }
+    .phase { position: fixed; bottom: 12px; right: 12px; background: #1A2330; color: #E8EEF4; font-size: 11px; padding: 6px 10px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="logo" href="shop-catalogue.html">retail-soln</a>
+    <a href="shop-cart.html">Cart (2)</a>
+  </header>
+  <div class="wrap">
+    <div class="img">Product image</div>
+    <div>
+      <div class="sku">SKU-4412</div>
+      <h1>Samsung Earbuds A</h1>
+      <div class="price">₦45,000.00</div>
+      <div class="stock">In stock · Ikeja Store A</div>
+      <p class="desc">Wireless earbuds with charging case. Fulfilled from your selected store. Price includes applicable tax where shown at checkout.</p>
+      <div class="qty">
+        <button type="button">−</button><b>1</b><button type="button">+</button>
+      </div>
+      <button type="button" class="add">Add to cart</button>
+      <p class="fulfil">Delivery · Pickup · Click &amp; collect available at checkout</p>
+    </div>
+  </div>
+  <a class="back" href="index.html">← Mockups</a>
+  <div class="phase">Phase 7 · Customer portal</div>
+</body>
+</html>

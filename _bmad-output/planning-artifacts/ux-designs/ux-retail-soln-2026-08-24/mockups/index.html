@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>retail-soln — UX Mockups</title>
+  <style>
+    /* Index for mockup gallery. Tokens from DESIGN.md */
+    :root {
+      --bg: #F4F6F8;
+      --fg: #12181F;
+      --muted: #5C6B7A;
+      --card: #FFFFFF;
+      --border: #D5DCE3;
+      --primary: #0B6E4F;
+      --accent: #C45C26;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.45;
+    }
+    header {
+      background: #1A2330;
+      color: #E8EEF4;
+      padding: 24px 32px;
+    }
+    header h1 {
+      font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 28px;
+      margin: 0 0 6px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p { margin: 0; color: #A8B4C0; font-size: 14px; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px; }
+    .note {
+      background: #FFF8F3;
+      border: 1px solid #E8C4B0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #5C3A28;
+      margin-bottom: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    a.card {
+      display: block;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      text-decoration: none;
+      color: inherit;
+    }
+    a.card:hover { border-color: var(--primary); }
+    a.card h2 {
+      font-family: Outfit, "Segoe UI", sans-serif;
+      font-size: 18px;
+      margin: 0 0 8px;
+      color: var(--primary);
+    }
+    a.card p { margin: 0; font-size: 13px; color: var(--muted); }
+    a.card .tag {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>retail-soln mockups</h1>
+    <p>Static HTML from DESIGN.md + EXPERIENCE.md · spines win on conflict</p>
+  </header>
+  <main>
+    <p class="note">Open any screen below in the browser. No build step. Visual reference only — not production UI. Customer shop screens are <strong>Phase 7</strong> (post-MVP) but share DESIGN.md tokens.</p>
+    <h2 style="font-family:Outfit,sans-serif;font-size:16px;margin:0 0 12px;color:#5C6B7A;">MVP / operations</h2>
+    <div class="grid">
+      <a class="card" href="pos-sale.html">
+        <h2>POS — Sale</h2>
+        <p>Three-zone POS with search, cart, sync badge ONLINE, Pay CTA.</p>
+        <span class="tag">UJ-1</span>
+      </a>
+      <a class="card" href="pos-payment-installments.html">
+        <h2>POS — Payment &amp; installments</h2>
+        <p>Payment sheet with deposit + installment schedule editor.</p>
+        <span class="tag">UJ-7</span>
+      </a>
+      <a class="card" href="pos-offline.html">
+        <h2>POS — Offline state</h2>
+        <p>OFFLINE badge + banner; local sale still available.</p>
+        <span class="tag">UJ-2</span>
+      </a>
+      <a class="card" href="admin-dashboard.html">
+        <h2>Admin / SM — Dashboard</h2>
+        <p>Store-scoped KPIs, low stock, pending oversell &amp; approvals.</p>
+        <span class="tag">UJ-3</span>
+      </a>
+      <a class="card" href="proforma-document.html">
+        <h2>Proforma invoice</h2>
+        <p>PROFORMA banner, lines, Issue / PDF / Convert — no Pay.</p>
+        <span class="tag">UJ-8</span>
+      </a>
+    </div>
+    <h2 style="font-family:Outfit,sans-serif;font-size:16px;margin:32px 0 12px;color:#5C6B7A;">Customer online store · Phase 7</h2>
+    <div class="grid">
+      <a class="card" href="shop-catalogue.html">
+        <h2>Shop — Catalogue</h2>
+        <p>Browse, search, filter products for online customers.</p>
+        <span class="tag">UJ-5</span>
+      </a>
+      <a class="card" href="shop-product.html">
+        <h2>Shop — Product detail</h2>
+        <p>Price, stock store, add to cart.</p>
+        <span class="tag">UJ-5</span>
+      </a>
+      <a class="card" href="shop-cart.html">
+        <h2>Shop — Cart</h2>
+        <p>Line items and summary before checkout.</p>
+        <span class="tag">UJ-5</span>
+      </a>
+      <a class="card" href="shop-checkout.html">
+        <h2>Shop — Checkout</h2>
+        <p>Delivery / pickup / click &amp; collect + Paystack/Stripe.</p>
+        <span class="tag">UJ-5</span>
+      </a>
+      <a class="card" href="shop-order.html">
+        <h2>Shop — Order tracking</h2>
+        <p>Status timeline through Ready for pickup.</p>
+        <span class="tag">UJ-5</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>
