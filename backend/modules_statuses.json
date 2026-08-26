@@ -1,4 +1,6 @@
 {
     "Organization": true,
-    "Authentication": true
+    "Authentication": true,
+    "Settings": true,
+    "Audit": true
 }

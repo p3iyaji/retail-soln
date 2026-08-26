@@ -3,7 +3,7 @@
 
 ## retail-soln
 
-Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. Auth, org/stores, and RBAC (Stories 1.2–1.4) are in place. **Next: Story 1.5** settings & audit — see `_bmad-output/handover-epic-1.md`.
+Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. Platform foundation through Story 1.5 (auth, org/stores, RBAC, settings, audit) is in place. **Next: Story 1.6** admin Vue SPA shell — see `_bmad-output/handover-epic-1.md`.
 
 ## Policy
 
@@ -23,13 +23,14 @@ Multi-store offline-first POS and retail management platform. Stack: Laravel 13 
 - Sprint tracking: `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - Session handover for Epic 1: `_bmad-output/handover-epic-1.md`
 - Layout: `backend/` (Laravel + `Modules/`), `frontend/admin/` and `frontend/pos/` (placeholders until Stories 1.6 / Epic 4), `docker/`, root `docker-compose.yml`
+- Modules: Authentication, Organization, Settings, Audit
 
 ## Running and verifying
 
 - First boot (host): `cd backend && composer install && cp -n .env.example .env && php artisan key:generate` (Compose does **not** require `backend/.env`; it injects MySQL/Redis via service `environment`).
 - Docker stack (from repo root): `docker compose up -d --build` — services: `mysql`, `redis`, `app` (PHP-FPM), `nginx` (http://localhost:8080), `queue` (`php artisan queue:work`). Validate with `docker compose config`. Smoke: `curl -sf http://localhost:8080/api/v1/health`.
 - Backend tests (Herd PHP 8.4, from `backend/`): `composer install` then `php artisan test` (uses sqlite `:memory:` via `phpunit.xml`).
-- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/api/v1/health` (public), `/api/v1/auth/*`, `/organizations/current`, `/stores`, `/warehouses`, `/users`, `/roles`, `/permissions`.
+- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/api/v1/health`, `/auth/*`, `/organizations/current`, `/stores`, `/warehouses`, `/users`, `/roles`, `/permissions`, `/settings`, `/audit-logs`.
 - Seed RBAC: `cd backend && php artisan db:seed` (permission matrix + role maps).
 - Auth smoke: `curl -sf -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"...","password":"..."}'`
 - Local without Docker: sqlite default in `.env.example` is fine for unit/feature tests.
