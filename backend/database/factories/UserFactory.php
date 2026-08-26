@@ -41,6 +41,20 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function storeManager(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'store_manager',
+        ]);
+    }
+
+    public function cashier(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'cashier',
+        ]);
+    }
+
     /**
      * Indicate that the model's email address should be unverified.
      */
