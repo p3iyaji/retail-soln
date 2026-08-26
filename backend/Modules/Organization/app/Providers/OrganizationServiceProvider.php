@@ -2,8 +2,14 @@
 
 namespace Modules\Organization\Providers;
 
+use Illuminate\Support\Facades\Gate;
+use Modules\Organization\Models\Organization;
+use Modules\Organization\Models\Store;
+use Modules\Organization\Models\Warehouse;
+use Modules\Organization\Policies\OrganizationPolicy;
+use Modules\Organization\Policies\StorePolicy;
+use Modules\Organization\Policies\WarehousePolicy;
 use Nwidart\Modules\Support\ModuleServiceProvider;
-use Illuminate\Console\Scheduling\Schedule;
 
 class OrganizationServiceProvider extends ModuleServiceProvider
 {
@@ -18,13 +24,6 @@ class OrganizationServiceProvider extends ModuleServiceProvider
     protected string $nameLower = 'organization';
 
     /**
-     * Command classes to register.
-     *
-     * @var string[]
-     */
-    // protected array $commands = [];
-
-    /**
      * Provider classes to register.
      *
      * @var string[]
@@ -34,13 +33,14 @@ class OrganizationServiceProvider extends ModuleServiceProvider
         RouteServiceProvider::class,
     ];
 
-    /**
-     * Define module schedules.
-     * 
-     * @param $schedule
-     */
-    // protected function configureSchedules(Schedule $schedule): void
-    // {
-    //     $schedule->command('inspire')->hourly();
-    // }
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
+
+        Gate::policy(Organization::class, OrganizationPolicy::class);
+        Gate::policy(Store::class, StorePolicy::class);
+        Gate::policy(Warehouse::class, WarehousePolicy::class);
+    }
 }
