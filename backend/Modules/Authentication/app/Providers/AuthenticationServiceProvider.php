@@ -17,6 +17,16 @@ class AuthenticationServiceProvider extends ModuleServiceProvider
      */
     protected string $nameLower = 'authentication';
 
+    public function register(): void
+    {
+        parent::register();
+
+        $this->mergeConfigFrom(
+            module_path($this->name, 'config/authentication.php'),
+            'authentication'
+        );
+    }
+
     /**
      * Command classes to register.
      *

@@ -23,7 +23,7 @@ class ApiV1ScaffoldTest extends TestCase
 
     public function test_protected_route_requires_sanctum_token(): void
     {
-        $response = $this->getJson('/api/v1/me');
+        $response = $this->getJson('/api/v1/auth/me');
 
         $response->assertUnauthorized();
     }
@@ -33,7 +33,7 @@ class ApiV1ScaffoldTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $response = $this->getJson('/api/v1/me');
+        $response = $this->getJson('/api/v1/auth/me');
 
         $response->assertOk()
             ->assertJsonPath('data.id', $user->id)
