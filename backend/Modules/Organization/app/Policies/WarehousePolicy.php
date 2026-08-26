@@ -4,32 +4,39 @@ namespace Modules\Organization\Policies;
 
 use App\Models\User;
 use Modules\Organization\Models\Warehouse;
-use Modules\Organization\Support\OrganizationAuthorization;
 
 class WarehousePolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->hasPermission('warehouses.view');
     }
 
     public function view(User $user, Warehouse $warehouse): bool
     {
-        return true;
+        if (! $user->hasPermission('warehouses.view')) {
+            return false;
+        }
+
+        if ($warehouse->store_id === null) {
+            return $user->isOrgWide() || $user->hasPermission('warehouses.manage');
+        }
+
+        return $user->canAccessStore($warehouse->store_id);
     }
 
     public function create(User $user): bool
     {
-        return OrganizationAuthorization::canManage($user);
+        return $user->hasPermission('warehouses.manage');
     }
 
     public function update(User $user, Warehouse $warehouse): bool
     {
-        return OrganizationAuthorization::canManage($user);
+        return $user->hasPermission('warehouses.manage');
     }
 
     public function delete(User $user, Warehouse $warehouse): bool
     {
-        return OrganizationAuthorization::canManage($user);
+        return $user->hasPermission('warehouses.manage');
     }
 }

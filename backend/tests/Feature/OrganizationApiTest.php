@@ -14,6 +14,13 @@ class OrganizationApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(\Modules\Authentication\Database\Seeders\PermissionMatrixSeeder::class);
+    }
+
     public function test_org_admin_can_get_and_update_current_organization(): void
     {
         $admin = User::factory()->orgAdmin()->create();

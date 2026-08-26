@@ -6,22 +6,18 @@ use App\Models\User;
 
 final class OrganizationAuthorization
 {
-    /**
-     * Privileged roles until Story 1.4 seeds the full permission matrix.
-     *
-     * @var list<string>
-     */
-    public const PRIVILEGED_ROLES = [
-        'super_admin',
-        'org_admin',
-    ];
-
     public static function canManage(?User $user): bool
     {
         if ($user === null) {
             return false;
         }
 
-        return in_array($user->role, self::PRIVILEGED_ROLES, true);
+        return $user->hasPermission('org.update')
+            || $user->hasPermission('stores.create');
+    }
+
+    public static function can(string $permission, ?User $user): bool
+    {
+        return $user !== null && $user->hasPermission($permission);
     }
 }

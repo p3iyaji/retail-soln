@@ -4,32 +4,33 @@ namespace Modules\Organization\Policies;
 
 use App\Models\User;
 use Modules\Organization\Models\Store;
-use Modules\Organization\Support\OrganizationAuthorization;
 
 class StorePolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->hasPermission('stores.view');
     }
 
     public function view(User $user, Store $store): bool
     {
-        return true;
+        return $user->hasPermission('stores.view')
+            && $user->canAccessStore($store->id);
     }
 
     public function create(User $user): bool
     {
-        return OrganizationAuthorization::canManage($user);
+        return $user->hasPermission('stores.create');
     }
 
     public function update(User $user, Store $store): bool
     {
-        return OrganizationAuthorization::canManage($user);
+        return $user->hasPermission('stores.update')
+            && $user->canAccessStore($store->id);
     }
 
     public function delete(User $user, Store $store): bool
     {
-        return OrganizationAuthorization::canManage($user);
+        return $user->hasPermission('stores.create');
     }
 }

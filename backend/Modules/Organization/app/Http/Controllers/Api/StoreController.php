@@ -17,10 +17,15 @@ class StoreController
         $this->authorize($request, 'viewAny', Store::class);
 
         $organization = $organizations->current();
-        $stores = Store::query()
+        $query = Store::query()
             ->where('organization_id', $organization->id)
-            ->orderBy('name')
-            ->paginate(perPage: (int) $request->integer('per_page', 15));
+            ->orderBy('name');
+
+        if (! $request->user()->isOrgWide()) {
+            $query->whereIn('id', $request->user()->accessibleStoreIds());
+        }
+
+        $stores = $query->paginate(perPage: (int) $request->integer('per_page', 15));
 
         return response()->json([
             'data' => StoreResource::collection($stores->items()),

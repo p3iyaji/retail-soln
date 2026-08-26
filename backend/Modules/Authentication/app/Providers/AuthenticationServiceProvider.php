@@ -2,8 +2,10 @@
 
 namespace Modules\Authentication\Providers;
 
+use Illuminate\Support\Facades\Gate;
+use Modules\Authentication\Models\Permission;
+use Modules\Authentication\Models\Role;
 use Nwidart\Modules\Support\ModuleServiceProvider;
-use Illuminate\Console\Scheduling\Schedule;
 
 class AuthenticationServiceProvider extends ModuleServiceProvider
 {
@@ -17,23 +19,6 @@ class AuthenticationServiceProvider extends ModuleServiceProvider
      */
     protected string $nameLower = 'authentication';
 
-    public function register(): void
-    {
-        parent::register();
-
-        $this->mergeConfigFrom(
-            module_path($this->name, 'config/authentication.php'),
-            'authentication'
-        );
-    }
-
-    /**
-     * Command classes to register.
-     *
-     * @var string[]
-     */
-    // protected array $commands = [];
-
     /**
      * Provider classes to register.
      *
@@ -44,13 +29,28 @@ class AuthenticationServiceProvider extends ModuleServiceProvider
         RouteServiceProvider::class,
     ];
 
-    /**
-     * Define module schedules.
-     * 
-     * @param $schedule
-     */
-    // protected function configureSchedules(Schedule $schedule): void
-    // {
-    //     $schedule->command('inspire')->hourly();
-    // }
+    public function register(): void
+    {
+        parent::register();
+
+        $this->mergeConfigFrom(
+            module_path($this->name, 'config/authentication.php'),
+            'authentication'
+        );
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
+
+        Gate::before(function ($user, string $ability) {
+            if ($user === null || ! str_contains($ability, '.')) {
+                return null;
+            }
+
+            return $user->hasPermission($ability);
+        });
+    }
 }

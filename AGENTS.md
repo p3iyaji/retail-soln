@@ -3,7 +3,7 @@
 
 ## retail-soln
 
-Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. Auth + org/stores APIs (Stories 1.2–1.3) are in place. **Next: Story 1.4** RBAC — see `_bmad-output/handover-epic-1.md`.
+Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. Auth, org/stores, and RBAC (Stories 1.2–1.4) are in place. **Next: Story 1.5** settings & audit — see `_bmad-output/handover-epic-1.md`.
 
 ## Policy
 
@@ -29,7 +29,8 @@ Multi-store offline-first POS and retail management platform. Stack: Laravel 13 
 - First boot (host): `cd backend && composer install && cp -n .env.example .env && php artisan key:generate` (Compose does **not** require `backend/.env`; it injects MySQL/Redis via service `environment`).
 - Docker stack (from repo root): `docker compose up -d --build` — services: `mysql`, `redis`, `app` (PHP-FPM), `nginx` (http://localhost:8080), `queue` (`php artisan queue:work`). Validate with `docker compose config`. Smoke: `curl -sf http://localhost:8080/api/v1/health`.
 - Backend tests (Herd PHP 8.4, from `backend/`): `composer install` then `php artisan test` (uses sqlite `:memory:` via `phpunit.xml`).
-- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/api/v1/health` (public) and `/api/v1/auth/*` (`login`, `logout`, `me`, `two-factor/*`), plus `/organizations/current`, `/stores`, `/warehouses`.
+- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/api/v1/health` (public), `/api/v1/auth/*`, `/organizations/current`, `/stores`, `/warehouses`, `/users`, `/roles`, `/permissions`.
+- Seed RBAC: `cd backend && php artisan db:seed` (permission matrix + role maps).
 - Auth smoke: `curl -sf -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"...","password":"..."}'`
 - Local without Docker: sqlite default in `.env.example` is fine for unit/feature tests.
 - Frontend SPAs are not scaffolded yet — no `pnpm`/`npm` app scripts until Stories 1.6 / Epic 4.

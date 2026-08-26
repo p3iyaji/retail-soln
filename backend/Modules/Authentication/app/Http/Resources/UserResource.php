@@ -22,7 +22,12 @@ class UserResource extends JsonResource
             'twoFactorEnabled' => $this->two_factor_secret !== null
                 && $this->two_factor_confirmed_at !== null,
             'roles' => $this->role ? [$this->role] : [],
-            'storeAccess' => [],
+            'permissions' => $this->roleModel()
+                ?->permissions()
+                ->pluck('name')
+                ->values()
+                ->all() ?? [],
+            'storeAccess' => $this->storeAccessPayload(),
         ];
     }
 }
