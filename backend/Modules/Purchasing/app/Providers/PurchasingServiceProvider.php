@@ -9,6 +9,8 @@ use Modules\Purchasing\Models\PurchaseOrder;
 use Modules\Purchasing\Models\Supplier;
 use Modules\Purchasing\Models\SupplierAddress;
 use Modules\Purchasing\Models\SupplierContact;
+use Modules\Purchasing\Models\SupplierInvoice;
+use Modules\Purchasing\Models\SupplierPayment;
 use Modules\Purchasing\Models\SupplierProduct;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -36,5 +38,7 @@ class PurchasingServiceProvider extends ModuleServiceProvider
         PurchaseOrder::observe(AuditableObserver::class);
         GoodsReceipt::observe(AuditableObserver::class);
         GoodsReceiptItem::observe(AuditableObserver::class);
+        SupplierInvoice::observe(AuditableObserver::class);
+        SupplierPayment::observe(AuditableObserver::class);
     }
 }
