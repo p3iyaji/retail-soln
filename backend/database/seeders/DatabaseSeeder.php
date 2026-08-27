@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             PermissionMatrixSeeder::class,
             DevelopmentUsersSeeder::class,
             \Modules\Pricing\Database\Seeders\PricingDatabaseSeeder::class,
+            \Modules\Customers\Database\Seeders\CustomersDatabaseSeeder::class,
         ]);
     }
 }

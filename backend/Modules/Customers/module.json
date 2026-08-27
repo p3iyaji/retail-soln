@@ -1,0 +1,11 @@
+{
+    "name": "Customers",
+    "alias": "customers",
+    "description": "Customer records, groups, and addresses for POS",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Customers\\Providers\\CustomersServiceProvider"
+    ],
+    "files": []
+}
