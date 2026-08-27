@@ -15,6 +15,7 @@ const nav = [
   { name: 'purchase-orders', label: 'Purchase orders', to: '/purchase-orders' },
   { name: 'payments', label: 'Payments', to: '/payments' },
   { name: 'inventory', label: 'Inventory', to: '/inventory' },
+  { name: 'pricing', label: 'Pricing', to: '/pricing' },
   { name: 'users', label: 'Users', to: '/users' },
   { name: 'settings', label: 'Settings', to: '/settings' },
 ]

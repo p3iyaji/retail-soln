@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PermissionMatrixSeeder::class,
             DevelopmentUsersSeeder::class,
+            \Modules\Pricing\Database\Seeders\PricingDatabaseSeeder::class,
         ]);
     }
 }
