@@ -91,3 +91,19 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-purchase-returns.md`
   summary: Preview estimated return credit in the Admin return modal before submit.
   evidence: Credit currently appears only in the success message.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-1-pricing-promotion-services.md`
+  summary: Add Admin edit/deactivate/delete UI for price lists, prices, and promotions beyond create/list.
+  evidence: Thin MVP ships create + list + smoke resolve; API update/delete exist but Admin forms do not.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-1-pricing-promotion-services.md`
+  summary: Hide Pricing nav for users lacking pricing.manage / promotions.manage / sales.create.
+  evidence: AppShell always shows Pricing; API still enforces permissions.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-1-pricing-promotion-services.md`
+  summary: Build tax_rates / tax_categories / product_taxes tables beyond store tax_config JSON.
+  evidence: Story Ask First default was store JSON only; FR-21 full model deferred.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-1-pricing-promotion-services.md`
+  summary: Wire customerId / customer-group price list targeting after Story 4.2.
+  evidence: Resolve accepts customerId but ignores it until customers exist.
