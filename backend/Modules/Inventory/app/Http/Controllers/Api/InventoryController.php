@@ -6,12 +6,49 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Inventory\Http\Resources\InventoryBalanceResource;
 use Modules\Inventory\Http\Resources\InventoryMovementResource;
+use Modules\Inventory\Http\Resources\LowStockAlertResource;
 use Modules\Inventory\Models\InventoryBalance;
 use Modules\Inventory\Models\InventoryMovement;
+use Modules\Inventory\Services\LowStockAlertService;
 use Modules\Organization\Services\OrganizationService;
 
 class InventoryController
 {
+    public function lowStockAlerts(
+        Request $request,
+        OrganizationService $organizations,
+        LowStockAlertService $alerts,
+    ): JsonResponse {
+        $this->assertView($request);
+
+        $validated = $request->validate([
+            'storeId' => ['nullable', 'integer', 'min:1', 'prohibits:warehouseId'],
+            'warehouseId' => ['nullable', 'integer', 'min:1', 'prohibits:storeId'],
+            'per_page' => ['nullable', 'integer'],
+        ]);
+
+        $organizationId = $organizations->current()->id;
+        $storeId = isset($validated['storeId']) ? (int) $validated['storeId'] : null;
+        $warehouseId = isset($validated['warehouseId']) ? (int) $validated['warehouseId'] : null;
+        $perPage = max(1, min(100, (int) ($validated['per_page'] ?? 50)));
+
+        $page = $alerts->paginate(
+            $organizationId,
+            $storeId,
+            $warehouseId,
+            $perPage,
+        );
+
+        return response()->json([
+            'data' => LowStockAlertResource::collection($page->items()),
+            'meta' => [
+                'currentPage' => $page->currentPage(),
+                'lastPage' => $page->lastPage(),
+                'total' => $page->total(),
+            ],
+        ]);
+    }
+
     public function balances(Request $request, OrganizationService $organizations): JsonResponse
     {
         $this->assertView($request);

@@ -15,3 +15,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-1-laravel-scaffold.md`
   summary: Harden bind-mount UID/GID alignment for www-data vs host-owned storage/bootstrap/cache.
   evidence: Dockerfile forces uid 1000; mismatches can cause write failures on some hosts.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-low-stock-alerts.md`
+  summary: Add automated Admin dashboard tests for the low-stock panel (critical vs warning styling).
+  evidence: Repo has no frontend test runner; verification is API tests + npm build + manual dashboard check only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-low-stock-alerts.md`
+  summary: Enforce store-access scoping on inventory read APIs (including low-stock alerts).
+  evidence: Inventory balances/movements already omit canAccessStore; alerts followed that pattern — pre-existing gap for store-scoped users.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-low-stock-alerts.md`
+  summary: Persist schedule low-stock check output (log/notify) for operators when cron runs.
+  evidence: Hourly Schedule runs the command but stdout is discarded without appendOutputTo or Epic 8 notifications.
