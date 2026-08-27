@@ -127,3 +127,19 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-2-customer-records-pos.md`
   summary: POS customer picker UI (walk-in default + search).
   evidence: Spec deferred UI to Story 4.3+; API ready.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-3-pos-vue-shell.md`
+  summary: Add Vitest/Playwright coverage for POS router gates and F-key shortcuts.
+  evidence: Spec verification is npm build + manual; no frontend test runner in repo.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-3-pos-vue-shell.md`
+  summary: Add CI job to build frontend/pos (and admin) on PRs.
+  evidence: GitHub CI currently runs PHPUnit only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-3-pos-vue-shell.md`
+  summary: Full StubPanel focus trap and PNG/maskable PWA icons.
+  evidence: Shell opens focus on first control; SVG-only manifest icons for MVP.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-3-pos-vue-shell.md`
+  summary: Backend terminals CRUD and session open/close chrome wiring.
+  evidence: Terminal is localStorage label; Session shows placeholder until 4.7.

@@ -22,9 +22,9 @@ Multi-store offline-first POS and retail management platform. Stack: Laravel 13 
 - UX spines (before POS UI): `_bmad-output/planning-artifacts/ux-designs/ux-retail-soln-2026-08-24/DESIGN.md` and `EXPERIENCE.md`
 - Sprint tracking: `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - Session handover for Epic 1: `_bmad-output/handover-epic-1.md`
-- Layout: `backend/` (Laravel + `Modules/`), `frontend/admin/` (Vue SPA), `frontend/pos/` (placeholder until Epic 4), `docker/`, root `docker-compose.yml`
+- Layout: `backend/` (Laravel + `Modules/`), `frontend/admin/` (Vue SPA), `frontend/pos/` (Vue POS SPA scaffolded Story 4.3), `docker/`, root `docker-compose.yml`
 - Modules: Authentication, Organization, Settings, Audit, Products, Inventory, Purchasing
-- Admin SPA: `frontend/admin/` (Vue 3 + Vite + TS + Tailwind); POS placeholder until Epic 4
+- Admin SPA: `frontend/admin/` (Vue 3 + Vite + TS + Tailwind); POS SPA: `frontend/pos/` (Vue 3 + Vite + Pinia; port 5174; Story 4.3 shell)
 
 ## Running and verifying
 
