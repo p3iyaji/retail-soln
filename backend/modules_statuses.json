@@ -6,5 +6,6 @@
   "Products": true,
   "Inventory": true,
   "Purchasing": true,
-  "Pricing": true
+  "Pricing": true,
+  "Customers": true
 }

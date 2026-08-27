@@ -107,3 +107,23 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-1-pricing-promotion-services.md`
   summary: Wire customerId / customer-group price list targeting after Story 4.2.
   evidence: Resolve accepts customerId but ignores it until customers exist.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-customer-records-pos.md`
+  summary: Add Laravel Policies for customer abilities (AD-4) instead of ad-hoc hasPermission checks.
+  evidence: Controllers use assertView/assertManage helpers; same pattern as Purchasing.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-customer-records-pos.md`
+  summary: Soft-delete unique account_number should allow reuse (partial unique where deleted_at is null).
+  evidence: Soft-deleted rows still block recreating the same account number.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-customer-records-pos.md`
+  summary: Admin edit/delete for customer groups beyond create chips.
+  evidence: Group API supports update/destroy; Admin only creates groups.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-customer-records-pos.md`
+  summary: Wire customer groups into Pricing resolve after groups exist.
+  evidence: Spec Ask First default skipped pricing; PricingService still ignores customerId.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-customer-records-pos.md`
+  summary: POS customer picker UI (walk-in default + search).
+  evidence: Spec deferred UI to Story 4.3+; API ready.
