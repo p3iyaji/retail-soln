@@ -48,7 +48,7 @@ development_status:
   epic-3: in-progress
   3-1-supplier-management: done
   3-2-purchase-order-approval: done
-  3-3-goods-receipt-partial: review
+  3-3-goods-receipt-partial: done
   3-4-supplier-invoices-payments: backlog
   3-5-purchase-returns: backlog
   epic-3-retrospective: optional
