@@ -28,6 +28,11 @@ class DevelopmentUsersSeeder extends Seeder
                 'email' => 'inventory@retail.local',
                 'role' => 'inventory_manager',
             ],
+            [
+                'name' => 'Procurement Officer',
+                'email' => 'procurement@retail.local',
+                'role' => 'procurement_officer',
+            ],
         ];
 
         foreach ($accounts as $account) {

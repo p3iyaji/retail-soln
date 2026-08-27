@@ -91,7 +91,7 @@ async function loadLookups() {
     api.get<{ data: Lookup[] }>('/categories'),
     api.get<{ data: Lookup[] }>('/brands'),
     api.get<{ data: Array<Lookup & { abbreviation: string }> }>('/units'),
-    api.get<{ data: Lookup[] }>('/suppliers'),
+    api.get<{ data: Lookup[] }>('/suppliers?lite=1'),
   ])
   categories.value = cats.data
   brands.value = brs.data

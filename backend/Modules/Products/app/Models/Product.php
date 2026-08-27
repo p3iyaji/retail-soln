@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Products\Database\Factories\ProductFactory;
+use Modules\Purchasing\Models\Supplier;
 
 class Product extends Model
 {

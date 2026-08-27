@@ -1,8 +1,9 @@
 {
-    "Organization": true,
-    "Authentication": true,
-    "Settings": true,
-    "Audit": true,
-    "Products": true,
-    "Inventory": true
+  "Organization": true,
+  "Authentication": true,
+  "Settings": true,
+  "Audit": true,
+  "Products": true,
+  "Inventory": true,
+  "Purchasing": true
 }

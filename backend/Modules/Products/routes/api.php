@@ -14,8 +14,6 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/brands', [CatalogController::class, 'storeBrand']);
         Route::get('/units', [CatalogController::class, 'units']);
         Route::post('/units', [CatalogController::class, 'storeUnit']);
-        Route::get('/suppliers', [CatalogController::class, 'suppliers']);
-        Route::post('/suppliers', [CatalogController::class, 'storeSupplier']);
 
         Route::get('/products/search', [ProductCatalogToolsController::class, 'search']);
         Route::get('/products/export', [ProductCatalogToolsController::class, 'export']);
