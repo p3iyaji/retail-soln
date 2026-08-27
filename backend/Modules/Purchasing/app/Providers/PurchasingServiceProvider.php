@@ -6,6 +6,8 @@ use Modules\Audit\Observers\AuditableObserver;
 use Modules\Purchasing\Models\GoodsReceipt;
 use Modules\Purchasing\Models\GoodsReceiptItem;
 use Modules\Purchasing\Models\PurchaseOrder;
+use Modules\Purchasing\Models\PurchaseReturn;
+use Modules\Purchasing\Models\PurchaseReturnItem;
 use Modules\Purchasing\Models\Supplier;
 use Modules\Purchasing\Models\SupplierAddress;
 use Modules\Purchasing\Models\SupplierContact;
@@ -40,5 +42,7 @@ class PurchasingServiceProvider extends ModuleServiceProvider
         GoodsReceiptItem::observe(AuditableObserver::class);
         SupplierInvoice::observe(AuditableObserver::class);
         SupplierPayment::observe(AuditableObserver::class);
+        PurchaseReturn::observe(AuditableObserver::class);
+        PurchaseReturnItem::observe(AuditableObserver::class);
     }
 }

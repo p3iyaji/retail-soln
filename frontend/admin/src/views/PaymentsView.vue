@@ -58,6 +58,7 @@ const invoices = ref<Invoice[]>([])
 const payments = ref<Payment[]>([])
 const invoiceable = ref<InvoiceableGrn[]>([])
 const outstanding = ref('0.0000')
+const isSupplierCredit = computed(() => /^-/.test(outstanding.value) && outstanding.value !== '-0.0000')
 const listMeta = ref<ListMeta>({ currentPage: 1, lastPage: 1, total: 0, perPage: 20 })
 const page = ref(1)
 const supplierId = ref<string | number>('')
@@ -352,8 +353,17 @@ onMounted(async () => {
         </select>
       </label>
       <div v-if="canPay && supplierId" class="rounded-md border border-[var(--line)] bg-[var(--panel)] px-4 py-2">
-        <p class="text-xs tracking-wide text-[var(--muted)] uppercase">Outstanding</p>
+        <p class="text-xs tracking-wide text-[var(--muted)] uppercase">
+          {{ isSupplierCredit ? 'Supplier credit' : 'Outstanding' }}
+        </p>
         <p class="text-lg font-semibold tabular-nums">{{ outstanding }}</p>
+        <p class="text-xs text-[var(--muted)]">
+          {{
+            isSupplierCredit
+              ? 'Negative outstanding — return credits exceed net AP (invoices − payments − credits).'
+              : 'Invoices − payments − return credits'
+          }}
+        </p>
       </div>
     </div>
 

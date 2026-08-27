@@ -84,7 +84,13 @@ class PurchaseOrderController
         $this->assertView($request);
         $this->assertOrg($purchaseOrder, $organizations);
 
-        $purchaseOrder->load(['items.productVariant', 'supplier', 'store']);
+        $purchaseOrder->load([
+            'items.productVariant',
+            'supplier',
+            'store',
+            'goodsReceipts.items.productVariant',
+            'goodsReceipts.items.purchaseReturnItems',
+        ]);
 
         return response()->json(['data' => new PurchaseOrderResource($purchaseOrder)]);
     }

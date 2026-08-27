@@ -2,14 +2,16 @@
 
 namespace Modules\Purchasing\Services;
 
+use Modules\Purchasing\Models\PurchaseReturn;
 use Modules\Purchasing\Models\SupplierInvoice;
 use Modules\Purchasing\Models\SupplierPayment;
 
 class SupplierOutstandingService
 {
     /**
-     * Computed outstanding: Σ invoice totals − Σ payments (org + supplier scoped).
+     * Computed outstanding: Σ invoice totals − Σ payments − Σ return credits (org + supplier scoped).
      * Never invent a mutable balance table. Never use float Eloquent sum().
+     * May be negative when return credits exceed net AP (supplier credit).
      */
     public function outstandingForSupplier(int $organizationId, int $supplierId): string
     {
@@ -33,9 +35,17 @@ class SupplierOutstandingService
             $paymentTotal = bcadd($paymentTotal, $this->normalizeDecimal($amount), 4);
         }
 
-        $outstanding = bcsub($invoiceTotal, $paymentTotal, 4);
+        $creditTotal = '0.0000';
+        foreach (
+            PurchaseReturn::query()
+                ->where('organization_id', $organizationId)
+                ->where('supplier_id', $supplierId)
+                ->pluck('credit_amount') as $amount
+        ) {
+            $creditTotal = bcadd($creditTotal, $this->normalizeDecimal($amount), 4);
+        }
 
-        return bccomp($outstanding, '0', 4) < 0 ? '0.0000' : $outstanding;
+        return bcsub(bcsub($invoiceTotal, $paymentTotal, 4), $creditTotal, 4);
     }
 
     private function normalizeDecimal(mixed $value): string

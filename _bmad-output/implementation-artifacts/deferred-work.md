@@ -71,3 +71,23 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-4-supplier-invoices-payments.md`
   summary: Wire AD-12 journal hooks when Accounting module lands.
   evidence: Intentionally stubbed; Ask First default was skip journals in 3.4.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-purchase-returns.md`
+  summary: Enforce store-scoped access on purchase returns (X-Store-Id / store_id).
+  evidence: Same org-only pattern as GRN; purchase.receive is store-scoped in the matrix.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-purchase-returns.md`
+  summary: Add human-readable purchase return numbers and richer GRN picker labels.
+  evidence: Returns expose numeric ids; Admin GRN picker is GRN #id only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-purchase-returns.md`
+  summary: Add automated Admin return UI tests.
+  evidence: Repo has no frontend test runner; verification is API tests + npm build + manual checks.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-purchase-returns.md`
+  summary: Update database-design.md ERD companions with purchase_returns column detail.
+  evidence: Tables exist in code; planning ERD still lists names only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-purchase-returns.md`
+  summary: Preview estimated return credit in the Admin return modal before submit.
+  evidence: Credit currently appears only in the success message.

@@ -39,6 +39,7 @@ class PurchaseOrderResource extends JsonResource
                 'name' => $this->store->name,
             ]),
             'items' => PurchaseOrderItemResource::collection($this->whenLoaded('items')),
+            'goodsReceipts' => GoodsReceiptResource::collection($this->whenLoaded('goodsReceipts')),
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
         ];

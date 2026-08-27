@@ -1,5 +1,5 @@
 # generated: 08-24-2026 04:00
-# last_updated: 08-27-2026 17:50
+# last_updated: 08-27-2026 18:30
 # project: retail-soln
 # project_key: RETAIL
 # tracking_system: file-system
@@ -11,7 +11,7 @@
 # Retrospective: optional | done
 
 generated: 08-24-2026 04:00
-last_updated: 08-27-2026 17:50
+last_updated: 08-27-2026 18:30
 project: retail-soln
 project_key: RETAIL
 tracking_system: file-system
@@ -45,12 +45,12 @@ development_status:
   2-7-low-stock-alerts: done
   epic-2-retrospective: optional
 
-  epic-3: in-progress
+  epic-3: done
   3-1-supplier-management: done
   3-2-purchase-order-approval: done
   3-3-goods-receipt-partial: done
-  3-4-supplier-invoices-payments: review
-  3-5-purchase-returns: backlog
+  3-4-supplier-invoices-payments: done
+  3-5-purchase-returns: done
   epic-3-retrospective: optional
 
   epic-4: backlog
