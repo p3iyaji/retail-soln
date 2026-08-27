@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Inventory\Http\Controllers\Api\InventoryController;
 use Modules\Inventory\Http\Controllers\Api\StockMutationController;
+use Modules\Inventory\Http\Controllers\Api\StockTransferController;
 
 Route::prefix('v1')->group(function (): void {
     Route::middleware('auth:sanctum')->group(function (): void {
@@ -12,5 +13,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/inventory/adjustments', [StockMutationController::class, 'storeAdjustment']);
         Route::post('/inventory/counts', [StockMutationController::class, 'storeCount']);
         Route::get('/inventory/counts', [StockMutationController::class, 'indexCounts']);
+
+        Route::get('/inventory/transfers', [StockTransferController::class, 'index']);
+        Route::post('/inventory/transfers', [StockTransferController::class, 'store']);
+        Route::post('/inventory/transfers/{transfer}/receive', [StockTransferController::class, 'receive']);
     });
 });

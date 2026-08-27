@@ -8,6 +8,8 @@ use Modules\Inventory\Models\InventoryMovement;
 use Modules\Inventory\Models\StockAdjustment;
 use Modules\Inventory\Models\StockCount;
 use Modules\Inventory\Models\StockCountItem;
+use Modules\Inventory\Models\StockTransfer;
+use Modules\Inventory\Models\StockTransferItem;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class InventoryServiceProvider extends ModuleServiceProvider
@@ -32,5 +34,7 @@ class InventoryServiceProvider extends ModuleServiceProvider
         StockAdjustment::observe(AuditableObserver::class);
         StockCount::observe(AuditableObserver::class);
         StockCountItem::observe(AuditableObserver::class);
+        StockTransfer::observe(AuditableObserver::class);
+        StockTransferItem::observe(AuditableObserver::class);
     }
 }
