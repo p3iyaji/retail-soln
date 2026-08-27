@@ -39,7 +39,7 @@ development_status:
   2-1-product-catalog-crud: done
   2-2-product-variants-barcodes: done
   2-3-inventory-ledger-service: done
-  2-4-stock-adjustments-counts: backlog
+  2-4-stock-adjustments-counts: done
   2-5-stock-transfers: backlog
   2-6-product-search-import: backlog
   2-7-low-stock-alerts: backlog

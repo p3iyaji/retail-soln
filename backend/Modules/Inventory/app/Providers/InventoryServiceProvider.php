@@ -5,6 +5,9 @@ namespace Modules\Inventory\Providers;
 use Modules\Audit\Observers\AuditableObserver;
 use Modules\Inventory\Models\InventoryBalance;
 use Modules\Inventory\Models\InventoryMovement;
+use Modules\Inventory\Models\StockAdjustment;
+use Modules\Inventory\Models\StockCount;
+use Modules\Inventory\Models\StockCountItem;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class InventoryServiceProvider extends ModuleServiceProvider
@@ -26,5 +29,8 @@ class InventoryServiceProvider extends ModuleServiceProvider
 
         InventoryBalance::observe(AuditableObserver::class);
         InventoryMovement::observe(AuditableObserver::class);
+        StockAdjustment::observe(AuditableObserver::class);
+        StockCount::observe(AuditableObserver::class);
+        StockCountItem::observe(AuditableObserver::class);
     }
 }
