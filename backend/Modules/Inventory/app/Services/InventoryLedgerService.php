@@ -5,6 +5,8 @@ namespace Modules\Inventory\Services;
 use Illuminate\Support\Facades\DB;
 use Modules\Inventory\Data\PostMovementData;
 use Modules\Inventory\Enums\BalanceBucket;
+use Modules\Inventory\Enums\LocationType;
+use Modules\Inventory\Enums\MovementType;
 use Modules\Inventory\Models\InventoryBalance;
 use Modules\Inventory\Models\InventoryMovement;
 use Modules\Products\Models\ProductVariant;
@@ -83,6 +85,27 @@ class InventoryLedgerService
             ->where('location_id', $locationId)
             ->where('product_variant_id', $productVariantId)
             ->first();
+    }
+
+    /**
+     * Lock (or create) a balance row. Must be called inside a DB transaction.
+     */
+    public function getLockedBalance(
+        int $organizationId,
+        LocationType $locationType,
+        int $locationId,
+        int $productVariantId,
+    ): InventoryBalance {
+        $this->assertVariantBelongsToOrganization($organizationId, $productVariantId);
+
+        return $this->lockOrCreateBalance(new PostMovementData(
+            organizationId: $organizationId,
+            locationType: $locationType,
+            locationId: $locationId,
+            productVariantId: $productVariantId,
+            type: MovementType::Adjustment,
+            quantity: '0.0001', // unused — lock helper only
+        ));
     }
 
     private function lockOrCreateBalance(PostMovementData $data): InventoryBalance

@@ -3,7 +3,7 @@
 
 ## retail-soln
 
-Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epic 2 in progress** — Stories 2.1–2.4 done; **next: Story 2.5** stock transfers — see `_bmad-output/planning-artifacts/epics.md`.
+Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epic 2 in progress** — Stories 2.1–2.5 done; **next: Story 2.6** product search/import — see `_bmad-output/planning-artifacts/epics.md`.
 
 ## Policy
 
@@ -37,7 +37,7 @@ Multi-store offline-first POS and retail management platform. Stack: Laravel 13 
 - Auth smoke: `curl -sf -X POST http://localhost:8001/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@retail.local","password":"password"}'`
 - Admin SPA: `cd frontend/admin && npm install && npm run dev` (http://localhost:5173). Build: `npm run build`.
 - Local without Docker: sqlite default in `.env.example` is fine for unit/feature tests.
-- **Current story:** Epic 2 Story 2.5 — stock transfers between locations (via ledger). Never mutate `inventory_balances` quantities outside `InventoryLedgerService` (AD-2).
+- **Current story:** Epic 2 Story 2.6 — product search and CSV import/export. Never mutate `inventory_balances` quantities outside `InventoryLedgerService` (AD-2).
 
 ## Conventions that differ from defaults
 

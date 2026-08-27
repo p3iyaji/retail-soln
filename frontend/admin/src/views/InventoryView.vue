@@ -9,6 +9,7 @@ type Balance = {
   locationId: number
   productVariantId: number
   available: string
+  inTransit: string
 }
 type Movement = {
   id: number
@@ -17,11 +18,19 @@ type Movement = {
   notes: string | null
   createdAt: string | null
 }
+type Transfer = {
+  id: number
+  status: string
+  fromLocationId: number
+  toLocationId: number
+  items: Array<{ productVariantId: number; quantity: string }>
+}
 
 const stores = ref<Store[]>([])
 const variants = ref<VariantOption[]>([])
 const balances = ref<Balance[]>([])
 const movements = ref<Movement[]>([])
+const transfers = ref<Transfer[]>([])
 const loading = ref(true)
 const error = ref('')
 const saving = ref(false)
@@ -40,12 +49,22 @@ const countForm = reactive({
   notes: '',
 })
 
+const transferForm = reactive({
+  fromStoreId: '' as string | number,
+  toStoreId: '' as string | number,
+  productVariantId: '' as string | number,
+  quantity: '',
+  notes: '',
+})
+
 async function loadStores() {
   const res = await api.get<{ data: Store[] }>('/stores?per_page=50')
   stores.value = res.data
   if (!adjustForm.storeId && stores.value[0]) {
     adjustForm.storeId = stores.value[0].id
     countForm.storeId = stores.value[0].id
+    transferForm.fromStoreId = stores.value[0].id
+    transferForm.toStoreId = stores.value[1]?.id ?? stores.value[0].id
   }
 }
 
@@ -70,12 +89,14 @@ async function loadInventory() {
     return
   }
 
-  const [b, m] = await Promise.all([
+  const [b, m, t] = await Promise.all([
     api.get<{ data: Balance[] }>(`/inventory/balances?storeId=${storeId}&per_page=50`),
     api.get<{ data: Movement[] }>(`/inventory/movements?storeId=${storeId}&per_page=20`),
+    api.get<{ data: Transfer[] }>('/inventory/transfers?per_page=20'),
   ])
   balances.value = b.data
   movements.value = m.data
+  transfers.value = t.data
 }
 
 async function refresh() {
@@ -136,6 +157,44 @@ async function onCount() {
   }
 }
 
+async function onTransfer() {
+  saving.value = true
+  error.value = ''
+  try {
+    await api.post('/inventory/transfers', {
+      fromStoreId: Number(transferForm.fromStoreId),
+      toStoreId: Number(transferForm.toStoreId),
+      notes: transferForm.notes || null,
+      items: [
+        {
+          productVariantId: Number(transferForm.productVariantId),
+          quantity: transferForm.quantity,
+        },
+      ],
+    })
+    transferForm.quantity = ''
+    transferForm.notes = ''
+    await loadInventory()
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'Transfer failed'
+  } finally {
+    saving.value = false
+  }
+}
+
+async function onReceive(transferId: number) {
+  saving.value = true
+  error.value = ''
+  try {
+    await api.post(`/inventory/transfers/${transferId}/receive`)
+    await loadInventory()
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'Receive failed'
+  } finally {
+    saving.value = false
+  }
+}
+
 onMounted(refresh)
 </script>
 
@@ -144,14 +203,14 @@ onMounted(refresh)
     <div>
       <h2 class="text-xl font-semibold tracking-tight">Inventory</h2>
       <p class="mt-1 text-sm text-[var(--muted)]">
-        Adjust stock and complete counts. All quantity changes post through the inventory ledger.
+        Adjust stock, complete counts, and transfer between stores. All quantity changes post through the inventory ledger.
       </p>
     </div>
 
     <p v-if="error" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{{ error }}</p>
     <p v-if="loading" class="text-sm text-[var(--muted)]">Loading…</p>
 
-    <div v-if="!loading" class="grid gap-6 lg:grid-cols-2">
+    <div v-if="!loading" class="grid gap-6 lg:grid-cols-3">
       <form class="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-4 space-y-3" @submit.prevent="onAdjust">
         <h3 class="font-semibold">Stock adjustment</h3>
         <label class="block text-sm">
@@ -207,6 +266,71 @@ onMounted(refresh)
           Complete count
         </button>
       </form>
+
+      <form class="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-4 space-y-3" @submit.prevent="onTransfer">
+        <h3 class="font-semibold">Transfer</h3>
+        <label class="block text-sm">
+          <span class="text-[var(--muted)]">From store</span>
+          <select v-model="transferForm.fromStoreId" class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2">
+            <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </select>
+        </label>
+        <label class="block text-sm">
+          <span class="text-[var(--muted)]">To store</span>
+          <select v-model="transferForm.toStoreId" class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2">
+            <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </select>
+        </label>
+        <label class="block text-sm">
+          <span class="text-[var(--muted)]">Variant</span>
+          <select v-model="transferForm.productVariantId" required class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2">
+            <option value="">—</option>
+            <option v-for="v in variants" :key="v.id" :value="v.id">{{ v.label }}</option>
+          </select>
+        </label>
+        <label class="block text-sm">
+          <span class="text-[var(--muted)]">Quantity</span>
+          <input v-model="transferForm.quantity" required class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
+        </label>
+        <label class="block text-sm">
+          <span class="text-[var(--muted)]">Notes</span>
+          <input v-model="transferForm.notes" class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
+        </label>
+        <button type="submit" class="rounded-md bg-[var(--brand)] px-3 py-2 text-sm text-white disabled:opacity-60" :disabled="saving">
+          Initiate transfer
+        </button>
+      </form>
+    </div>
+
+    <div v-if="!loading && transfers.length" class="overflow-x-auto rounded-lg border border-[var(--line)]">
+      <table class="min-w-full text-left text-sm">
+        <thead class="border-b border-[var(--line)] bg-stone-50 text-[var(--muted)]">
+          <tr>
+            <th class="px-3 py-2 font-medium">Transfer</th>
+            <th class="px-3 py-2 font-medium">From → To</th>
+            <th class="px-3 py-2 font-medium">Status</th>
+            <th class="px-3 py-2 font-medium" />
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="t in transfers" :key="t.id" class="border-b border-[var(--line)]">
+            <td class="px-3 py-2">#{{ t.id }}</td>
+            <td class="px-3 py-2 font-mono text-xs">{{ t.fromLocationId }} → {{ t.toLocationId }}</td>
+            <td class="px-3 py-2">{{ t.status }}</td>
+            <td class="px-3 py-2 text-right">
+              <button
+                v-if="t.status === 'in_transit'"
+                type="button"
+                class="text-[var(--brand)] disabled:opacity-60"
+                :disabled="saving"
+                @click="onReceive(t.id)"
+              >
+                Receive
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <div v-if="!loading" class="grid gap-6 lg:grid-cols-2">
@@ -216,15 +340,17 @@ onMounted(refresh)
             <tr>
               <th class="px-3 py-2 font-medium">Variant</th>
               <th class="px-3 py-2 font-medium">Available</th>
+              <th class="px-3 py-2 font-medium">In transit</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="balances.length === 0">
-              <td colspan="2" class="px-3 py-4 text-[var(--muted)]">No balances yet.</td>
+              <td colspan="3" class="px-3 py-4 text-[var(--muted)]">No balances yet.</td>
             </tr>
             <tr v-for="b in balances" :key="b.id" class="border-b border-[var(--line)]">
               <td class="px-3 py-2 font-mono text-xs">#{{ b.productVariantId }}</td>
               <td class="px-3 py-2">{{ b.available }}</td>
+              <td class="px-3 py-2">{{ b.inTransit }}</td>
             </tr>
           </tbody>
         </table>
