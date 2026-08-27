@@ -9,7 +9,6 @@ use Modules\Products\Models\Brand;
 use Modules\Products\Models\Category;
 use Modules\Products\Models\Product;
 use Modules\Products\Models\ProductVariant;
-use Modules\Products\Models\Supplier;
 use Modules\Products\Models\Unit;
 use Modules\Products\Policies\ProductPolicy;
 use Nwidart\Modules\Support\ModuleServiceProvider;
@@ -39,6 +38,5 @@ class ProductsServiceProvider extends ModuleServiceProvider
         Category::observe(AuditableObserver::class);
         Brand::observe(AuditableObserver::class);
         Unit::observe(AuditableObserver::class);
-        Supplier::observe(AuditableObserver::class);
     }
 }

@@ -11,8 +11,8 @@ use Modules\Products\Models\Brand;
 use Modules\Products\Models\Category;
 use Modules\Products\Models\Product;
 use Modules\Products\Models\ProductImport;
-use Modules\Products\Models\Supplier;
 use Modules\Products\Models\Unit;
+use Modules\Purchasing\Models\Supplier;
 use RuntimeException;
 
 class ProductCsvService

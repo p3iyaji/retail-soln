@@ -62,6 +62,13 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function procurementOfficer(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'procurement_officer',
+        ]);
+    }
+
     /**
      * Indicate that the model's email address should be unverified.
      */

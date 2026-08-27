@@ -27,3 +27,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-low-stock-alerts.md`
   summary: Persist schedule low-stock check output (log/notify) for operators when cron runs.
   evidence: Hourly Schedule runs the command but stdout is discarded without appendOutputTo or Epic 8 notifications.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-1-supplier-management.md`
+  summary: Add automated Admin Suppliers UI tests (list/CRUD/CSV feedback).
+  evidence: Repo has no frontend test runner; verification is API tests + npm build + manual checks.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-1-supplier-management.md`
+  summary: Hide or disable Suppliers nav for users without suppliers.view.
+  evidence: AppShell exposes Suppliers to all authenticated admins; API still enforces permissions.

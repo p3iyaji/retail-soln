@@ -1,0 +1,11 @@
+{
+    "name": "Purchasing",
+    "alias": "purchasing",
+    "description": "Suppliers, purchase orders, and procure-to-pay",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Purchasing\\Providers\\PurchasingServiceProvider"
+    ],
+    "files": []
+}

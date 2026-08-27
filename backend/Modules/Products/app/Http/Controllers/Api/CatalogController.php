@@ -9,11 +9,9 @@ use Illuminate\Validation\Rule;
 use Modules\Organization\Services\OrganizationService;
 use Modules\Products\Http\Resources\BrandResource;
 use Modules\Products\Http\Resources\CategoryResource;
-use Modules\Products\Http\Resources\SupplierResource;
 use Modules\Products\Http\Resources\UnitResource;
 use Modules\Products\Models\Brand;
 use Modules\Products\Models\Category;
-use Modules\Products\Models\Supplier;
 use Modules\Products\Models\Unit;
 
 class CatalogController
@@ -150,58 +148,6 @@ class CatalogController
         ]);
 
         return response()->json(['data' => new UnitResource($unit)], 201);
-    }
-
-    public function suppliers(Request $request, OrganizationService $organizations): JsonResponse
-    {
-        $user = $request->user();
-        if ($user?->hasPermission('catalog.view') !== true
-            && $user?->hasPermission('suppliers.view') !== true
-            && $user?->hasPermission('products.view') !== true) {
-            abort(403, 'This action is unauthorized.');
-        }
-
-        $items = Supplier::query()
-            ->where('organization_id', $organizations->current()->id)
-            ->orderBy('name')
-            ->get();
-
-        return response()->json([
-            'data' => SupplierResource::collection($items),
-        ]);
-    }
-
-    public function storeSupplier(Request $request, OrganizationService $organizations): JsonResponse
-    {
-        $user = $request->user();
-        if ($user?->hasPermission('products.manage') !== true
-            && $user?->hasPermission('suppliers.manage') !== true) {
-            abort(403, 'This action is unauthorized.');
-        }
-
-        $organizationId = $organizations->current()->id;
-
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'code' => [
-                'nullable',
-                'string',
-                'max:50',
-                Rule::unique('suppliers', 'code')->where(
-                    fn ($q) => $q->where('organization_id', $organizationId)
-                ),
-            ],
-            'isActive' => ['sometimes', 'boolean'],
-        ]);
-
-        $supplier = Supplier::query()->create([
-            'organization_id' => $organizationId,
-            'name' => $data['name'],
-            'code' => $data['code'] ?? null,
-            'is_active' => $data['isActive'] ?? true,
-        ]);
-
-        return response()->json(['data' => new SupplierResource($supplier)], 201);
     }
 
     private function assertView(Request $request): void
