@@ -82,6 +82,9 @@ const variantForm = reactive({
 })
 
 const formTitle = computed(() => (editingId.value ? 'Edit product' : 'New product'))
+const searchQuery = ref('')
+const importMessage = ref('')
+const fileInput = ref<HTMLInputElement | null>(null)
 
 async function loadLookups() {
   const [cats, brs, uns, sups] = await Promise.all([
@@ -97,8 +100,69 @@ async function loadLookups() {
 }
 
 async function loadProducts() {
+  const q = searchQuery.value.trim()
+  if (q) {
+    const res = await api.get<{ data: Product[] }>(`/products/search?q=${encodeURIComponent(q)}&limit=50`)
+    products.value = res.data
+    return
+  }
   const res = await api.get<{ data: Product[] }>('/products?per_page=50')
   products.value = res.data
+}
+
+async function onSearch() {
+  error.value = ''
+  try {
+    await loadProducts()
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'Search failed'
+  }
+}
+
+async function onExport() {
+  error.value = ''
+  try {
+    await api.download('/products/export', 'products-export.csv')
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'Export failed'
+  }
+}
+
+async function onImportFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  error.value = ''
+  importMessage.value = ''
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const preview = await api.upload<{
+      data: { totalRows: number; validCount: number; errorCount: number; errors: Array<{ row: number; message: string }> }
+    }>('/products/import/preview', formData)
+
+    if (preview.data.errorCount > 0 && preview.data.validCount === 0) {
+      error.value = `Import preview failed: ${preview.data.errors[0]?.message ?? 'validation errors'}`
+      return
+    }
+
+    const importForm = new FormData()
+    importForm.append('file', file)
+    const result = await api.upload<{
+      data: { id: number; status: string; successCount: number; errorCount: number; async: boolean }
+    }>('/products/import', importForm)
+
+    importMessage.value = result.data.async
+      ? `Import #${result.data.id} queued (${result.data.status}).`
+      : `Imported ${result.data.successCount} row(s); ${result.data.errorCount} error(s).`
+    await loadProducts()
+    await loadLookups()
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'Import failed'
+  } finally {
+    input.value = ''
+  }
 }
 
 async function refresh() {
@@ -319,17 +383,56 @@ onMounted(refresh)
       <div>
         <h2 class="text-xl font-semibold tracking-tight">Products</h2>
         <p class="mt-1 text-sm text-[var(--muted)]">
-          Catalog CRUD with SKU, barcode, category, brand, supplier, unit, images, and stock thresholds.
+          Catalog CRUD with search, CSV import/export, variants, and stock thresholds.
         </p>
       </div>
-      <button
-        type="button"
-        class="rounded-md bg-[var(--brand)] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
-        @click="openCreate"
-      >
-        New product
-      </button>
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="rounded-md border border-[var(--line)] px-3 py-2 text-sm"
+          @click="onExport"
+        >
+          Export CSV
+        </button>
+        <button
+          type="button"
+          class="rounded-md border border-[var(--line)] px-3 py-2 text-sm"
+          @click="fileInput?.click()"
+        >
+          Import CSV
+        </button>
+        <input ref="fileInput" type="file" accept=".csv,text/csv" class="hidden" @change="onImportFile" />
+        <button
+          type="button"
+          class="rounded-md bg-[var(--brand)] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+          @click="openCreate"
+        >
+          New product
+        </button>
+      </div>
     </div>
+
+    <form class="flex flex-wrap gap-2" @submit.prevent="onSearch">
+      <input
+        v-model="searchQuery"
+        type="search"
+        placeholder="Search SKU, barcode, name, category…"
+        class="min-w-[240px] flex-1 rounded-md border border-[var(--line)] px-3 py-2 text-sm"
+      />
+      <button type="submit" class="rounded-md border border-[var(--line)] px-3 py-2 text-sm">Search</button>
+      <button
+        v-if="searchQuery"
+        type="button"
+        class="rounded-md border border-[var(--line)] px-3 py-2 text-sm"
+        @click="searchQuery = ''; onSearch()"
+      >
+        Clear
+      </button>
+    </form>
+
+    <p v-if="importMessage" class="rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-900">
+      {{ importMessage }}
+    </p>
 
     <p v-if="error" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
       {{ error }}

@@ -42,11 +42,13 @@ export function hasToken(): boolean {
   return Boolean(getToken())
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}, jsonBody = true): Promise<T> {
   const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? '/api/v1'
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json')
-  headers.set('Content-Type', 'application/json')
+  if (jsonBody) {
+    headers.set('Content-Type', 'application/json')
+  }
 
   const token = getToken()
   if (token) {
@@ -78,6 +80,26 @@ export const api = {
   patch: <T>(path: string, data?: unknown) =>
     request<T>(path, { method: 'PATCH', body: data ? JSON.stringify(data) : undefined }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  upload: <T>(path: string, formData: FormData) =>
+    request<T>(path, { method: 'POST', body: formData }, false),
+  download: async (path: string, filename: string): Promise<void> => {
+    const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? '/api/v1'
+    const headers = new Headers({ Accept: '*/*' })
+    const token = getToken()
+    if (token) headers.set('Authorization', `Bearer ${token}`)
+    const response = await fetch(`${base}${path}`, { headers })
+    if (!response.ok) {
+      const body = (await response.json().catch(() => ({}))) as ApiErrorBody
+      throw new ApiError(response.status, body)
+    }
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  },
 }
 
 export type LoginResponse =
