@@ -17,6 +17,8 @@ class PurchaseOrderItemResource extends JsonResource
             'id' => $this->id,
             'productVariantId' => $this->product_variant_id,
             'qty' => $this->qty,
+            'qtyReceived' => $this->qty_received,
+            'qtyRemaining' => $this->qtyRemaining(),
             'unitCost' => $this->unit_cost,
             'lineTotal' => $this->line_total,
             'productVariant' => $this->whenLoaded('productVariant', fn () => $this->productVariant === null ? null : [

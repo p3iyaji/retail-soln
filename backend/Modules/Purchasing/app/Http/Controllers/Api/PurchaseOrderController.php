@@ -210,7 +210,8 @@ class PurchaseOrderController
     {
         $user = $request->user();
         if ($user?->hasPermission('purchase.create') !== true
-            && $user?->hasPermission('purchase.approve') !== true) {
+            && $user?->hasPermission('purchase.approve') !== true
+            && $user?->hasPermission('purchase.receive') !== true) {
             abort(403, 'This action is unauthorized.');
         }
     }

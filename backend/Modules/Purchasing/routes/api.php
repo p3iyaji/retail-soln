@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Purchasing\Http\Controllers\Api\GoodsReceiptController;
 use Modules\Purchasing\Http\Controllers\Api\PurchaseOrderController;
 use Modules\Purchasing\Http\Controllers\Api\SupplierController;
 use Modules\Purchasing\Http\Controllers\Api\SupplierCsvController;
@@ -28,5 +29,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/purchase-orders/{purchaseOrder}/submit', [PurchaseOrderController::class, 'submit']);
         Route::post('/purchase-orders/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve']);
         Route::post('/purchase-orders/{purchaseOrder}/reject', [PurchaseOrderController::class, 'reject']);
+
+        Route::post('/goods-receipts', [GoodsReceiptController::class, 'store']);
     });
 });

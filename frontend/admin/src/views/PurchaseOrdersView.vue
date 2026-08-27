@@ -10,6 +10,8 @@ type PoItem = {
   id?: number
   productVariantId: number | ''
   qty: string
+  qtyReceived?: string
+  qtyRemaining?: string
   unitCost: string
   lineTotal?: string
   productVariant?: { id: number; name: string; sku: string } | null
@@ -60,6 +62,7 @@ const productSearch = ref('')
 const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
+const success = ref('')
 const editingId = ref<number | null>(null)
 const showForm = ref(false)
 const rejectReason = ref('')
@@ -74,8 +77,23 @@ const form = reactive({
 
 const canCreate = computed(() => auth.user?.permissions?.includes('purchase.create') === true)
 const canApprove = computed(() => auth.user?.permissions?.includes('purchase.approve') === true)
+const canReceive = computed(() => auth.user?.permissions?.includes('purchase.receive') === true)
 const formTitle = computed(() => (editingId.value ? 'Edit purchase order' : 'New purchase order'))
 const editableStatuses = new Set(['draft', 'rejected'])
+const receivableStatuses = new Set(['approved', 'partial'])
+
+const receivingPo = ref<PurchaseOrder | null>(null)
+const receiveNotes = ref('')
+const receiveLines = ref<
+  Array<{
+    purchaseOrderItemId: number
+    label: string
+    remaining: string
+    qty: string
+    qtyOrdered: string
+    qtyReceived: string
+  }>
+>([])
 
 function statusLabel(status: string): string {
   return STATUS_LABELS[status] ?? status
@@ -91,6 +109,53 @@ function canSubmit(po: PurchaseOrder): boolean {
 
 function canApprovePo(po: PurchaseOrder): boolean {
   return canApprove.value && po.status === 'pending_approval'
+}
+
+function canReceivePo(po: PurchaseOrder): boolean {
+  return canReceive.value && receivableStatuses.has(po.status)
+}
+
+/** Scale-4 decimal helpers (string-safe; avoids float drift). */
+function isPositiveDecimal(value: string): boolean {
+  return /^\d+(\.\d{1,4})?$/.test(value) && decimalCmp(value, '0') > 0
+}
+
+function toScaled(value: string): bigint {
+  const [whole, frac = ''] = value.split('.')
+  return BigInt(`${whole}${frac.padEnd(4, '0').slice(0, 4)}`)
+}
+
+function decimalCmp(a: string, b: string): number {
+  const left = toScaled(a)
+  const right = toScaled(b)
+  if (left < right) return -1
+  if (left > right) return 1
+  return 0
+}
+
+function formatScaled(total: bigint): string {
+  const negative = total < 0n
+  const abs = negative ? -total : total
+  const raw = abs.toString().padStart(5, '0')
+  const whole = raw.slice(0, -4) || '0'
+  const frac = raw.slice(-4)
+  return `${negative ? '-' : ''}${whole}.${frac}`
+}
+
+function receiveProgress(po: PurchaseOrder): string | null {
+  const items = po.items
+  if (!items?.length) return null
+  let ordered = 0n
+  let received = 0n
+  for (const item of items) {
+    if (!/^\d+(\.\d{1,4})?$/.test(item.qty)) continue
+    ordered += toScaled(item.qty)
+    const got = item.qtyReceived ?? '0'
+    if (/^\d+(\.\d{1,4})?$/.test(got)) {
+      received += toScaled(got)
+    }
+  }
+  return `${formatScaled(received)} / ${formatScaled(ordered)} received`
 }
 
 function formatError(e: unknown, fallback: string): string {
@@ -288,8 +353,11 @@ async function onApprove(po: PurchaseOrder) {
 }
 
 function startReject(po: PurchaseOrder) {
+  closeReceive()
   rejectingId.value = po.id
   rejectReason.value = ''
+  success.value = ''
+  error.value = ''
 }
 
 async function onReject() {
@@ -318,6 +386,92 @@ async function onDelete(po: PurchaseOrder) {
     await loadOrders()
   } catch (e) {
     error.value = formatError(e, 'Delete failed')
+  }
+}
+
+async function openReceive(po: PurchaseOrder) {
+  rejectingId.value = null
+  rejectReason.value = ''
+  error.value = ''
+  success.value = ''
+  try {
+    const res = await api.get<{ data: PurchaseOrder }>(`/purchase-orders/${po.id}`)
+    const detail = res.data
+    receivingPo.value = detail
+    receiveNotes.value = ''
+    receiveLines.value = (detail.items ?? [])
+      .filter((i) => i.id != null && isPositiveDecimal(i.qtyRemaining ?? '0'))
+      .map((i) => ({
+        purchaseOrderItemId: i.id as number,
+        label: i.productVariant
+          ? `${i.productVariant.name} (${i.productVariant.sku})`
+          : `Item #${i.id}`,
+        remaining: i.qtyRemaining ?? i.qty,
+        qty: i.qtyRemaining ?? i.qty,
+        qtyOrdered: i.qty,
+        qtyReceived: i.qtyReceived ?? '0.0000',
+      }))
+    if (receiveLines.value.length === 0) {
+      error.value = 'No remaining quantity to receive on this purchase order.'
+      receivingPo.value = null
+    }
+  } catch (e) {
+    error.value = formatError(e, 'Failed to load purchase order for receive')
+  }
+}
+
+function closeReceive() {
+  receivingPo.value = null
+  receiveNotes.value = ''
+  receiveLines.value = []
+}
+
+async function onReceive() {
+  if (receivingPo.value == null) return
+  if (saving.value) return
+  saving.value = true
+  error.value = ''
+  success.value = ''
+  try {
+    for (const line of receiveLines.value) {
+      if (!line.qty || line.qty === '0' || line.qty === '0.0000') continue
+      if (!isPositiveDecimal(line.qty)) {
+        error.value = `Invalid quantity for ${line.label}.`
+        return
+      }
+      if (decimalCmp(line.qty, line.remaining) > 0) {
+        error.value = `Quantity for ${line.label} exceeds remaining (${line.remaining}).`
+        return
+      }
+    }
+    const items = receiveLines.value
+      .filter((l) => isPositiveDecimal(l.qty))
+      .map((l) => ({
+        purchaseOrderItemId: l.purchaseOrderItemId,
+        qty: l.qty,
+      }))
+    if (items.length === 0) {
+      error.value = 'Enter a received quantity greater than zero for at least one line.'
+      return
+    }
+    const number = receivingPo.value.number
+    const idempotencyKey = crypto.randomUUID()
+    await api.post(
+      '/goods-receipts',
+      {
+        purchaseOrderId: receivingPo.value.id,
+        notes: receiveNotes.value || null,
+        items,
+      },
+      { 'Idempotency-Key': idempotencyKey },
+    )
+    closeReceive()
+    success.value = `Goods receipt posted for ${number}.`
+    await loadOrders()
+  } catch (e) {
+    error.value = formatError(e, 'Receive failed')
+  } finally {
+    saving.value = false
   }
 }
 
@@ -351,7 +505,7 @@ onMounted(refresh)
       <div>
         <h2 class="text-xl font-semibold tracking-tight">Purchase orders</h2>
         <p class="mt-1 text-sm text-[var(--muted)]">
-          Create drafts, submit for approval, and approve or reject pending orders. Receiving is not available until a PO is approved.
+          Create drafts, submit for approval, approve or reject pending orders, and receive approved deliveries (partial OK).
         </p>
       </div>
       <button
@@ -365,6 +519,7 @@ onMounted(refresh)
     </div>
 
     <p v-if="error" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{{ error }}</p>
+    <p v-if="success" class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{{ success }}</p>
     <p v-if="loading" class="text-sm text-[var(--muted)]">Loading…</p>
 
     <div v-if="!loading" class="flex flex-wrap items-end gap-3">
@@ -375,6 +530,8 @@ onMounted(refresh)
           <option value="draft">Draft</option>
           <option value="pending_approval">Pending approval</option>
           <option value="approved">Approved</option>
+          <option value="partial">Partial</option>
+          <option value="received">Received</option>
           <option value="rejected">Rejected</option>
         </select>
       </label>
@@ -456,7 +613,64 @@ onMounted(refresh)
     </div>
 
     <div
-      v-if="rejectingId != null"
+      v-if="receivingPo != null"
+      class="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-4 space-y-3"
+    >
+      <h3 class="font-semibold">Receive goods — {{ receivingPo.number }}</h3>
+      <p class="text-sm text-[var(--muted)]">
+        Progress: {{ receiveProgress(receivingPo) ?? '—' }}. Enter quantities for this delivery; remaining stays open.
+      </p>
+      <label class="block text-sm">
+        <span class="text-[var(--muted)]">Notes (optional)</span>
+        <input v-model="receiveNotes" class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
+      </label>
+      <div class="space-y-2">
+        <div
+          v-for="line in receiveLines"
+          :key="line.purchaseOrderItemId"
+          class="grid gap-2 md:grid-cols-[1fr_120px_120px] items-end"
+        >
+          <div class="text-sm">
+            <p class="font-medium">{{ line.label }}</p>
+            <p class="text-xs text-[var(--muted)]">
+              Received {{ line.qtyReceived }} / {{ line.qtyOrdered }} · remaining {{ line.remaining }}
+            </p>
+          </div>
+          <label class="block text-sm">
+            <span class="text-[var(--muted)]">Receive qty</span>
+            <input v-model="line.qty" class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2 text-sm" />
+          </label>
+          <button
+            type="button"
+            class="text-sm text-[var(--brand)] pb-2"
+            @click="line.qty = line.remaining"
+          >
+            Fill remaining
+          </button>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="rounded-md bg-[var(--brand)] px-3 py-2 text-sm text-white disabled:opacity-60"
+          :disabled="saving"
+          @click="onReceive"
+        >
+          Post receipt
+        </button>
+        <button
+          type="button"
+          class="rounded-md border border-[var(--line)] px-3 py-2 text-sm"
+          :disabled="saving"
+          @click="closeReceive"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="rejectingId != null && receivingPo == null"
       class="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-4 space-y-3"
     >
       <h3 class="font-semibold">Reject purchase order</h3>
@@ -487,13 +701,14 @@ onMounted(refresh)
             <th class="px-3 py-2 font-medium">Supplier</th>
             <th class="px-3 py-2 font-medium">Store</th>
             <th class="px-3 py-2 font-medium">Status</th>
+            <th class="px-3 py-2 font-medium">Received</th>
             <th class="px-3 py-2 font-medium">Total</th>
             <th class="px-3 py-2 font-medium" />
           </tr>
         </thead>
         <tbody>
           <tr v-if="orders.length === 0">
-            <td colspan="6" class="px-3 py-4 text-[var(--muted)]">No purchase orders yet.</td>
+            <td colspan="7" class="px-3 py-4 text-[var(--muted)]">No purchase orders yet.</td>
           </tr>
           <tr v-for="po in orders" :key="po.id" class="border-b border-[var(--line)]">
             <td class="px-3 py-2 font-mono text-xs">{{ po.number }}</td>
@@ -504,6 +719,9 @@ onMounted(refresh)
               <span v-if="po.status === 'rejected' && po.rejectionReason" class="mt-0.5 block text-xs text-[var(--muted)]">
                 {{ po.rejectionReason }}
               </span>
+            </td>
+            <td class="px-3 py-2 font-mono text-xs text-[var(--muted)]">
+              {{ receiveProgress(po) ?? '—' }}
             </td>
             <td class="px-3 py-2 font-mono text-xs">{{ po.totalAmount }}</td>
             <td class="px-3 py-2 text-right space-x-2 whitespace-nowrap">
@@ -542,6 +760,15 @@ onMounted(refresh)
                 @click="startReject(po)"
               >
                 Reject
+              </button>
+              <button
+                v-if="canReceivePo(po)"
+                type="button"
+                class="text-emerald-700 disabled:opacity-60"
+                :disabled="saving"
+                @click="openReceive(po)"
+              >
+                Receive
               </button>
               <button
                 v-if="canCreate && po.status === 'draft'"
