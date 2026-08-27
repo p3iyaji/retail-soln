@@ -11,8 +11,8 @@ const titles: Record<Exclude<StubPanel, null>, string> = {
 }
 
 const storyHints: Record<Exclude<StubPanel, null>, string> = {
-  customer: 'Coming in story 4.4+',
-  discount: 'Coming in story 4.4+',
+  customer: 'Coming in a later story',
+  discount: 'Line discount engine deferred — use price override when permitted',
   payment: 'Coming in story 4.5+',
 }
 
@@ -65,7 +65,7 @@ watch(
         </div>
         <div class="px-4 py-6 text-[var(--muted)]">
           <p>{{ hint }}</p>
-          <p class="mt-2 text-sm">This panel is a shell stub — no cart or payment logic yet.</p>
+          <p class="mt-2 text-sm">Shell stub — no customer / discount / payment completion yet.</p>
         </div>
       </div>
     </div>

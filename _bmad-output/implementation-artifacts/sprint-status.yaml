@@ -1,5 +1,5 @@
 # generated: 08-24-2026 04:00
-# last_updated: 08-27-2026 20:25
+# last_updated: 08-27-2026 20:52
 # project: retail-soln
 # project_key: RETAIL
 # tracking_system: file-system
@@ -11,7 +11,7 @@
 # Retrospective: optional | done
 
 generated: 08-24-2026 04:00
-last_updated: 08-27-2026 20:25
+last_updated: 08-27-2026 20:52
 project: retail-soln
 project_key: RETAIL
 tracking_system: file-system
@@ -56,8 +56,8 @@ development_status:
   epic-4: in-progress
   4-1-pricing-promotion-services: done
   4-2-customer-records-pos: done
-  4-3-pos-vue-shell: review
-  4-4-cart-product-search: backlog
+  4-3-pos-vue-shell: done
+  4-4-cart-product-search: review
   4-5-sale-atomic-transaction: backlog
   4-6-hold-suspend-void: backlog
   4-7-cashier-sessions: backlog

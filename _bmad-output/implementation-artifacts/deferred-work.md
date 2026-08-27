@@ -143,3 +143,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-3-pos-vue-shell.md`
   summary: Backend terminals CRUD and session open/close chrome wiring.
   evidence: Terminal is localStorage label; Session shows placeholder until 4.7.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-4-cart-product-search.md`
+  summary: Add frontend/pos vitest to CI and story verification gates.
+  evidence: Vitest covers cart/search but CI and listed Verification still center on build/PHPUnit.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-4-cart-product-search.md`
+  summary: F8 line-discount engine beyond price override.
+  evidence: Spec Ask First kept F8 as stub; override is the authorized price path for 4.4.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-4-cart-product-search.md`
+  summary: Block add-to-cart when stock unavailable.
+  evidence: Spec deferred inventory checks to Story 4.5 sale completion.
