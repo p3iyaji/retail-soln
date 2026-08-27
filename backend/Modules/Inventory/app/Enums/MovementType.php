@@ -6,6 +6,7 @@ enum MovementType: string
 {
     case Adjustment = 'adjustment';
     case Purchase = 'purchase';
+    case PurchaseReturn = 'purchase_return';
     case Sale = 'sale';
     case TransferOut = 'transfer_out';
     case TransferIn = 'transfer_in';

@@ -19,6 +19,8 @@ class GoodsReceiptItemResource extends JsonResource
             'productVariantId' => $this->product_variant_id,
             'qty' => $this->qty,
             'unitCost' => $this->unit_cost,
+            'qtyReturned' => $this->qtyReturned(),
+            'qtyReturnable' => $this->qtyReturnable(),
             'inventoryMovementId' => $this->inventory_movement_id,
             'productVariant' => $this->whenLoaded('productVariant', fn () => $this->productVariant === null ? null : [
                 'id' => $this->productVariant->id,

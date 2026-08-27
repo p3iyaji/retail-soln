@@ -16,6 +16,21 @@ type PoItem = {
   lineTotal?: string
   productVariant?: { id: number; name: string; sku: string } | null
 }
+type GoodsReceiptItem = {
+  id: number
+  purchaseOrderItemId: number
+  productVariantId: number
+  qty: string
+  unitCost: string
+  qtyReturned?: string
+  qtyReturnable?: string
+  productVariant?: { id: number; name: string; sku: string } | null
+}
+type GoodsReceipt = {
+  id: number
+  purchaseOrderId: number
+  items?: GoodsReceiptItem[]
+}
 type PurchaseOrder = {
   id: number
   number: string
@@ -30,6 +45,7 @@ type PurchaseOrder = {
   supplier?: { id: number; name: string; code: string | null } | null
   store?: { id: number; name: string } | null
   items?: PoItem[]
+  goodsReceipts?: GoodsReceipt[]
 }
 
 type ListMeta = {
@@ -81,6 +97,7 @@ const canReceive = computed(() => auth.user?.permissions?.includes('purchase.rec
 const formTitle = computed(() => (editingId.value ? 'Edit purchase order' : 'New purchase order'))
 const editableStatuses = new Set(['draft', 'rejected'])
 const receivableStatuses = new Set(['approved', 'partial'])
+const returnableStatuses = new Set(['partial', 'received'])
 
 const receivingPo = ref<PurchaseOrder | null>(null)
 const receiveNotes = ref('')
@@ -92,6 +109,29 @@ const receiveLines = ref<
     qty: string
     qtyOrdered: string
     qtyReceived: string
+  }>
+>([])
+
+const returningPo = ref<PurchaseOrder | null>(null)
+const returnNotes = ref('')
+const returnGoodsReceiptId = ref<number | null>(null)
+const returnableReceipts = ref<Array<{ id: number; label: string }>>([])
+const returnLines = ref<
+  Array<{
+    goodsReceiptItemId: number
+    label: string
+    remaining: string
+    qty: string
+    unitCost: string
+  }>
+>([])
+const allReturnableLines = ref<
+  Array<{
+    goodsReceiptId: number
+    goodsReceiptItemId: number
+    label: string
+    remaining: string
+    unitCost: string
   }>
 >([])
 
@@ -113,6 +153,10 @@ function canApprovePo(po: PurchaseOrder): boolean {
 
 function canReceivePo(po: PurchaseOrder): boolean {
   return canReceive.value && receivableStatuses.has(po.status)
+}
+
+function canReturnPo(po: PurchaseOrder): boolean {
+  return canReceive.value && returnableStatuses.has(po.status)
 }
 
 /** Scale-4 decimal helpers (string-safe; avoids float drift). */
@@ -392,6 +436,7 @@ async function onDelete(po: PurchaseOrder) {
 async function openReceive(po: PurchaseOrder) {
   rejectingId.value = null
   rejectReason.value = ''
+  closeReturn()
   error.value = ''
   success.value = ''
   try {
@@ -424,6 +469,80 @@ function closeReceive() {
   receivingPo.value = null
   receiveNotes.value = ''
   receiveLines.value = []
+}
+
+async function openReturn(po: PurchaseOrder) {
+  rejectingId.value = null
+  rejectReason.value = ''
+  closeReceive()
+  error.value = ''
+  success.value = ''
+  try {
+    const res = await api.get<{ data: PurchaseOrder }>(`/purchase-orders/${po.id}`)
+    const detail = res.data
+    const receipts = detail.goodsReceipts ?? []
+    const lines: typeof allReturnableLines.value = []
+    const grnOptions: Array<{ id: number; label: string }> = []
+
+    for (const grn of receipts) {
+      let hasReturnable = false
+      for (const item of grn.items ?? []) {
+        const remaining = item.qtyReturnable ?? '0'
+        if (!isPositiveDecimal(remaining)) continue
+        hasReturnable = true
+        lines.push({
+          goodsReceiptId: grn.id,
+          goodsReceiptItemId: item.id,
+          label: item.productVariant
+            ? `${item.productVariant.name} (${item.productVariant.sku})`
+            : `GRN item #${item.id}`,
+          remaining,
+          unitCost: item.unitCost,
+        })
+      }
+      if (hasReturnable) {
+        grnOptions.push({ id: grn.id, label: `GRN #${grn.id}` })
+      }
+    }
+
+    if (grnOptions.length === 0 || lines.length === 0) {
+      closeReturn()
+      error.value =
+        'Nothing left to return on this purchase order — all received quantities have already been returned.'
+      return
+    }
+
+    returningPo.value = detail
+    returnableReceipts.value = grnOptions
+    allReturnableLines.value = lines
+    returnNotes.value = ''
+    selectReturnReceipt(grnOptions[0].id)
+  } catch (e) {
+    closeReturn()
+    error.value = formatError(e, 'Failed to load purchase order for return')
+  }
+}
+
+function selectReturnReceipt(grnId: number) {
+  returnGoodsReceiptId.value = grnId
+  returnLines.value = allReturnableLines.value
+    .filter((l) => l.goodsReceiptId === grnId)
+    .map((l) => ({
+      goodsReceiptItemId: l.goodsReceiptItemId,
+      label: l.label,
+      remaining: l.remaining,
+      qty: l.remaining,
+      unitCost: l.unitCost,
+    }))
+}
+
+function closeReturn() {
+  returningPo.value = null
+  returnNotes.value = ''
+  returnGoodsReceiptId.value = null
+  returnableReceipts.value = []
+  returnLines.value = []
+  allReturnableLines.value = []
 }
 
 async function onReceive() {
@@ -475,6 +594,61 @@ async function onReceive() {
   }
 }
 
+async function onReturn() {
+  if (returningPo.value == null || returnGoodsReceiptId.value == null) return
+  if (saving.value) return
+  saving.value = true
+  error.value = ''
+  success.value = ''
+  try {
+    for (const line of returnLines.value) {
+      if (!line.qty || line.qty === '0' || line.qty === '0.0000') continue
+      if (!isPositiveDecimal(line.qty)) {
+        error.value = `Invalid quantity for ${line.label}.`
+        return
+      }
+      if (decimalCmp(line.qty, line.remaining) > 0) {
+        error.value = `Quantity for ${line.label} exceeds returnable (${line.remaining}).`
+        return
+      }
+    }
+    const items = returnLines.value
+      .filter((l) => isPositiveDecimal(l.qty))
+      .map((l) => ({
+        goodsReceiptItemId: l.goodsReceiptItemId,
+        qty: l.qty,
+      }))
+    if (items.length === 0) {
+      error.value = 'Enter a return quantity greater than zero for at least one line.'
+      return
+    }
+    const number = returningPo.value.number
+    const idempotencyKey = crypto.randomUUID()
+    const res = await api.post<{
+      data: { creditAmount: string }
+      meta?: { outstanding?: string }
+    }>(
+      '/purchase-returns',
+      {
+        goodsReceiptId: returnGoodsReceiptId.value,
+        notes: returnNotes.value || null,
+        items,
+      },
+      { 'Idempotency-Key': idempotencyKey },
+    )
+    closeReturn()
+    const outstanding = res.meta?.outstanding
+    success.value = outstanding
+      ? `Purchase return posted for ${number} (credit ${res.data.creditAmount}). Supplier outstanding now ${outstanding}.`
+      : `Purchase return posted for ${number} (credit ${res.data.creditAmount}).`
+    await loadOrders()
+  } catch (e) {
+    error.value = formatError(e, 'Return failed')
+  } finally {
+    saving.value = false
+  }
+}
+
 async function onFilter() {
   page.value = 1
   error.value = ''
@@ -505,7 +679,7 @@ onMounted(refresh)
       <div>
         <h2 class="text-xl font-semibold tracking-tight">Purchase orders</h2>
         <p class="mt-1 text-sm text-[var(--muted)]">
-          Create drafts, submit for approval, approve or reject pending orders, and receive approved deliveries (partial OK).
+          Create drafts, submit for approval, approve or reject pending orders, receive approved deliveries (partial OK), and return goods to suppliers.
         </p>
       </div>
       <button
@@ -670,7 +844,75 @@ onMounted(refresh)
     </div>
 
     <div
-      v-if="rejectingId != null && receivingPo == null"
+      v-if="returningPo != null"
+      class="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-4 space-y-3"
+    >
+      <h3 class="font-semibold">Return to supplier — {{ returningPo.number }}</h3>
+      <p class="text-sm text-[var(--muted)]">
+        Return against a goods receipt. Credit reduces supplier outstanding; stock decreases via ledger.
+      </p>
+      <label v-if="returnableReceipts.length > 1" class="block text-sm">
+        <span class="text-[var(--muted)]">Goods receipt</span>
+        <select
+          class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2"
+          :value="returnGoodsReceiptId ?? ''"
+          @change="selectReturnReceipt(Number(($event.target as HTMLSelectElement).value))"
+        >
+          <option v-for="g in returnableReceipts" :key="g.id" :value="g.id">{{ g.label }}</option>
+        </select>
+      </label>
+      <p v-else class="text-sm text-[var(--muted)]">Returning against {{ returnableReceipts[0]?.label }}.</p>
+      <label class="block text-sm">
+        <span class="text-[var(--muted)]">Notes (optional)</span>
+        <input v-model="returnNotes" class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
+      </label>
+      <div class="space-y-2">
+        <div
+          v-for="line in returnLines"
+          :key="line.goodsReceiptItemId"
+          class="grid gap-2 md:grid-cols-[1fr_120px_auto] items-end"
+        >
+          <div class="text-sm">
+            <p class="font-medium">{{ line.label }}</p>
+            <p class="text-xs text-[var(--muted)]">
+              Returnable {{ line.remaining }} · unit cost {{ line.unitCost }}
+            </p>
+          </div>
+          <label class="block text-sm">
+            <span class="text-[var(--muted)]">Return qty</span>
+            <input v-model="line.qty" class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2 text-sm" />
+          </label>
+          <button
+            type="button"
+            class="text-sm text-[var(--brand)] pb-2"
+            @click="line.qty = line.remaining"
+          >
+            Fill returnable
+          </button>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="rounded-md bg-[var(--brand)] px-3 py-2 text-sm text-white disabled:opacity-60"
+          :disabled="saving"
+          @click="onReturn"
+        >
+          Post return
+        </button>
+        <button
+          type="button"
+          class="rounded-md border border-[var(--line)] px-3 py-2 text-sm"
+          :disabled="saving"
+          @click="closeReturn"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="rejectingId != null && receivingPo == null && returningPo == null"
       class="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-4 space-y-3"
     >
       <h3 class="font-semibold">Reject purchase order</h3>
@@ -769,6 +1011,15 @@ onMounted(refresh)
                 @click="openReceive(po)"
               >
                 Receive
+              </button>
+              <button
+                v-if="canReturnPo(po)"
+                type="button"
+                class="text-amber-800 disabled:opacity-60"
+                :disabled="saving"
+                @click="openReturn(po)"
+              >
+                Return
               </button>
               <button
                 v-if="canCreate && po.status === 'draft'"
