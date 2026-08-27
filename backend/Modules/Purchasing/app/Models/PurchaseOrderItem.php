@@ -15,6 +15,7 @@ class PurchaseOrderItem extends Model
         'qty',
         'unit_cost',
         'line_total',
+        'qty_received',
     ];
 
     protected function casts(): array
@@ -23,7 +24,15 @@ class PurchaseOrderItem extends Model
             'qty' => 'decimal:4',
             'unit_cost' => 'decimal:4',
             'line_total' => 'decimal:4',
+            'qty_received' => 'decimal:4',
         ];
+    }
+
+    public function qtyRemaining(): string
+    {
+        $remaining = bcsub((string) $this->qty, (string) $this->qty_received, 4);
+
+        return bccomp($remaining, '0', 4) < 0 ? '0.0000' : $remaining;
     }
 
     public function purchaseOrder(): BelongsTo

@@ -8,7 +8,6 @@ enum PurchaseOrderStatus: string
     case PendingApproval = 'pending_approval';
     case Approved = 'approved';
     case Rejected = 'rejected';
-    // Reserved for Stories 3.3+
     case Partial = 'partial';
     case Received = 'received';
     case Closed = 'closed';
@@ -26,5 +25,10 @@ enum PurchaseOrderStatus: string
     public function canApproveOrReject(): bool
     {
         return $this === self::PendingApproval;
+    }
+
+    public function canReceive(): bool
+    {
+        return $this === self::Approved || $this === self::Partial;
     }
 }

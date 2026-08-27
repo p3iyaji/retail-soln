@@ -47,3 +47,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-2-purchase-order-approval.md`
   summary: Add automated Admin PurchaseOrders UI tests.
   evidence: Repo has no frontend test runner; verification is API tests + npm build + manual checks.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-goods-receipt-partial.md`
+  summary: Enforce store-scoped access on goods receipt using PO store_id / X-Store-Id.
+  evidence: Receive is org-scoped only today; purchase.receive is store-scoped in the permission matrix.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-goods-receipt-partial.md`
+  summary: Add human-readable GRN numbers and optional GRN history list on the PO.
+  evidence: GRNs expose numeric ids only; Admin has no prior-receipt history panel.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-goods-receipt-partial.md`
+  summary: Add automated Admin receive UI tests for partial PO receive button.
+  evidence: Repo has no frontend test runner; verification is API tests + npm build + manual checks.
