@@ -3,6 +3,7 @@
 namespace Modules\Inventory\Providers;
 
 use Modules\Audit\Observers\AuditableObserver;
+use Modules\Inventory\Console\CheckLowStockCommand;
 use Modules\Inventory\Models\InventoryBalance;
 use Modules\Inventory\Models\InventoryMovement;
 use Modules\Inventory\Models\StockAdjustment;
@@ -26,6 +27,10 @@ class InventoryServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        $this->commands([
+            CheckLowStockCommand::class,
+        ]);
 
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
 
