@@ -3,7 +3,7 @@
 
 ## retail-soln
 
-Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epic 1 complete.** **In progress: Epic 2 Story 2.1** product catalog CRUD — see `_bmad-output/planning-artifacts/epics.md`.
+Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epic 2 in progress** — Stories 2.1–2.2 done (catalog + variants); **next: Story 2.3** inventory ledger — see `_bmad-output/planning-artifacts/epics.md`.
 
 ## Policy
 
@@ -36,7 +36,7 @@ Multi-store offline-first POS and retail management platform. Stack: Laravel 13 
 - Auth smoke: `curl -sf -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"...","password":"..."}'`
 - Admin SPA: `cd frontend/admin && npm install && npm run dev` (http://localhost:5173; Vite proxies `/api` → `http://localhost:8080`). Build: `npm run build`.
 - Local without Docker: sqlite default in `.env.example` is fine for unit/feature tests.
-- **Current story:** Epic 2 Story 2.1 — product catalog CRUD (API + admin Products page). Inventory ledger is Story 2.3 — do not mutate stock quantities yet.
+- **Current story:** Epic 2 Story 2.3 — inventory ledger service (AD-2). Do not mutate stock quantities outside the ledger. Product variants are sellable SKUs (`/products/{id}/variants`).
 
 ## Conventions that differ from defaults
 

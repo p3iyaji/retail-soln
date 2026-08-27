@@ -4,7 +4,9 @@ namespace Modules\Products\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Modules\Organization\Services\OrganizationService;
+use Modules\Products\Support\CatalogCodeValidator;
 
 class StoreProductRequest extends FormRequest
 {
@@ -22,22 +24,8 @@ class StoreProductRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'sku' => [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('products', 'sku')->where(
-                    fn ($q) => $q->where('organization_id', $organizationId)
-                ),
-            ],
-            'barcode' => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::unique('products', 'barcode')->where(
-                    fn ($q) => $q->where('organization_id', $organizationId)
-                ),
-            ],
+            'sku' => ['required', 'string', 'max:100'],
+            'barcode' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
             'categoryId' => [
                 'nullable',
@@ -79,6 +67,21 @@ class StoreProductRequest extends FormRequest
             'images.*.sortOrder' => ['nullable', 'integer', 'min:0'],
             'images.*.isPrimary' => ['nullable', 'boolean'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v): void {
+            if ($v->errors()->isNotEmpty()) {
+                return;
+            }
+
+            CatalogCodeValidator::validate($v, [
+                'organizationId' => app(OrganizationService::class)->current()->id,
+                'sku' => $this->input('sku'),
+                'barcode' => $this->input('barcode'),
+            ]);
+        });
     }
 
     /**

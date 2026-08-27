@@ -37,7 +37,7 @@ development_status:
 
   epic-2: in-progress
   2-1-product-catalog-crud: done
-  2-2-product-variants-barcodes: backlog
+  2-2-product-variants-barcodes: done
   2-3-inventory-ledger-service: backlog
   2-4-stock-adjustments-counts: backlog
   2-5-stock-transfers: backlog
