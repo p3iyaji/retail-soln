@@ -59,3 +59,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-3-goods-receipt-partial.md`
   summary: Add automated Admin receive UI tests for partial PO receive button.
   evidence: Repo has no frontend test runner; verification is API tests + npm build + manual checks.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-4-supplier-invoices-payments.md`
+  summary: Add invoice/payment update-void-delete APIs beyond create/list/show.
+  evidence: Spec Always mentioned CRUD; MVP shipped index/store/show only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-4-supplier-invoices-payments.md`
+  summary: Link Purchase Orders UI into AP invoice creation for a received PO/GRN.
+  evidence: Design Notes optional continuity; PaymentsView is standalone.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-4-supplier-invoices-payments.md`
+  summary: Wire AD-12 journal hooks when Accounting module lands.
+  evidence: Intentionally stubbed; Ask First default was skip journals in 3.4.

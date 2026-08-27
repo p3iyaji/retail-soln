@@ -5,6 +5,8 @@ use Modules\Purchasing\Http\Controllers\Api\GoodsReceiptController;
 use Modules\Purchasing\Http\Controllers\Api\PurchaseOrderController;
 use Modules\Purchasing\Http\Controllers\Api\SupplierController;
 use Modules\Purchasing\Http\Controllers\Api\SupplierCsvController;
+use Modules\Purchasing\Http\Controllers\Api\SupplierInvoiceController;
+use Modules\Purchasing\Http\Controllers\Api\SupplierPaymentController;
 
 Route::prefix('v1')->group(function (): void {
     Route::middleware('auth:sanctum')->group(function (): void {
@@ -31,5 +33,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/purchase-orders/{purchaseOrder}/reject', [PurchaseOrderController::class, 'reject']);
 
         Route::post('/goods-receipts', [GoodsReceiptController::class, 'store']);
+
+        Route::get('/supplier-invoices', [SupplierInvoiceController::class, 'index']);
+        Route::post('/supplier-invoices', [SupplierInvoiceController::class, 'store']);
+        Route::get('/supplier-invoices/{supplierInvoice}', [SupplierInvoiceController::class, 'show']);
+
+        Route::get('/supplier-payments', [SupplierPaymentController::class, 'index']);
+        Route::post('/supplier-payments', [SupplierPaymentController::class, 'store']);
+        Route::get('/supplier-payments/{supplierPayment}', [SupplierPaymentController::class, 'show']);
     });
 });

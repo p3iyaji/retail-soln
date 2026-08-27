@@ -19,6 +19,11 @@ class SupplierResource extends JsonResource
             'name' => $this->name,
             'code' => $this->code,
             'isActive' => $this->is_active,
+            'outstandingBalance' => $this->when(
+                array_key_exists('outstanding_balance', $this->resource->getAttributes())
+                    || isset($this->resource->outstanding_balance),
+                fn () => $this->outstanding_balance,
+            ),
             'contacts' => SupplierContactResource::collection($this->whenLoaded('contacts')),
             'addresses' => SupplierAddressResource::collection($this->whenLoaded('addresses')),
             'productMappings' => SupplierProductResource::collection($this->whenLoaded('productMappings')),

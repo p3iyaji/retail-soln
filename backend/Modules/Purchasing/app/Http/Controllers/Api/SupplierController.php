@@ -9,6 +9,7 @@ use Modules\Purchasing\Http\Requests\StoreSupplierRequest;
 use Modules\Purchasing\Http\Requests\UpdateSupplierRequest;
 use Modules\Purchasing\Http\Resources\SupplierResource;
 use Modules\Purchasing\Models\Supplier;
+use Modules\Purchasing\Services\SupplierOutstandingService;
 use Modules\Purchasing\Services\SupplierService;
 use RuntimeException;
 
@@ -69,12 +70,20 @@ class SupplierController
         return response()->json(['data' => new SupplierResource($supplier)], 201);
     }
 
-    public function show(Request $request, Supplier $supplier, OrganizationService $organizations): JsonResponse
-    {
+    public function show(
+        Request $request,
+        Supplier $supplier,
+        OrganizationService $organizations,
+        SupplierOutstandingService $outstanding,
+    ): JsonResponse {
         $this->assertView($request);
         $this->assertOrg($supplier, $organizations);
 
         $supplier->load(['contacts', 'addresses', 'productMappings.product']);
+        $supplier->setAttribute(
+            'outstanding_balance',
+            $outstanding->outstandingForSupplier($supplier->organization_id, $supplier->id),
+        );
 
         return response()->json(['data' => new SupplierResource($supplier)]);
     }

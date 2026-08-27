@@ -13,6 +13,7 @@ const nav = [
   { name: 'products', label: 'Products', to: '/products' },
   { name: 'suppliers', label: 'Suppliers', to: '/suppliers' },
   { name: 'purchase-orders', label: 'Purchase orders', to: '/purchase-orders' },
+  { name: 'payments', label: 'Payments', to: '/payments' },
   { name: 'inventory', label: 'Inventory', to: '/inventory' },
   { name: 'users', label: 'Users', to: '/users' },
   { name: 'settings', label: 'Settings', to: '/settings' },
