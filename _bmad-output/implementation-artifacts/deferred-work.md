@@ -35,3 +35,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-supplier-management.md`
   summary: Hide or disable Suppliers nav for users without suppliers.view.
   evidence: AppShell exposes Suppliers to all authenticated admins; API still enforces permissions.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-2-purchase-order-approval.md`
+  summary: Add Laravel Policies for purchase-order abilities (AD-4) instead of ad-hoc hasPermission checks.
+  evidence: Controllers use assertCreate/assertApprove helpers; suppliers already follow the same ad-hoc pattern.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-2-purchase-order-approval.md`
+  summary: Hide Purchase orders nav for users lacking purchase.create and purchase.approve.
+  evidence: AppShell always shows the link; API still enforces permissions.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-2-purchase-order-approval.md`
+  summary: Add automated Admin PurchaseOrders UI tests.
+  evidence: Repo has no frontend test runner; verification is API tests + npm build + manual checks.

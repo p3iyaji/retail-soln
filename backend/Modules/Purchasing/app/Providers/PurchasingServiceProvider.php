@@ -3,6 +3,7 @@
 namespace Modules\Purchasing\Providers;
 
 use Modules\Audit\Observers\AuditableObserver;
+use Modules\Purchasing\Models\PurchaseOrder;
 use Modules\Purchasing\Models\Supplier;
 use Modules\Purchasing\Models\SupplierAddress;
 use Modules\Purchasing\Models\SupplierContact;
@@ -30,5 +31,6 @@ class PurchasingServiceProvider extends ModuleServiceProvider
         SupplierContact::observe(AuditableObserver::class);
         SupplierAddress::observe(AuditableObserver::class);
         SupplierProduct::observe(AuditableObserver::class);
+        PurchaseOrder::observe(AuditableObserver::class);
     }
 }

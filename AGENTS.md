@@ -3,7 +3,7 @@
 
 ## retail-soln
 
-Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epic 3 in progress** — Story 3.1 done; **next: Story 3.2** purchase order approval — see `_bmad-output/planning-artifacts/epics.md`.
+Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epic 3 in progress** — Stories 3.1–3.2 done; **next: Story 3.3** goods receipt (partial) — see `_bmad-output/planning-artifacts/epics.md`.
 
 ## Policy
 
@@ -31,13 +31,13 @@ Multi-store offline-first POS and retail management platform. Stack: Laravel 13 
 - First boot (host): `cd backend && composer install && cp -n .env.example .env && php artisan key:generate` (Compose does **not** require `backend/.env`; it injects MySQL/Redis via service `environment`).
 - Docker stack (from repo root): `docker compose up -d --build` — services: `mysql`, `redis`, `app` (PHP-FPM), `nginx` (http://localhost:8080), `queue` (`php artisan queue:work`). Validate with `docker compose config`. Smoke: `curl -sf http://localhost:8080/api/v1/health`.
 - Backend tests (Herd PHP 8.4, from `backend/`): `composer install` then `php artisan test` (uses sqlite `:memory:` via `phpunit.xml`).
-- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/health`, `/auth/*`, org/stores, RBAC, settings/audit, catalog `/products`…, inventory, and `/suppliers` (+ CSV import/export).
+- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/health`, `/auth/*`, org/stores, RBAC, settings/audit, catalog `/products`…, inventory, `/suppliers`, and `/purchase-orders` (+ submit/approve/reject).
 - Seed RBAC + dev users: `cd backend && php artisan db:seed` (permission matrix + role maps).
-- **Dev login** (after seed): `admin@retail.local` / `password` (org admin); `inventory@retail.local` / `password` (products); `procurement@retail.local` / `password` (suppliers). Start API: `cd backend && php artisan serve --port=8001` (avoid `:8000` if another Herd site uses it). Admin SPA: `cd frontend/admin && npm run dev` → http://localhost:5173 (`VITE_PROXY_TARGET` in `frontend/admin/.env`; use `:8080` for Docker nginx).
+- **Dev login** (after seed): `admin@retail.local` / `password` (org admin); `inventory@retail.local` / `password` (products); `procurement@retail.local` / `password` (suppliers/POs). Start API: `cd backend && php artisan serve --port=8001` (avoid `:8000` if another Herd site uses it). Admin SPA: `cd frontend/admin && npm run dev` → http://localhost:5173 (`VITE_PROXY_TARGET` in `frontend/admin/.env`; use `:8080` for Docker nginx).
 - Auth smoke: `curl -sf -X POST http://localhost:8001/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@retail.local","password":"password"}'`
 - Admin SPA: `cd frontend/admin && npm install && npm run dev` (http://localhost:5173). Build: `npm run build`.
 - Local without Docker: sqlite default in `.env.example` is fine for unit/feature tests.
-- **Current story:** Epic 3 Story 3.2 — purchase order creation and approval. Never mutate `inventory_balances` quantities outside `InventoryLedgerService` (AD-2).
+- **Current story:** Epic 3 Story 3.3 — goods receipt (partial). Never mutate `inventory_balances` quantities outside `InventoryLedgerService` (AD-2).
 
 ## Conventions that differ from defaults
 
