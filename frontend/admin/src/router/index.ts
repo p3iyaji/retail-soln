@@ -24,12 +24,13 @@ const router = createRouter({
         {
           path: 'organization',
           name: 'organization',
-          component: () => import('@/views/stubs/OrganizationView.vue'),
+          component: () => import('@/views/OrganizationView.vue'),
         },
+
         {
           path: 'stores',
           name: 'stores',
-          component: () => import('@/views/stubs/StoresView.vue'),
+          component: () => import('@/views/StoresView.vue'),
         },
         {
           path: 'users',
@@ -39,7 +40,7 @@ const router = createRouter({
         {
           path: 'settings',
           name: 'settings',
-          component: () => import('@/views/stubs/SettingsView.vue'),
+          component: () => import('@/views/SettingsView.vue'),
         },
         {
           path: 'products',
