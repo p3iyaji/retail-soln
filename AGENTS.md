@@ -3,7 +3,7 @@
 
 ## retail-soln
 
-Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epic 1 complete** (Stories 1.1–1.6): auth, org/stores, RBAC, settings/audit, admin SPA shell. **Next: Epic 2** products & inventory — see `_bmad-output/planning-artifacts/epics.md`.
+Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epic 1 complete.** **In progress: Epic 2 Story 2.1** product catalog CRUD — see `_bmad-output/planning-artifacts/epics.md`.
 
 ## Policy
 
@@ -23,19 +23,20 @@ Multi-store offline-first POS and retail management platform. Stack: Laravel 13 
 - Sprint tracking: `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - Session handover for Epic 1: `_bmad-output/handover-epic-1.md`
 - Layout: `backend/` (Laravel + `Modules/`), `frontend/admin/` (Vue SPA), `frontend/pos/` (placeholder until Epic 4), `docker/`, root `docker-compose.yml`
-- Modules: Authentication, Organization, Settings, Audit
+- Modules: Authentication, Organization, Settings, Audit, Products
+- Admin SPA: `frontend/admin/` (Vue 3 + Vite + TS + Tailwind); POS placeholder until Epic 4
 
 ## Running and verifying
 
 - First boot (host): `cd backend && composer install && cp -n .env.example .env && php artisan key:generate` (Compose does **not** require `backend/.env`; it injects MySQL/Redis via service `environment`).
 - Docker stack (from repo root): `docker compose up -d --build` — services: `mysql`, `redis`, `app` (PHP-FPM), `nginx` (http://localhost:8080), `queue` (`php artisan queue:work`). Validate with `docker compose config`. Smoke: `curl -sf http://localhost:8080/api/v1/health`.
 - Backend tests (Herd PHP 8.4, from `backend/`): `composer install` then `php artisan test` (uses sqlite `:memory:` via `phpunit.xml`).
-- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/api/v1/health`, `/auth/*`, `/organizations/current`, `/stores`, `/warehouses`, `/users`, `/roles`, `/permissions`, `/settings`, `/audit-logs`.
+- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/health`, `/auth/*`, org/stores, RBAC, settings/audit, and catalog `/products`, `/categories`, `/brands`, `/units`, `/suppliers`.
 - Seed RBAC: `cd backend && php artisan db:seed` (permission matrix + role maps).
 - Auth smoke: `curl -sf -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"...","password":"..."}'`
 - Admin SPA: `cd frontend/admin && npm install && npm run dev` (http://localhost:5173; Vite proxies `/api` → `http://localhost:8080`). Build: `npm run build`.
 - Local without Docker: sqlite default in `.env.example` is fine for unit/feature tests.
-- POS SPA is not scaffolded yet — placeholder until Epic 4.
+- **Current story:** Epic 2 Story 2.1 — product catalog CRUD (API + admin Products page). Inventory ledger is Story 2.3 — do not mutate stock quantities yet.
 
 ## Conventions that differ from defaults
 

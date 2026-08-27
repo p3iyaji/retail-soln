@@ -55,6 +55,7 @@ final class PermissionMatrix
             'products.view' => ['SA', 'OA', 'SM', 'CA', 'IM', 'PO'],
             'products.manage' => ['SA', 'OA', 'IM'],
             'products.import' => ['SA', 'OA', 'IM'],
+            'catalog.view' => ['SA', 'OA', 'SM', 'CA', 'IM', 'PO'],
             'inventory.view' => ['SA', 'OA', 'SM', 'CA', 'IM', 'PO'],
             'inventory.adjust' => ['SA', 'OA', 'SM', 'IM'],
             'inventory.transfer' => ['SA', 'OA', 'SM', 'IM'],

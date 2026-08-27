@@ -10,6 +10,7 @@ const router = useRouter()
 const nav = [
   { name: 'organization', label: 'Organization', to: '/organization' },
   { name: 'stores', label: 'Stores', to: '/stores' },
+  { name: 'products', label: 'Products', to: '/products' },
   { name: 'users', label: 'Users', to: '/users' },
   { name: 'settings', label: 'Settings', to: '/settings' },
 ]

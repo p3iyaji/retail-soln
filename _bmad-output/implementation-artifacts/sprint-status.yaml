@@ -35,8 +35,8 @@ development_status:
   1-6-admin-portal-shell: done
   epic-1-retrospective: optional
 
-  epic-2: backlog
-  2-1-product-catalog-crud: backlog
+  epic-2: in-progress
+  2-1-product-catalog-crud: done
   2-2-product-variants-barcodes: backlog
   2-3-inventory-ledger-service: backlog
   2-4-stock-adjustments-counts: backlog

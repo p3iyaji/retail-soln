@@ -1,0 +1,24 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Modules\Products\Http\Controllers\Api\CatalogController;
+use Modules\Products\Http\Controllers\Api\ProductController;
+
+Route::prefix('v1')->group(function (): void {
+    Route::middleware('auth:sanctum')->group(function (): void {
+        Route::get('/categories', [CatalogController::class, 'categories']);
+        Route::post('/categories', [CatalogController::class, 'storeCategory']);
+        Route::get('/brands', [CatalogController::class, 'brands']);
+        Route::post('/brands', [CatalogController::class, 'storeBrand']);
+        Route::get('/units', [CatalogController::class, 'units']);
+        Route::post('/units', [CatalogController::class, 'storeUnit']);
+        Route::get('/suppliers', [CatalogController::class, 'suppliers']);
+        Route::post('/suppliers', [CatalogController::class, 'storeSupplier']);
+
+        Route::get('/products', [ProductController::class, 'index']);
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::get('/products/{product}', [ProductController::class, 'show']);
+        Route::patch('/products/{product}', [ProductController::class, 'update']);
+        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+    });
+});

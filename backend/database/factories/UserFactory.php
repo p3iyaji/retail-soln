@@ -55,6 +55,13 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function inventoryManager(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'inventory_manager',
+        ]);
+    }
+
     /**
      * Indicate that the model's email address should be unverified.
      */
