@@ -5,13 +5,16 @@ namespace Modules\Organization\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Organization\Models\Store;
-use Modules\Organization\Support\OrganizationAuthorization;
 
 class UpdateStoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return OrganizationAuthorization::canManage($this->user());
+        /** @var Store|null $store */
+        $store = $this->route('store');
+
+        return $store instanceof Store
+            && $this->user()?->can('update', $store) === true;
     }
 
     /**
