@@ -4,9 +4,11 @@ namespace Modules\Products\Providers;
 
 use Illuminate\Support\Facades\Gate;
 use Modules\Audit\Observers\AuditableObserver;
+use Modules\Products\Models\Barcode;
 use Modules\Products\Models\Brand;
 use Modules\Products\Models\Category;
 use Modules\Products\Models\Product;
+use Modules\Products\Models\ProductVariant;
 use Modules\Products\Models\Supplier;
 use Modules\Products\Models\Unit;
 use Modules\Products\Policies\ProductPolicy;
@@ -32,6 +34,8 @@ class ProductsServiceProvider extends ModuleServiceProvider
         Gate::policy(Product::class, ProductPolicy::class);
 
         Product::observe(AuditableObserver::class);
+        ProductVariant::observe(AuditableObserver::class);
+        Barcode::observe(AuditableObserver::class);
         Category::observe(AuditableObserver::class);
         Brand::observe(AuditableObserver::class);
         Unit::observe(AuditableObserver::class);

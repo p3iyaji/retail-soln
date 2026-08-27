@@ -4,6 +4,17 @@ import { api, ApiError } from '@/api/client'
 
 type Lookup = { id: number; name: string; abbreviation?: string }
 type ProductImage = { url: string; altText?: string; sortOrder?: number; isPrimary?: boolean }
+type ProductVariant = {
+  id: number
+  name: string
+  sku: string
+  barcode: string | null
+  price: string
+  costPrice: string | null
+  isDefault: boolean
+  isActive: boolean
+}
+
 type Product = {
   id: number
   name: string
@@ -25,9 +36,11 @@ type Product = {
   brand?: Lookup | null
   unit?: Lookup | null
   supplier?: Lookup | null
+  variants?: ProductVariant[]
 }
 
 const products = ref<Product[]>([])
+const variants = ref<ProductVariant[]>([])
 const categories = ref<Lookup[]>([])
 const brands = ref<Lookup[]>([])
 const units = ref<Lookup[]>([])
@@ -37,6 +50,9 @@ const saving = ref(false)
 const error = ref('')
 const editingId = ref<number | null>(null)
 const showForm = ref(false)
+const showVariantForm = ref(false)
+const editingVariantId = ref<number | null>(null)
+const variantSaving = ref(false)
 
 const form = reactive({
   name: '',
@@ -54,6 +70,15 @@ const form = reactive({
   maxStock: '',
   imageUrl: '',
   isActive: true,
+})
+
+const variantForm = reactive({
+  name: '',
+  sku: '',
+  barcode: '',
+  price: '0.0000',
+  costPrice: '',
+  isDefault: false,
 })
 
 const formTitle = computed(() => (editingId.value ? 'Edit product' : 'New product'))
@@ -105,6 +130,24 @@ function resetForm() {
   form.maxStock = ''
   form.imageUrl = ''
   form.isActive = true
+  variants.value = []
+  resetVariantForm()
+}
+
+function resetVariantForm() {
+  editingVariantId.value = null
+  showVariantForm.value = false
+  variantForm.name = ''
+  variantForm.sku = ''
+  variantForm.barcode = ''
+  variantForm.price = '0.0000'
+  variantForm.costPrice = ''
+  variantForm.isDefault = false
+}
+
+async function loadVariants(productId: number) {
+  const res = await api.get<{ data: ProductVariant[] }>(`/products/${productId}/variants`)
+  variants.value = res.data
 }
 
 function openCreate() {
@@ -130,6 +173,66 @@ function openEdit(product: Product) {
   form.imageUrl = product.images?.[0]?.url ?? ''
   form.isActive = product.isActive
   showForm.value = true
+  resetVariantForm()
+  void loadVariants(product.id).catch((e) => {
+    error.value = e instanceof ApiError ? e.message : 'Failed to load variants'
+  })
+}
+
+function openVariantCreate() {
+  resetVariantForm()
+  showVariantForm.value = true
+}
+
+function openVariantEdit(variant: ProductVariant) {
+  editingVariantId.value = variant.id
+  variantForm.name = variant.name
+  variantForm.sku = variant.sku
+  variantForm.barcode = variant.barcode ?? ''
+  variantForm.price = variant.price
+  variantForm.costPrice = variant.costPrice ?? ''
+  variantForm.isDefault = variant.isDefault
+  showVariantForm.value = true
+}
+
+async function onVariantSubmit() {
+  if (!editingId.value) return
+  variantSaving.value = true
+  error.value = ''
+  try {
+    const body = {
+      name: variantForm.name,
+      sku: variantForm.sku,
+      barcode: variantForm.barcode || null,
+      price: variantForm.price,
+      costPrice: variantForm.costPrice || null,
+      isDefault: variantForm.isDefault,
+    }
+    if (editingVariantId.value) {
+      await api.patch(`/products/${editingId.value}/variants/${editingVariantId.value}`, body)
+    } else {
+      await api.post(`/products/${editingId.value}/variants`, body)
+    }
+    resetVariantForm()
+    await loadVariants(editingId.value)
+    await loadProducts()
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'Variant save failed'
+  } finally {
+    variantSaving.value = false
+  }
+}
+
+async function onVariantDelete(variant: ProductVariant) {
+  if (!editingId.value || !confirm(`Delete variant ${variant.name}?`)) return
+  error.value = ''
+  try {
+    await api.delete(`/products/${editingId.value}/variants/${variant.id}`)
+    await loadVariants(editingId.value)
+    await loadProducts()
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'Variant delete failed'
+  }
 }
 
 function payload() {
@@ -336,6 +439,62 @@ onMounted(refresh)
           </button>
         </div>
       </form>
+
+      <div v-if="editingId" class="mt-6 border-t border-[var(--line)] pt-4">
+        <div class="flex items-center justify-between gap-3">
+          <h4 class="text-sm font-semibold">Variants</h4>
+          <button
+            type="button"
+            class="rounded-md border border-[var(--line)] px-2 py-1 text-xs"
+            @click="openVariantCreate"
+          >
+            Add variant
+          </button>
+        </div>
+
+        <form v-if="showVariantForm" class="mt-3 grid gap-2 sm:grid-cols-3" @submit.prevent="onVariantSubmit">
+          <input v-model="variantForm.name" required placeholder="Name" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
+          <input v-model="variantForm.sku" required placeholder="SKU" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm font-mono" />
+          <input v-model="variantForm.barcode" placeholder="Barcode" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm font-mono" />
+          <input v-model="variantForm.price" required placeholder="Price" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
+          <input v-model="variantForm.costPrice" placeholder="Cost" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
+          <label class="flex items-center gap-2 text-sm">
+            <input v-model="variantForm.isDefault" type="checkbox" />
+            Default variant
+          </label>
+          <div class="flex gap-2 sm:col-span-3">
+            <button type="submit" class="rounded-md bg-[var(--brand)] px-2 py-1 text-xs text-white disabled:opacity-60" :disabled="variantSaving">
+              {{ variantSaving ? 'Saving…' : editingVariantId ? 'Update variant' : 'Add variant' }}
+            </button>
+            <button type="button" class="rounded-md border border-[var(--line)] px-2 py-1 text-xs" @click="resetVariantForm">Cancel</button>
+          </div>
+        </form>
+
+        <table v-if="variants.length" class="mt-3 min-w-full text-left text-sm">
+          <thead class="text-[var(--muted)]">
+            <tr>
+              <th class="py-1 pr-3 font-medium">Name</th>
+              <th class="py-1 pr-3 font-medium">SKU</th>
+              <th class="py-1 pr-3 font-medium">Barcode</th>
+              <th class="py-1 pr-3 font-medium">Price</th>
+              <th class="py-1 font-medium" />
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="v in variants" :key="v.id" class="border-t border-[var(--line)]">
+              <td class="py-2 pr-3">{{ v.name }}{{ v.isDefault ? ' (default)' : '' }}</td>
+              <td class="py-2 pr-3 font-mono text-xs">{{ v.sku }}</td>
+              <td class="py-2 pr-3 font-mono text-xs">{{ v.barcode ?? '—' }}</td>
+              <td class="py-2 pr-3">{{ v.price }}</td>
+              <td class="py-2 text-right">
+                <button type="button" class="mr-2 text-[var(--brand)]" @click="openVariantEdit(v)">Edit</button>
+                <button type="button" class="text-red-700" @click="onVariantDelete(v)">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-else class="mt-2 text-sm text-[var(--muted)]">No variants yet — add sellable SKUs with their own barcode and price.</p>
+      </div>
     </div>
 
     <div v-if="!loading" class="overflow-x-auto rounded-lg border border-[var(--line)]">
@@ -346,19 +505,21 @@ onMounted(refresh)
             <th class="px-3 py-2 font-medium">SKU</th>
             <th class="px-3 py-2 font-medium">Category</th>
             <th class="px-3 py-2 font-medium">Price</th>
+            <th class="px-3 py-2 font-medium">Variants</th>
             <th class="px-3 py-2 font-medium">Reorder</th>
             <th class="px-3 py-2 font-medium" />
           </tr>
         </thead>
         <tbody>
           <tr v-if="products.length === 0">
-            <td colspan="6" class="px-3 py-6 text-[var(--muted)]">No products yet.</td>
+            <td colspan="7" class="px-3 py-6 text-[var(--muted)]">No products yet.</td>
           </tr>
           <tr v-for="p in products" :key="p.id" class="border-b border-[var(--line)] last:border-0">
             <td class="px-3 py-2">{{ p.name }}</td>
             <td class="px-3 py-2 font-mono text-xs">{{ p.sku }}</td>
             <td class="px-3 py-2">{{ p.category?.name ?? '—' }}</td>
             <td class="px-3 py-2">{{ p.basePrice }}</td>
+            <td class="px-3 py-2">{{ p.variants?.length ?? 0 }}</td>
             <td class="px-3 py-2">{{ p.reorderLevel ?? '—' }}</td>
             <td class="px-3 py-2 text-right">
               <button type="button" class="mr-2 text-[var(--brand)]" @click="openEdit(p)">Edit</button>

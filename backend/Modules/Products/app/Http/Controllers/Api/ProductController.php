@@ -19,7 +19,7 @@ class ProductController
 
         $organization = $organizations->current();
         $query = Product::query()
-            ->with(['category', 'brand', 'unit', 'supplier', 'images'])
+            ->with(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes'])
             ->where('organization_id', $organization->id)
             ->orderBy('name');
 
@@ -27,7 +27,11 @@ class ProductController
             $query->where(function ($q) use ($search): void {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%");
+                    ->orWhere('barcode', 'like', "%{$search}%")
+                    ->orWhereHas('variants', function ($vq) use ($search): void {
+                        $vq->where('sku', 'like', "%{$search}%")
+                            ->orWhereHas('barcodes', fn ($bq) => $bq->where('code', 'like', "%{$search}%"));
+                    });
             });
         }
 
@@ -65,7 +69,7 @@ class ProductController
                 $product->images()->create($image);
             }
 
-            return $product->load(['category', 'brand', 'unit', 'supplier', 'images']);
+            return $product->load(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes']);
         });
 
         return response()->json([
@@ -78,7 +82,7 @@ class ProductController
         $this->authorize($request, 'view', $product);
         $this->ensureCurrentOrg($product);
 
-        $product->load(['category', 'brand', 'unit', 'supplier', 'images']);
+        $product->load(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes']);
 
         return response()->json([
             'data' => new ProductResource($product),
@@ -101,7 +105,7 @@ class ProductController
                 }
             }
 
-            return $product->fresh()->load(['category', 'brand', 'unit', 'supplier', 'images']);
+            return $product->fresh()->load(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes']);
         });
 
         return response()->json([

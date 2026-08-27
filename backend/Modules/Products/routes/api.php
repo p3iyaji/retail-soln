@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Products\Http\Controllers\Api\CatalogController;
 use Modules\Products\Http\Controllers\Api\ProductController;
+use Modules\Products\Http\Controllers\Api\ProductVariantController;
 
 Route::prefix('v1')->group(function (): void {
     Route::middleware('auth:sanctum')->group(function (): void {
@@ -20,5 +21,11 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/products/{product}', [ProductController::class, 'show']);
         Route::patch('/products/{product}', [ProductController::class, 'update']);
         Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+
+        Route::get('/products/{product}/variants', [ProductVariantController::class, 'index']);
+        Route::post('/products/{product}/variants', [ProductVariantController::class, 'store']);
+        Route::get('/products/{product}/variants/{variant}', [ProductVariantController::class, 'show']);
+        Route::patch('/products/{product}/variants/{variant}', [ProductVariantController::class, 'update']);
+        Route::delete('/products/{product}/variants/{variant}', [ProductVariantController::class, 'destroy']);
     });
 });

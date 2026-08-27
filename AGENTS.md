@@ -3,7 +3,7 @@
 
 ## retail-soln
 
-Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epic 1 complete.** **In progress: Epic 2 Story 2.1** product catalog CRUD — see `_bmad-output/planning-artifacts/epics.md`.
+Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epic 2 in progress** — Stories 2.1–2.3 done (catalog, variants, inventory ledger); **next: Story 2.4** stock adjustments/counts — see `_bmad-output/planning-artifacts/epics.md`.
 
 ## Policy
 
@@ -23,7 +23,7 @@ Multi-store offline-first POS and retail management platform. Stack: Laravel 13 
 - Sprint tracking: `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - Session handover for Epic 1: `_bmad-output/handover-epic-1.md`
 - Layout: `backend/` (Laravel + `Modules/`), `frontend/admin/` (Vue SPA), `frontend/pos/` (placeholder until Epic 4), `docker/`, root `docker-compose.yml`
-- Modules: Authentication, Organization, Settings, Audit, Products
+- Modules: Authentication, Organization, Settings, Audit, Products, Inventory
 - Admin SPA: `frontend/admin/` (Vue 3 + Vite + TS + Tailwind); POS placeholder until Epic 4
 
 ## Running and verifying
@@ -31,12 +31,13 @@ Multi-store offline-first POS and retail management platform. Stack: Laravel 13 
 - First boot (host): `cd backend && composer install && cp -n .env.example .env && php artisan key:generate` (Compose does **not** require `backend/.env`; it injects MySQL/Redis via service `environment`).
 - Docker stack (from repo root): `docker compose up -d --build` — services: `mysql`, `redis`, `app` (PHP-FPM), `nginx` (http://localhost:8080), `queue` (`php artisan queue:work`). Validate with `docker compose config`. Smoke: `curl -sf http://localhost:8080/api/v1/health`.
 - Backend tests (Herd PHP 8.4, from `backend/`): `composer install` then `php artisan test` (uses sqlite `:memory:` via `phpunit.xml`).
-- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/health`, `/auth/*`, org/stores, RBAC, settings/audit, and catalog `/products`, `/categories`, `/brands`, `/units`, `/suppliers`.
-- Seed RBAC: `cd backend && php artisan db:seed` (permission matrix + role maps).
-- Auth smoke: `curl -sf -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"...","password":"..."}'`
-- Admin SPA: `cd frontend/admin && npm install && npm run dev` (http://localhost:5173; Vite proxies `/api` → `http://localhost:8080`). Build: `npm run build`.
+- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/health`, `/auth/*`, org/stores, RBAC, settings/audit, catalog `/products`…, and `/inventory/balances`, `/inventory/movements`.
+- Seed RBAC + dev users: `cd backend && php artisan db:seed` (permission matrix + role maps).
+- **Dev login** (after seed): `admin@retail.local` / `password` (org admin); `inventory@retail.local` / `password` (products). Start API: `cd backend && php artisan serve --port=8001` (avoid `:8000` if another Herd site uses it). Admin SPA: `cd frontend/admin && npm run dev` → http://localhost:5173 (`VITE_PROXY_TARGET` in `frontend/admin/.env`; use `:8080` for Docker nginx).
+- Auth smoke: `curl -sf -X POST http://localhost:8001/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@retail.local","password":"password"}'`
+- Admin SPA: `cd frontend/admin && npm install && npm run dev` (http://localhost:5173). Build: `npm run build`.
 - Local without Docker: sqlite default in `.env.example` is fine for unit/feature tests.
-- **Current story:** Epic 2 Story 2.1 — product catalog CRUD (API + admin Products page). Inventory ledger is Story 2.3 — do not mutate stock quantities yet.
+- **Current story:** Epic 2 Story 2.4 — stock adjustments and counts (via ledger). Never mutate `inventory_balances` quantities outside `InventoryLedgerService` (AD-2).
 
 ## Conventions that differ from defaults
 

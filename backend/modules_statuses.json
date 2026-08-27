@@ -3,5 +3,6 @@
     "Authentication": true,
     "Settings": true,
     "Audit": true,
-    "Products": true
+    "Products": true,
+    "Inventory": true
 }

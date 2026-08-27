@@ -48,6 +48,7 @@ class ProductResource extends JsonResource
             'maxStock' => $this->max_stock,
             'isActive' => $this->is_active,
             'images' => ProductImageResource::collection($this->whenLoaded('images')),
+            'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
         ];

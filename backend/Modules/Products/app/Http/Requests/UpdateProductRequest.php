@@ -4,8 +4,10 @@ namespace Modules\Products\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Modules\Organization\Services\OrganizationService;
 use Modules\Products\Models\Product;
+use Modules\Products\Support\CatalogCodeValidator;
 
 class UpdateProductRequest extends FormRequest
 {
@@ -25,22 +27,8 @@ class UpdateProductRequest extends FormRequest
 
         return [
             'name' => ['sometimes', 'string', 'max:255'],
-            'sku' => [
-                'sometimes',
-                'string',
-                'max:100',
-                Rule::unique('products', 'sku')
-                    ->where(fn ($q) => $q->where('organization_id', $organizationId))
-                    ->ignore($product->id),
-            ],
-            'barcode' => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::unique('products', 'barcode')
-                    ->where(fn ($q) => $q->where('organization_id', $organizationId))
-                    ->ignore($product->id),
-            ],
+            'sku' => ['sometimes', 'string', 'max:100'],
+            'barcode' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
             'categoryId' => [
                 'nullable',
@@ -82,6 +70,25 @@ class UpdateProductRequest extends FormRequest
             'images.*.sortOrder' => ['nullable', 'integer', 'min:0'],
             'images.*.isPrimary' => ['nullable', 'boolean'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        /** @var Product $product */
+        $product = $this->route('product');
+
+        $validator->after(function (Validator $v) use ($product): void {
+            if ($v->errors()->isNotEmpty()) {
+                return;
+            }
+
+            CatalogCodeValidator::validate($v, [
+                'organizationId' => app(OrganizationService::class)->current()->id,
+                'sku' => $this->has('sku') ? $this->input('sku') : null,
+                'barcode' => $this->has('barcode') ? $this->input('barcode') : null,
+                'ignoreProductId' => $product->id,
+            ]);
+        });
     }
 
     /**
