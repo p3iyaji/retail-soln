@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Products\Http\Controllers\Api\CatalogController;
+use Modules\Products\Http\Controllers\Api\ProductCatalogToolsController;
 use Modules\Products\Http\Controllers\Api\ProductController;
 use Modules\Products\Http\Controllers\Api\ProductVariantController;
 
@@ -15,6 +16,12 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/units', [CatalogController::class, 'storeUnit']);
         Route::get('/suppliers', [CatalogController::class, 'suppliers']);
         Route::post('/suppliers', [CatalogController::class, 'storeSupplier']);
+
+        Route::get('/products/search', [ProductCatalogToolsController::class, 'search']);
+        Route::get('/products/export', [ProductCatalogToolsController::class, 'export']);
+        Route::post('/products/import/preview', [ProductCatalogToolsController::class, 'previewImport']);
+        Route::post('/products/import', [ProductCatalogToolsController::class, 'import']);
+        Route::get('/products/imports/{import}', [ProductCatalogToolsController::class, 'showImport']);
 
         Route::get('/products', [ProductController::class, 'index']);
         Route::post('/products', [ProductController::class, 'store']);
