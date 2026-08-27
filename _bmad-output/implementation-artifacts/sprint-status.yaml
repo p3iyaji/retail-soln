@@ -49,7 +49,7 @@ development_status:
   3-1-supplier-management: done
   3-2-purchase-order-approval: done
   3-3-goods-receipt-partial: done
-  3-4-supplier-invoices-payments: review
+  3-4-supplier-invoices-payments: done
   3-5-purchase-returns: backlog
   epic-3-retrospective: optional
 
