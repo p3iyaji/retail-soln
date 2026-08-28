@@ -24,6 +24,7 @@ class SaleCompletionService
         private readonly InventoryLedgerService $ledger,
         private readonly CustomerService $customers,
         private readonly SaleLineCalculator $lineCalculator,
+        private readonly CashierSessionService $sessions,
     ) {}
 
     /**
@@ -34,6 +35,8 @@ class SaleCompletionService
      *   uuid: string,
      *   customerId?: ?int,
      *   idempotencyKey?: ?string,
+     *   sessionId: int,
+     *   terminalId?: ?int,
      *   items: list<array{variantId: int, qty: string, unitPrice: string, discount: string}>,
      *   payments: list<array{method: string, amount: string, provider: string, reference?: ?string}>,
      * }  $input
@@ -70,6 +73,13 @@ class SaleCompletionService
             throw new RuntimeException('Sale requires at least one payment.');
         }
 
+        $session = $this->sessions->assertOpenSessionForSale(
+            $input['organizationId'],
+            $input['storeId'],
+            $input['userId'],
+            $input['sessionId'],
+        );
+
         $store = Store::query()
             ->where('organization_id', $input['organizationId'])
             ->whereKey($input['storeId'])
@@ -92,7 +102,7 @@ class SaleCompletionService
         }
 
         try {
-            $result = DB::transaction(function () use ($input, $idempotencyKey, $store, $customer, $computed) {
+            $result = DB::transaction(function () use ($input, $idempotencyKey, $store, $customer, $computed, $session) {
                 if ($idempotencyKey !== null && $idempotencyKey !== '') {
                     $existing = Sale::query()
                         ->where('organization_id', $input['organizationId'])
@@ -136,6 +146,8 @@ class SaleCompletionService
                         'total' => $computed['total'],
                         'status' => SaleStatus::Completed,
                         'idempotency_key' => ($idempotencyKey !== null && $idempotencyKey !== '') ? $idempotencyKey : null,
+                        'terminal_id' => $input['terminalId'] ?? $session->terminal_id,
+                        'session_id' => $session->id,
                     ]);
                 } catch (QueryException $e) {
                     if ($this->isUniqueIdempotencyViolation($e) && $idempotencyKey !== null && $idempotencyKey !== '') {
@@ -229,6 +241,8 @@ class SaleCompletionService
                         'line_total' => $line['line_total'],
                     ]);
                 }
+
+                $this->sessions->recordSaleCashPayments($sale->fresh(['payments']), $input['userId']);
 
                 return [
                     'sale' => $this->loadSale($sale->fresh()),

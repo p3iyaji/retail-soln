@@ -10,6 +10,8 @@ export type SalePaymentInput = {
 export type CompleteSaleInput = {
   uuid: string
   customerId?: number | null
+  sessionId: number
+  terminalId?: number | null
   items: Array<{
     variantId: number
     qty: string

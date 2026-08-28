@@ -33,6 +33,20 @@ class StoreSaleRequest extends FormRequest
                 ),
             ],
             'installmentPlan' => ['prohibited'],
+            'sessionId' => [
+                'required',
+                'integer',
+                Rule::exists('cashier_sessions', 'id')->where(
+                    fn ($q) => $q->where('organization_id', $organizationId)
+                ),
+            ],
+            'terminalId' => [
+                'nullable',
+                'integer',
+                Rule::exists('terminals', 'id')->where(
+                    fn ($q) => $q->where('organization_id', $organizationId)
+                ),
+            ],
             'items' => ['required', 'array', 'min:1'],
             'items.*.variantId' => [
                 'required',
@@ -56,6 +70,8 @@ class StoreSaleRequest extends FormRequest
      * @return array{
      *   uuid: string,
      *   customerId: ?int,
+     *   sessionId: int,
+     *   terminalId: ?int,
      *   items: list<array{variantId: int, qty: string, unitPrice: string, discount: string}>,
      *   payments: list<array{method: string, amount: string, provider: string, reference?: ?string}>,
      * }
@@ -67,6 +83,8 @@ class StoreSaleRequest extends FormRequest
         return [
             'uuid' => $validated['uuid'],
             'customerId' => isset($validated['customerId']) ? (int) $validated['customerId'] : null,
+            'sessionId' => (int) $validated['sessionId'],
+            'terminalId' => isset($validated['terminalId']) ? (int) $validated['terminalId'] : null,
             'items' => collect($validated['items'])->map(fn (array $item) => [
                 'variantId' => (int) $item['variantId'],
                 'qty' => bcadd((string) $item['qty'], '0', 4),

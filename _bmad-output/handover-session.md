@@ -4,18 +4,18 @@
 
 | Item | Value |
 | --- | --- |
-| **Branch** | `main` (sync after commit) |
+| **Branch** | `feat/4-7-cashier-sessions` (uncommitted) |
 | **Epic** | **4 — POS (online)** in progress |
-| **Next story** | **4.7 — Cashier sessions and cash management** |
+| **Next story** | **4.8 — Returns and refunds (POS)** |
 | **Workflow** | **bmad-build**: plan → approve spec → implement → review → commit/PR |
 
 ## Epic 4 progress
 
 | Story | Status |
 | --- | --- |
-| 4.1–4.6 | `done` |
-| **4.7** | `backlog` — **next** |
-| 4.8–4.12 | `backlog` |
+| 4.1–4.7 | `done` |
+| **4.8** | `backlog` — **next** |
+| 4.9–4.12 | `backlog` |
 
 ## Dev quick reference
 
@@ -27,12 +27,15 @@ cd frontend && npm run dev:pos           # POS :5174
 
 **Logins:** `admin@retail.local` / `password`
 
-## Story 4.7 preview
+## Story 4.7 delivered
 
-- Cashier sessions: open/close, float, cash in/out, variance
-- `POST /pos/sessions/open`, close, link sales to `sessionId`
-- POS Pay gating when session open (deferred partially in 4.5)
+- `terminals`, `cashier_sessions`, `cash_movements` tables + session APIs
+- Sales require open `sessionId`; cash payments recorded as `sale_cash` movements
+- Void reverses cash via `refund_cash` movement
+- POS: Session panel (open/close, cash in/out), chrome status, Pay/F9 gated
+
+**Tests:** 215 passing (`CashierSessionApiTest` + updated sale tests)
 
 ## Next session
 
-Say: **“Continue Story 4.7 — plan and implement”**
+Say: **“Continue Story 4.8 — returns and refunds”**

@@ -45,7 +45,7 @@ export function usePosShortcuts() {
         break
       case 'F9':
         event.preventDefault()
-        pos.openStub('payment')
+        pos.openPaymentOrSession()
         break
       default:
         break

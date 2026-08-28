@@ -23,6 +23,7 @@ const canComplete = computed(
     pos.cartLines.length > 0 &&
     !busy.value &&
     pos.hasSelectedStore &&
+    pos.hasOpenSession &&
     Math.abs(remaining.value) < 0.0001 &&
     parseAmount(cashAmount.value) + parseAmount(cardAmount.value) > 0,
 )
@@ -80,6 +81,11 @@ function buildPayments(): Array<{ method: 'cash' | 'card'; amount: string; provi
 
 async function submit(): Promise<void> {
   if (!canComplete.value || busy.value) return
+  const session = pos.cashierSession
+  if (!session) {
+    error.value = 'Open a register session before taking payment'
+    return
+  }
 
   busy.value = true
   error.value = null
@@ -90,6 +96,8 @@ async function submit(): Promise<void> {
       {
         uuid: saleUuid,
         customerId: null,
+        sessionId: session.id,
+        terminalId: session.terminalId,
         items: pos.cartLines.map((line) => ({
           variantId: line.variantId,
           qty: line.qty,
@@ -105,6 +113,7 @@ async function submit(): Promise<void> {
     receipt.value = receiptRes.data
     const heldId = pos.activeHeldSaleId
     pos.clearCart()
+    await pos.refreshSession()
     if (heldId != null) {
       await pos.voidHeldAfterComplete(heldId)
     }
@@ -141,7 +150,7 @@ function close(): void {
       <p class="mt-4 text-xs text-[var(--muted)]">Receipt delivery queued.</p>
       <button
         type="button"
-        class="mt-6 min-h-11 w-full rounded-[var(--radius)] bg-[var(--accent)] px-4 font-medium text-white"
+        class="mt-6 min-h-11 w-full rounded-[var(--radius)] bg-[var(--primary)] px-4 font-medium text-[var(--primary-fg)]"
         @click="close"
       >
         Done
@@ -184,7 +193,7 @@ function close(): void {
 
       <button
         type="button"
-        class="mt-6 min-h-11 w-full rounded-[var(--radius)] bg-[var(--accent)] px-4 font-medium text-white disabled:opacity-50"
+        class="mt-6 min-h-11 w-full rounded-[var(--radius)] bg-[var(--primary)] px-4 font-medium text-[var(--primary-fg)] disabled:opacity-50"
         :disabled="!canComplete"
         @click="submit"
       >

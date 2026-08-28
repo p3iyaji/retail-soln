@@ -41,6 +41,7 @@ onMounted(async () => {
   await pos.loadCategories()
   await pos.runSearch('', { immediate: true, allowAutoAdd: false })
   await pos.loadHeldSales()
+  await pos.refreshSession()
 })
 
 onUnmounted(() => {
@@ -89,6 +90,17 @@ async function onVoid(): Promise<void> {
   if (await pos.voidCurrentTransaction()) {
     showToast('Transaction voided')
   }
+}
+
+function openSessionPanel(): void {
+  pos.openStub('session')
+}
+
+function tryOpenPayment(): void {
+  if (!pos.hasOpenSession) {
+    showToast('Open a register session before taking payment')
+  }
+  pos.openPaymentOrSession()
 }
 
 function openHeldList(): void {
@@ -179,7 +191,15 @@ function productVariants(product: SearchProduct): SearchVariant[] {
       </span>
 
       <span>{{ auth.displayName }}</span>
-      <span class="text-white/60">Session: —</span>
+      <button
+        type="button"
+        class="min-h-11 rounded px-1.5 hover:bg-white/10"
+        :class="pos.hasOpenSession ? 'text-green-300' : 'text-[var(--ember)]'"
+        :title="pos.hasOpenSession ? 'Session open — manage' : 'No session — open register'"
+        @click="openSessionPanel"
+      >
+        Session: {{ pos.hasOpenSession ? 'Open' : 'Closed' }}
+      </button>
 
       <span class="flex-1" />
 
@@ -489,7 +509,7 @@ function productVariants(product: SearchProduct): SearchVariant[] {
               class="font-display col-span-2 min-h-14 rounded-[var(--radius)] bg-[var(--primary)] text-lg font-semibold text-[var(--primary-fg)] hover:opacity-95 disabled:opacity-60"
               title="Complete payment (F9)"
               :disabled="pos.cartLines.length === 0"
-              @click="pos.openStub('payment')"
+              @click="tryOpenPayment"
             >
               Pay · F9
             </button>

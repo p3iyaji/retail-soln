@@ -14,7 +14,10 @@ use RuntimeException;
 
 class SaleVoidService
 {
-    public function __construct(private readonly InventoryLedgerService $ledger) {}
+    public function __construct(
+        private readonly InventoryLedgerService $ledger,
+        private readonly CashierSessionService $sessions,
+    ) {}
 
     public function void(Sale $sale, int $userId, ?string $reason = null): Sale
     {
@@ -32,6 +35,7 @@ class SaleVoidService
             if ($locked->status === SaleStatus::Completed) {
                 $this->reverseInventory($locked, $userId, $reason);
                 $locked->invoice?->update(['status' => 'voided']);
+                $this->sessions->recordVoidCashRefunds($locked, $userId);
             }
 
             $locked->update([

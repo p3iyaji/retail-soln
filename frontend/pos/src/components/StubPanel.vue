@@ -2,6 +2,7 @@
 import { computed, nextTick, watch } from 'vue'
 import PaymentPanel from '@/components/PaymentPanel.vue'
 import HeldPanel from '@/components/HeldPanel.vue'
+import SessionPanel from '@/components/SessionPanel.vue'
 import { usePosStore, type StubPanel } from '@/stores/pos'
 
 const pos = usePosStore()
@@ -11,6 +12,7 @@ const titles: Record<Exclude<StubPanel, null>, string> = {
   discount: 'Discount',
   payment: 'Payment',
   held: 'Held sales',
+  session: 'Register session',
 }
 
 const storyHints: Record<Exclude<StubPanel, null>, string> = {
@@ -18,6 +20,7 @@ const storyHints: Record<Exclude<StubPanel, null>, string> = {
   discount: 'Line discount engine deferred — use price override when permitted',
   payment: 'Tender cash/card to complete the sale',
   held: 'Tap a sale to resume it in the cart',
+  session: 'Open, manage cash, or close your register session',
 }
 
 const open = computed(() => pos.activeStub != null)
@@ -54,9 +57,9 @@ watch(
     >
       <div
         data-stub-panel
-        class="w-full max-w-md rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] shadow-lg"
+        class="flex max-h-[min(90vh,640px)] w-full max-w-md flex-col rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] shadow-lg"
       >
-        <div class="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+        <div class="flex flex-shrink-0 items-center justify-between border-b border-[var(--line)] px-4 py-3">
           <h2 class="font-display text-lg font-semibold">{{ title }}</h2>
           <button
             type="button"
@@ -67,11 +70,14 @@ watch(
             Esc
           </button>
         </div>
-        <PaymentPanel v-if="pos.activeStub === 'payment'" />
-        <HeldPanel v-else-if="pos.activeStub === 'held'" />
-        <div v-else class="px-4 py-6 text-[var(--muted)]">
-          <p>{{ hint }}</p>
-          <p class="mt-2 text-sm">Shell stub — no customer / discount completion yet.</p>
+        <div class="min-h-0 flex-1 overflow-y-auto">
+          <PaymentPanel v-if="pos.activeStub === 'payment'" />
+          <HeldPanel v-else-if="pos.activeStub === 'held'" />
+          <SessionPanel v-else-if="pos.activeStub === 'session'" />
+          <div v-else class="px-4 py-6 text-[var(--muted)]">
+            <p>{{ hint }}</p>
+            <p class="mt-2 text-sm">Shell stub — no customer / discount completion yet.</p>
+          </div>
         </div>
       </div>
     </div>

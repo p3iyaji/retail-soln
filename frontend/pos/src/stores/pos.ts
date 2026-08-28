@@ -16,9 +16,14 @@ import {
   type SearchVariant,
 } from '@/lib/cartPricing'
 import { holdSale, listHeldSales, voidSale, type SaleResource } from '@/api/posSales'
+import {
+  fetchCurrentSession,
+  openCashierSession,
+  type CashierSessionResource,
+} from '@/api/posSessions'
 import { useAuthStore } from '@/stores/auth'
 
-export type StubPanel = 'customer' | 'discount' | 'payment' | 'held' | null
+export type StubPanel = 'customer' | 'discount' | 'payment' | 'held' | 'session' | null
 
 function readTerminal(): string {
   return localStorage.getItem(TERMINAL_KEY) ?? 'POS-001'
@@ -40,6 +45,10 @@ export const usePosStore = defineStore('pos', () => {
   const heldSales = ref<SaleResource[]>([])
   const heldBusy = ref(false)
 
+  const cashierSession = ref<CashierSessionResource | null>(null)
+  const sessionBusy = ref(false)
+  const sessionError = ref<string | null>(null)
+
   const searchQuery = ref('')
   const categoryId = ref<number | null>(null)
   const categories = ref<Category[]>([])
@@ -59,6 +68,10 @@ export const usePosStore = defineStore('pos', () => {
   })
 
   const hasSelectedStore = computed(() => selectedStore.value != null)
+
+  const hasOpenSession = computed(
+    () => cashierSession.value != null && cashierSession.value.status === 'open',
+  )
 
   const cartTotals = computed(() => sumLineTotals(cartLines.value))
 
@@ -94,7 +107,61 @@ export const usePosStore = defineStore('pos', () => {
     if (changed) {
       clearCart()
       clearSearch()
+      clearSession()
       void loadCategories()
+    }
+  }
+
+  function clearSession(): void {
+    cashierSession.value = null
+    sessionError.value = null
+  }
+
+  async function refreshSession(): Promise<void> {
+    if (!hasSelectedStore.value) {
+      clearSession()
+      return
+    }
+
+    sessionBusy.value = true
+    sessionError.value = null
+    try {
+      const res = await fetchCurrentSession(terminalLabel.value)
+      cashierSession.value = res.data
+    } catch (err) {
+      sessionError.value = err instanceof ApiError ? err.message : 'Could not load session'
+      cashierSession.value = null
+    } finally {
+      sessionBusy.value = false
+    }
+  }
+
+  function openPaymentOrSession(): void {
+    if (!hasOpenSession.value) {
+      openStub('session')
+      return
+    }
+    openStub('payment')
+  }
+
+  async function openSession(openingFloat: string): Promise<void> {
+    if (!hasSelectedStore.value) {
+      throw new Error('Select a store first')
+    }
+
+    sessionBusy.value = true
+    sessionError.value = null
+    try {
+      const res = await openCashierSession({
+        terminalName: terminalLabel.value,
+        openingFloat: Number(openingFloat || 0).toFixed(4),
+      })
+      cashierSession.value = res.data
+    } catch (err) {
+      sessionError.value = err instanceof ApiError ? err.message : 'Could not open session'
+      throw err
+    } finally {
+      sessionBusy.value = false
     }
   }
 
@@ -103,6 +170,7 @@ export const usePosStore = defineStore('pos', () => {
     setStoredStoreId(null)
     clearCart()
     clearSearch()
+    clearSession()
   }
 
   function setTerminalLabel(label: string): void {
@@ -483,6 +551,10 @@ export const usePosStore = defineStore('pos', () => {
     selectedStoreId,
     terminalLabel,
     activeStub,
+    cashierSession,
+    sessionBusy,
+    sessionError,
+    hasOpenSession,
     selectedStore,
     hasSelectedStore,
     cartLines,
@@ -524,5 +596,9 @@ export const usePosStore = defineStore('pos', () => {
     voidCurrentTransaction,
     voidHeldAfterComplete,
     clearPriceOverride,
+    refreshSession,
+    openSession,
+    clearSession,
+    openPaymentOrSession,
   }
 })

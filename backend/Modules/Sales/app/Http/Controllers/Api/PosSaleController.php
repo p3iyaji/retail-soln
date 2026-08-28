@@ -36,6 +36,8 @@ class PosSaleController
                 'userId' => $request->user()->id,
                 'uuid' => $attrs['uuid'],
                 'customerId' => $attrs['customerId'],
+                'sessionId' => $attrs['sessionId'],
+                'terminalId' => $attrs['terminalId'],
                 'idempotencyKey' => $idempotencyKey,
                 'items' => $attrs['items'],
                 'payments' => $attrs['payments'],

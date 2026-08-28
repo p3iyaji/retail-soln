@@ -35,6 +35,10 @@ class SaleApiTest extends TestCase
 
     private InventoryLedgerService $ledger;
 
+    private ?int $sessionId = null;
+
+    private ?User $saleActor = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -84,14 +88,33 @@ class SaleApiTest extends TestCase
         ));
     }
 
+    private function openSession(?User $user = null): int
+    {
+        $actor = $user ?? User::factory()->cashier()->create();
+        if (! $actor->isOrgWide() && ! $actor->stores()->whereKey($this->store->id)->exists()) {
+            $actor->stores()->attach($this->store->id, ['is_default' => true]);
+        }
+        Sanctum::actingAs($actor);
+
+        $response = $this->postJson('/api/v1/pos/sessions/open', [
+            'terminalName' => 'POS-TEST',
+            'openingFloat' => '0.0000',
+        ], ['X-Store-Id' => (string) $this->store->id]);
+
+        $response->assertCreated();
+
+        return (int) $response->json('data.id');
+    }
+
     /**
      * @return array<string, mixed>
      */
-    private function salePayload(string $total = '10.7500', ?array $payments = null): array
+    private function salePayload(string $total = '10.7500', ?array $payments = null, ?int $sessionId = null): array
     {
         return [
             'uuid' => '550e8400-e29b-41d4-a716-446655440000',
             'customerId' => null,
+            'sessionId' => $sessionId ?? $this->sessionId,
             'items' => [
                 [
                     'variantId' => $this->variant->id,
@@ -108,11 +131,19 @@ class SaleApiTest extends TestCase
 
     private function postSale(array $payload, string $key = 'sale-happy-1', ?User $user = null): \Illuminate\Testing\TestResponse
     {
-        $actor = $user ?? User::factory()->cashier()->create();
-        if (! $actor->isOrgWide()) {
+        $actor = $user ?? $this->saleActor ?? User::factory()->cashier()->create();
+        $this->saleActor = $actor;
+        if (! $actor->isOrgWide() && ! $actor->stores()->whereKey($this->store->id)->exists()) {
             $actor->stores()->attach($this->store->id, ['is_default' => true]);
         }
         Sanctum::actingAs($actor);
+
+        if (! isset($payload['sessionId'])) {
+            if ($this->sessionId === null) {
+                $this->sessionId = $this->openSession($actor);
+            }
+            $payload['sessionId'] = $this->sessionId;
+        }
 
         return $this->postJson('/api/v1/pos/sales', $payload, [
             'Idempotency-Key' => $key,
@@ -211,10 +242,44 @@ class SaleApiTest extends TestCase
         $user = User::factory()->cashier()->create();
         $user->stores()->attach($this->store->id, ['is_default' => true]);
         Sanctum::actingAs($user);
+        $sessionId = $this->openSession($user);
 
-        $this->postJson('/api/v1/pos/sales', $this->salePayload(), [
+        $this->postJson('/api/v1/pos/sales', $this->salePayload(sessionId: $sessionId), [
             'X-Store-Id' => (string) $this->store->id,
         ])->assertStatus(422);
+    }
+
+    public function test_sale_without_open_session_rejected(): void
+    {
+        $user = User::factory()->cashier()->create();
+        $user->stores()->attach($this->store->id, ['is_default' => true]);
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/pos/sales', [
+            'uuid' => '990e8400-e29b-41d4-a716-446655440099',
+            'sessionId' => 99999,
+            'items' => $this->salePayload()['items'],
+            'payments' => [['method' => 'cash', 'amount' => '10.7500', 'provider' => 'manual']],
+        ], [
+            'Idempotency-Key' => 'sale-no-session',
+            'X-Store-Id' => (string) $this->store->id,
+        ])->assertStatus(422);
+    }
+
+    public function test_cash_sale_records_session_cash_movement(): void
+    {
+        Queue::fake();
+
+        $response = $this->postSale($this->salePayload());
+        $saleId = $response->json('data.id');
+
+        $this->assertDatabaseHas('cash_movements', [
+            'session_id' => $this->sessionId,
+            'type' => 'sale_cash',
+            'reference_type' => 'sale',
+            'reference_id' => $saleId,
+            'amount' => '10.7500',
+        ]);
     }
 
     public function test_cashier_without_permission_forbidden(): void
