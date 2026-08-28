@@ -25,6 +25,9 @@ class SaleResource extends JsonResource
             'taxTotal' => $this->tax_total,
             'total' => $this->total,
             'status' => $this->status?->value ?? $this->status,
+            'notes' => $this->notes,
+            'voidedAt' => $this->voided_at?->toIso8601String(),
+            'voidedBy' => $this->voided_by,
             'idempotencyKey' => $this->idempotency_key,
             'customer' => $this->whenLoaded('customer', fn () => $this->customer === null ? null : [
                 'id' => $this->customer->id,

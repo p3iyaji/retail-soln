@@ -40,6 +40,7 @@ onMounted(async () => {
   window.addEventListener('keydown', onGlobalKeydown, true)
   await pos.loadCategories()
   await pos.runSearch('', { immediate: true, allowAutoAdd: false })
+  await pos.loadHeldSales()
 })
 
 onUnmounted(() => {
@@ -76,6 +77,23 @@ function saveTerminal() {
 async function changeStore() {
   pos.clearStore()
   await router.push('/select-store')
+}
+
+async function onHold(): Promise<void> {
+  if (await pos.holdCurrentCart()) {
+    showToast('Sale held')
+  }
+}
+
+async function onVoid(): Promise<void> {
+  if (await pos.voidCurrentTransaction()) {
+    showToast('Transaction voided')
+  }
+}
+
+function openHeldList(): void {
+  void pos.loadHeldSales()
+  pos.openStub('held')
 }
 
 async function signOut() {
@@ -446,16 +464,25 @@ function productVariants(product: SearchProduct): SearchVariant[] {
             <button
               type="button"
               class="min-h-11 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-sm disabled:opacity-50"
-              disabled
+              :disabled="pos.cartLines.length === 0 || pos.cartBusy"
+              @click="onHold"
             >
               Hold
             </button>
             <button
               type="button"
               class="min-h-11 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-sm text-[var(--danger)] disabled:opacity-50"
-              disabled
+              :disabled="(pos.cartLines.length === 0 && pos.activeHeldSaleId == null) || pos.cartBusy"
+              @click="onVoid"
             >
               Void
+            </button>
+            <button
+              type="button"
+              class="col-span-2 min-h-9 text-xs text-[var(--primary)] underline disabled:opacity-50"
+              @click="openHeldList"
+            >
+              Held sales ({{ pos.heldSales.length }})
             </button>
             <button
               type="button"

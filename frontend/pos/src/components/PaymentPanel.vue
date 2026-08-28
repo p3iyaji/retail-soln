@@ -103,7 +103,11 @@ async function submit(): Promise<void> {
 
     const receiptRes = await fetchReceipt(res.data.id)
     receipt.value = receiptRes.data
+    const heldId = pos.activeHeldSaleId
     pos.clearCart()
+    if (heldId != null) {
+      await pos.voidHeldAfterComplete(heldId)
+    }
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Payment failed'
   } finally {

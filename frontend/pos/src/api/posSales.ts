@@ -30,6 +30,9 @@ export type SaleResource = {
   items: Array<{
     variantId: number
     qty: string
+    unitPrice?: string
+    discount?: string
+    taxAmount?: string
     lineTotal: string
     variant?: { name: string; sku: string } | null
   }>
@@ -49,6 +52,25 @@ export type ReceiptResource = {
   store?: { name: string } | null
   items: SaleResource['items']
   payments: SaleResource['payments']
+}
+
+export type HoldSaleInput = {
+  uuid: string
+  customerId?: number | null
+  notes?: string | null
+  items: CompleteSaleInput['items']
+}
+
+export async function holdSale(body: HoldSaleInput): Promise<{ data: SaleResource }> {
+  return api.post('/pos/sales/hold', body)
+}
+
+export async function listHeldSales(): Promise<{ data: SaleResource[] }> {
+  return api.get('/pos/sales/held')
+}
+
+export async function voidSale(saleId: number, reason?: string): Promise<{ data: SaleResource }> {
+  return api.post(`/pos/sales/${saleId}/void`, reason ? { reason } : {})
 }
 
 export async function completeSale(
