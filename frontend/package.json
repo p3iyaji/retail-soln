@@ -1,0 +1,13 @@
+{
+  "name": "retail-soln-frontend",
+  "private": true,
+  "description": "Convenience scripts for the Admin and POS Vue SPAs (see admin/ and pos/).",
+  "scripts": {
+    "dev": "npm --prefix admin run dev",
+    "dev:admin": "npm --prefix admin run dev",
+    "dev:pos": "npm --prefix pos run dev",
+    "build": "npm --prefix admin run build && npm --prefix pos run build",
+    "build:admin": "npm --prefix admin run build",
+    "build:pos": "npm --prefix pos run build"
+  }
+}
