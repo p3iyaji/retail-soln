@@ -6,9 +6,11 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Organization\Services\OrganizationService;
 use Modules\Sales\Enums\PaymentMethod;
+use Modules\Sales\Http\Concerns\ResolvesPosStore;
 
 class StoreSaleRequest extends FormRequest
 {
+    use ResolvesPosStore;
     public function authorize(): bool
     {
         return $this->user()?->hasPermission('sales.create') === true;
@@ -82,27 +84,6 @@ class StoreSaleRequest extends FormRequest
 
     public function storeId(): int
     {
-        $header = $this->header('X-Store-Id');
-        if ($header === null || $header === '' || ! ctype_digit((string) $header)) {
-            abort(422, 'X-Store-Id header is required.');
-        }
-
-        $storeId = (int) $header;
-        $user = $this->user();
-        if ($user === null || ! $user->canAccessStore($storeId)) {
-            abort(403, 'This action is unauthorized.');
-        }
-
-        $organizationId = app(OrganizationService::class)->current()->id;
-        $exists = \Modules\Organization\Models\Store::query()
-            ->where('organization_id', $organizationId)
-            ->whereKey($storeId)
-            ->exists();
-
-        if (! $exists) {
-            abort(422, 'Store not found.');
-        }
-
-        return $storeId;
+        return $this->resolvePosStoreId($this);
     }
 }

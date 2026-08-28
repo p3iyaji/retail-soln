@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, watch } from 'vue'
 import PaymentPanel from '@/components/PaymentPanel.vue'
+import HeldPanel from '@/components/HeldPanel.vue'
 import { usePosStore, type StubPanel } from '@/stores/pos'
 
 const pos = usePosStore()
@@ -9,12 +10,14 @@ const titles: Record<Exclude<StubPanel, null>, string> = {
   customer: 'Customer lookup',
   discount: 'Discount',
   payment: 'Payment',
+  held: 'Held sales',
 }
 
 const storyHints: Record<Exclude<StubPanel, null>, string> = {
   customer: 'Coming in a later story',
   discount: 'Line discount engine deferred — use price override when permitted',
   payment: 'Tender cash/card to complete the sale',
+  held: 'Tap a sale to resume it in the cart',
 }
 
 const open = computed(() => pos.activeStub != null)
@@ -65,6 +68,7 @@ watch(
           </button>
         </div>
         <PaymentPanel v-if="pos.activeStub === 'payment'" />
+        <HeldPanel v-else-if="pos.activeStub === 'held'" />
         <div v-else class="px-4 py-6 text-[var(--muted)]">
           <p>{{ hint }}</p>
           <p class="mt-2 text-sm">Shell stub — no customer / discount completion yet.</p>

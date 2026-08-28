@@ -27,6 +27,9 @@ class Sale extends Model
         'idempotency_key',
         'terminal_id',
         'session_id',
+        'notes',
+        'voided_at',
+        'voided_by',
     ];
 
     protected function casts(): array
@@ -37,7 +40,13 @@ class Sale extends Model
             'tax_total' => 'decimal:4',
             'total' => 'decimal:4',
             'status' => SaleStatus::class,
+            'voided_at' => 'datetime',
         ];
+    }
+
+    public function voidedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'voided_by');
     }
 
     public function items(): HasMany

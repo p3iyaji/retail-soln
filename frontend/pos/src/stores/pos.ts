@@ -15,9 +15,10 @@ import {
   type SearchProduct,
   type SearchVariant,
 } from '@/lib/cartPricing'
+import { holdSale, listHeldSales, voidSale, type SaleResource } from '@/api/posSales'
 import { useAuthStore } from '@/stores/auth'
 
-export type StubPanel = 'customer' | 'discount' | 'payment' | null
+export type StubPanel = 'customer' | 'discount' | 'payment' | 'held' | null
 
 function readTerminal(): string {
   return localStorage.getItem(TERMINAL_KEY) ?? 'POS-001'
@@ -35,6 +36,9 @@ export const usePosStore = defineStore('pos', () => {
   const cartLines = ref<CartLine[]>([])
   const cartBusy = ref(false)
   const cartError = ref<string | null>(null)
+  const activeHeldSaleId = ref<number | null>(null)
+  const heldSales = ref<SaleResource[]>([])
+  const heldBusy = ref(false)
 
   const searchQuery = ref('')
   const categoryId = ref<number | null>(null)
@@ -131,6 +135,7 @@ export const usePosStore = defineStore('pos', () => {
   function clearCart(): void {
     cartLines.value = []
     cartError.value = null
+    activeHeldSaleId.value = null
   }
 
   function clearSearch(): void {
@@ -360,6 +365,104 @@ export const usePosStore = defineStore('pos', () => {
     }
   }
 
+  async function loadHeldSales(): Promise<void> {
+    heldBusy.value = true
+    try {
+      const res = await listHeldSales()
+      heldSales.value = res.data
+    } catch (err) {
+      cartError.value = err instanceof ApiError ? err.message : 'Could not load held sales'
+    } finally {
+      heldBusy.value = false
+    }
+  }
+
+  async function holdCurrentCart(): Promise<boolean> {
+    if (cartBusy.value || cartLines.value.length === 0) return false
+
+    cartBusy.value = true
+    cartError.value = null
+    try {
+      await holdSale({
+        uuid: crypto.randomUUID(),
+        customerId: null,
+        items: cartLines.value.map((line) => ({
+          variantId: line.variantId,
+          qty: line.qty,
+          unitPrice: line.unitPrice,
+          discount: line.discountAmount,
+        })),
+      })
+      clearCart()
+      await loadHeldSales()
+      return true
+    } catch (err) {
+      cartError.value = err instanceof ApiError ? err.message : 'Could not hold sale'
+      return false
+    } finally {
+      cartBusy.value = false
+    }
+  }
+
+  function resumeHeldSale(sale: SaleResource): void {
+    activeHeldSaleId.value = sale.id
+    cartLines.value = sale.items.map((item) => ({
+      lineKey: newLineKey(),
+      variantId: item.variantId,
+      label: item.variant?.name ?? `Item ${item.variantId}`,
+      sku: item.variant?.sku ?? '',
+      barcode: null,
+      qty: item.qty,
+      unitPrice: item.unitPrice ?? '0.0000',
+      listPrice: item.unitPrice ?? '0.0000',
+      discountAmount: item.discount ?? '0.0000',
+      taxAmount: item.taxAmount ?? '0.0000',
+      taxName: 'Tax',
+      taxRate: '0.0000',
+      taxInclusive: false,
+      lineTotal: item.lineTotal,
+      priceOverride: null,
+    }))
+    cartError.value = null
+    closeStub()
+  }
+
+  async function voidCurrentTransaction(): Promise<boolean> {
+    if (cartBusy.value) return false
+
+    if (activeHeldSaleId.value != null) {
+      cartBusy.value = true
+      cartError.value = null
+      try {
+        await voidSale(activeHeldSaleId.value)
+        clearCart()
+        await loadHeldSales()
+        return true
+      } catch (err) {
+        cartError.value = err instanceof ApiError ? err.message : 'Could not void held sale'
+        return false
+      } finally {
+        cartBusy.value = false
+      }
+    }
+
+    if (cartLines.value.length > 0) {
+      clearCart()
+      return true
+    }
+
+    return false
+  }
+
+  async function voidHeldAfterComplete(heldId: number): Promise<void> {
+    try {
+      await voidSale(heldId)
+      await loadHeldSales()
+    } catch {
+      // Non-blocking cleanup after successful payment.
+    }
+  }
+
   async function clearPriceOverride(lineKey: string): Promise<void> {
     if (!allowPriceOverride.value) {
       cartError.value = 'Price override not permitted'
@@ -412,6 +515,14 @@ export const usePosStore = defineStore('pos', () => {
     bumpQty,
     removeLine,
     setPriceOverride,
+    activeHeldSaleId,
+    heldSales,
+    heldBusy,
+    loadHeldSales,
+    holdCurrentCart,
+    resumeHeldSale,
+    voidCurrentTransaction,
+    voidHeldAfterComplete,
     clearPriceOverride,
   }
 })
