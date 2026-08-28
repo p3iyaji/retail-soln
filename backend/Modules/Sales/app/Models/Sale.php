@@ -88,4 +88,9 @@ class Sale extends Model
     {
         return $this->belongsTo(Terminal::class);
     }
+
+    public function saleReturns(): HasMany
+    {
+        return $this->hasMany(SaleReturn::class);
+    }
 }

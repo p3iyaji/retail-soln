@@ -23,7 +23,7 @@ import {
 } from '@/api/posSessions'
 import { useAuthStore } from '@/stores/auth'
 
-export type StubPanel = 'customer' | 'discount' | 'payment' | 'held' | 'session' | null
+export type StubPanel = 'customer' | 'discount' | 'payment' | 'held' | 'session' | 'return' | null
 
 function readTerminal(): string {
   return localStorage.getItem(TERMINAL_KEY) ?? 'POS-001'
@@ -79,6 +79,10 @@ export const usePosStore = defineStore('pos', () => {
 
   const allowPriceOverride = computed(() =>
     canPriceOverride(useAuthStore().user?.permissions),
+  )
+
+  const canProcessRefund = computed(() =>
+    Boolean(useAuthStore().user?.permissions?.includes('sales.refund')),
   )
 
   function invalidateSearchInFlight(): void {
@@ -563,6 +567,7 @@ export const usePosStore = defineStore('pos', () => {
     cartTotals,
     lineCount,
     allowPriceOverride,
+    canProcessRefund,
     searchQuery,
     categoryId,
     categories,

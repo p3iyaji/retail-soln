@@ -201,6 +201,15 @@ function productVariants(product: SearchProduct): SearchVariant[] {
         Session: {{ pos.hasOpenSession ? 'Open' : 'Closed' }}
       </button>
 
+      <button
+        v-if="pos.canProcessRefund"
+        type="button"
+        class="min-h-11 rounded border border-white/20 px-3 hover:bg-white/10"
+        @click="pos.openStub('return')"
+      >
+        Return
+      </button>
+
       <span class="flex-1" />
 
       <span

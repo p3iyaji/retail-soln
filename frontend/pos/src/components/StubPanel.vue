@@ -2,6 +2,7 @@
 import { computed, nextTick, watch } from 'vue'
 import PaymentPanel from '@/components/PaymentPanel.vue'
 import HeldPanel from '@/components/HeldPanel.vue'
+import ReturnPanel from '@/components/ReturnPanel.vue'
 import SessionPanel from '@/components/SessionPanel.vue'
 import { usePosStore, type StubPanel } from '@/stores/pos'
 
@@ -13,6 +14,7 @@ const titles: Record<Exclude<StubPanel, null>, string> = {
   payment: 'Payment',
   held: 'Held sales',
   session: 'Register session',
+  return: 'Return & refund',
 }
 
 const storyHints: Record<Exclude<StubPanel, null>, string> = {
@@ -21,6 +23,7 @@ const storyHints: Record<Exclude<StubPanel, null>, string> = {
   payment: 'Tender cash/card to complete the sale',
   held: 'Tap a sale to resume it in the cart',
   session: 'Open, manage cash, or close your register session',
+  return: 'Look up a completed sale and issue a partial or full refund',
 }
 
 const open = computed(() => pos.activeStub != null)
@@ -74,6 +77,7 @@ watch(
           <PaymentPanel v-if="pos.activeStub === 'payment'" />
           <HeldPanel v-else-if="pos.activeStub === 'held'" />
           <SessionPanel v-else-if="pos.activeStub === 'session'" />
+        <ReturnPanel v-else-if="pos.activeStub === 'return'" />
           <div v-else class="px-4 py-6 text-[var(--muted)]">
             <p>{{ hint }}</p>
             <p class="mt-2 text-sm">Shell stub — no customer / discount completion yet.</p>

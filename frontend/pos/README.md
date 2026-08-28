@@ -28,3 +28,4 @@ npm run build
 - Shortcuts (floor): F2 search · F4 customer · F8 discount · F9 pay · Esc close stub
 - Terminal label: `localStorage` key `retail_soln_pos_terminal` (chrome editable)
 - Session: open/close via chrome **Session** control (`/pos/sessions`); Pay (F9) requires an open session
+- Returns: chrome **Return** button (requires `sales.refund` — store manager+); lookup sale ID from receipt

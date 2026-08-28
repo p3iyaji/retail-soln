@@ -9,6 +9,7 @@ use Modules\Sales\Enums\PaymentMethod;
 use Modules\Sales\Models\CashierSession;
 use Modules\Sales\Models\CashMovement;
 use Modules\Sales\Models\Sale;
+use Modules\Sales\Models\SaleReturn;
 use Modules\Sales\Models\Terminal;
 use RuntimeException;
 
@@ -193,6 +194,48 @@ class CashierSessionService
                 'reference_id' => $sale->id,
                 'user_id' => $userId,
                 'notes' => 'Void sale #'.$sale->id,
+            ]);
+        }
+    }
+
+    public function recordReturnCashRefunds(SaleReturn $saleReturn, int $userId): void
+    {
+        if ($saleReturn->session_id === null) {
+            return;
+        }
+
+        $session = CashierSession::query()->whereKey($saleReturn->session_id)->first();
+        if ($session === null) {
+            return;
+        }
+
+        $saleReturn->loadMissing('refunds');
+
+        foreach ($saleReturn->refunds as $refund) {
+            if ($refund->method !== PaymentMethod::Cash->value) {
+                continue;
+            }
+
+            $exists = CashMovement::query()
+                ->where('session_id', $session->id)
+                ->where('type', CashMovementType::RefundCash)
+                ->where('reference_type', 'sale_return')
+                ->where('reference_id', $saleReturn->id)
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            CashMovement::query()->create([
+                'organization_id' => $session->organization_id,
+                'session_id' => $session->id,
+                'type' => CashMovementType::RefundCash,
+                'amount' => bcadd((string) $refund->amount, '0', 4),
+                'reference_type' => 'sale_return',
+                'reference_id' => $saleReturn->id,
+                'user_id' => $userId,
+                'notes' => 'Return for sale #'.$saleReturn->sale_id,
             ]);
         }
     }
