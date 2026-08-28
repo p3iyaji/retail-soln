@@ -460,7 +460,7 @@ function productVariants(product: SearchProduct): SearchVariant[] {
             <button
               type="button"
               class="font-display col-span-2 min-h-14 rounded-[var(--radius)] bg-[var(--primary)] text-lg font-semibold text-[var(--primary-fg)] hover:opacity-95 disabled:opacity-60"
-              title="Payment stub (real pay gating in later stories)"
+              title="Complete payment (F9)"
               :disabled="pos.cartLines.length === 0"
               @click="pos.openStub('payment')"
             >
