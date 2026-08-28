@@ -2,7 +2,7 @@
 title: 'Story 4.5: Sale completion with atomic transaction'
 type: 'feature'
 created: '2026-08-27'
-status: 'in-review'
+status: 'done'
 baseline_commit: 'c934a59afb12d29c8a7f2b9e6f0e4a565a32f34a'
 review_loop_iteration: 0
 context:
@@ -86,7 +86,7 @@ context:
 
 ## Spec Change Log
 
-- 2026-08-28: Approved and implemented on `feat/4-5-sale-atomic-transaction` — Sales module, POST /pos/sales, POS payment panel.
+- 2026-08-28: Merged PR #21 (`b2bd7c2`) — story done.
 ## Design Notes
 
 **Totals:** Server recomputes line `lineTotal`/`tax` from posted `qty`/`unitPrice`/`discount` + store `tax_config` (bcmath). Do not trust client `lineTotal` alone.
