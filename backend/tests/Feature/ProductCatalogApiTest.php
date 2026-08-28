@@ -91,6 +91,18 @@ class ProductCatalogApiTest extends TestCase
 
         $productId = $create->json('data.id');
 
+        $create->assertJsonPath('data.variants.0.name', 'Default')
+            ->assertJsonPath('data.variants.0.sku', 'COLA-500')
+            ->assertJsonPath('data.variants.0.barcode', '1234567890123')
+            ->assertJsonPath('data.variants.0.price', '2.5000')
+            ->assertJsonPath('data.variants.0.isDefault', true);
+
+        $this->assertDatabaseHas('product_variants', [
+            'product_id' => $productId,
+            'sku' => 'COLA-500',
+            'is_default' => true,
+        ]);
+
         $this->getJson('/api/v1/products')
             ->assertOk()
             ->assertJsonPath('meta.total', 1);

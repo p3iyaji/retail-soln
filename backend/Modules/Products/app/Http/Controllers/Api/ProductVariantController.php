@@ -106,11 +106,33 @@ class ProductVariantController
         $this->authorize($request, 'update', $product);
         $this->ensureVariantBelongsToProduct($product, $variant);
 
+        if ($product->variants()->count() <= 1) {
+            return response()->json([
+                'message' => 'Cannot delete the only variant for a product.',
+            ], 422);
+        }
+
+        if ($this->variantIsReferenced($variant)) {
+            return response()->json([
+                'message' => 'Variant has stock or sales history and cannot be deleted.',
+            ], 422);
+        }
+
         $variant->delete();
 
         return response()->json([
             'message' => 'Product variant deleted.',
         ]);
+    }
+
+    private function variantIsReferenced(ProductVariant $variant): bool
+    {
+        return DB::table('sale_items')->where('product_variant_id', $variant->id)->exists()
+            || DB::table('inventory_movements')->where('product_variant_id', $variant->id)->exists()
+            || DB::table('prices')->where('product_variant_id', $variant->id)->exists()
+            || DB::table('purchase_order_items')->where('product_variant_id', $variant->id)->exists()
+            || DB::table('goods_receipt_items')->where('product_variant_id', $variant->id)->exists()
+            || DB::table('purchase_return_items')->where('product_variant_id', $variant->id)->exists();
     }
 
     private function ensureCurrentOrg(Product $product): void

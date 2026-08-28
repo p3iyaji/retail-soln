@@ -321,7 +321,7 @@ class ProductCsvService
             $unitId = $this->resolveUnitId($organizationId, $row['unit'] ?? null);
             $supplierId = $this->resolveSupplierId($organizationId, $row['supplier'] ?? null);
 
-            Product::query()->updateOrCreate(
+            $product = Product::query()->updateOrCreate(
                 [
                     'organization_id' => $organizationId,
                     'sku' => $row['sku'],
@@ -342,6 +342,8 @@ class ProductCsvService
                     'is_active' => true,
                 ],
             );
+
+            app(ProductVariantProvisioner::class)->ensureDefaultVariant($product);
         });
     }
 

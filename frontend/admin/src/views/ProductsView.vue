@@ -79,6 +79,7 @@ const variantForm = reactive({
   price: '0.0000',
   costPrice: '',
   isDefault: false,
+  isActive: true,
 })
 
 const formTitle = computed(() => (editingId.value ? 'Edit product' : 'New product'))
@@ -207,6 +208,7 @@ function resetVariantForm() {
   variantForm.price = '0.0000'
   variantForm.costPrice = ''
   variantForm.isDefault = false
+  variantForm.isActive = true
 }
 
 async function loadVariants(productId: number) {
@@ -245,6 +247,12 @@ function openEdit(product: Product) {
 
 function openVariantCreate() {
   resetVariantForm()
+  variantForm.name = 'Default'
+  variantForm.sku = form.sku
+  variantForm.barcode = form.barcode
+  variantForm.price = form.basePrice || '0.0000'
+  variantForm.costPrice = form.costPrice
+  variantForm.isDefault = variants.value.length === 0
   showVariantForm.value = true
 }
 
@@ -256,6 +264,7 @@ function openVariantEdit(variant: ProductVariant) {
   variantForm.price = variant.price
   variantForm.costPrice = variant.costPrice ?? ''
   variantForm.isDefault = variant.isDefault
+  variantForm.isActive = variant.isActive
   showVariantForm.value = true
 }
 
@@ -271,6 +280,7 @@ async function onVariantSubmit() {
       price: variantForm.price,
       costPrice: variantForm.costPrice || null,
       isDefault: variantForm.isDefault,
+      isActive: variantForm.isActive,
     }
     if (editingVariantId.value) {
       await api.patch(`/products/${editingId.value}/variants/${editingVariantId.value}`, body)
@@ -565,6 +575,10 @@ onMounted(refresh)
             <input v-model="variantForm.isDefault" type="checkbox" />
             Default variant
           </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input v-model="variantForm.isActive" type="checkbox" />
+            Active
+          </label>
           <div class="flex gap-2 sm:col-span-3">
             <button type="submit" class="rounded-md bg-[var(--brand)] px-2 py-1 text-xs text-white disabled:opacity-60" :disabled="variantSaving">
               {{ variantSaving ? 'Saving…' : editingVariantId ? 'Update variant' : 'Add variant' }}
@@ -580,6 +594,7 @@ onMounted(refresh)
               <th class="py-1 pr-3 font-medium">SKU</th>
               <th class="py-1 pr-3 font-medium">Barcode</th>
               <th class="py-1 pr-3 font-medium">Price</th>
+              <th class="py-1 pr-3 font-medium">Status</th>
               <th class="py-1 font-medium" />
             </tr>
           </thead>
@@ -589,6 +604,7 @@ onMounted(refresh)
               <td class="py-2 pr-3 font-mono text-xs">{{ v.sku }}</td>
               <td class="py-2 pr-3 font-mono text-xs">{{ v.barcode ?? '—' }}</td>
               <td class="py-2 pr-3">{{ v.price }}</td>
+              <td class="py-2 pr-3">{{ v.isActive ? 'Active' : 'Inactive' }}</td>
               <td class="py-2 text-right">
                 <button type="button" class="mr-2 text-[var(--brand)]" @click="openVariantEdit(v)">Edit</button>
                 <button type="button" class="text-red-700" @click="onVariantDelete(v)">Delete</button>
@@ -596,7 +612,7 @@ onMounted(refresh)
             </tr>
           </tbody>
         </table>
-        <p v-else class="mt-2 text-sm text-[var(--muted)]">No variants yet — add sellable SKUs with their own barcode and price.</p>
+        <p v-else class="mt-2 text-sm text-[var(--muted)]">No extra variants — a default sellable SKU is created automatically when you save the product.</p>
       </div>
     </div>
 
