@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Modules\Authentication\Http\Requests\UpdateUserRequest;
 use Modules\Authentication\Http\Resources\UserResource;
 use Modules\Authentication\Models\Role;
 use Modules\Organization\Models\Store;
@@ -66,6 +67,29 @@ class UserController
 
         return response()->json([
             'data' => new UserResource($user->load('stores')),
+        ]);
+    }
+
+    public function update(UpdateUserRequest $request, User $user): JsonResponse
+    {
+        $validated = $request->validated();
+
+        if (array_key_exists('name', $validated)) {
+            $user->name = $validated['name'];
+        }
+
+        if (array_key_exists('email', $validated)) {
+            $user->email = $validated['email'];
+        }
+
+        if (! empty($validated['password'] ?? null)) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        return response()->json([
+            'data' => new UserResource($user->fresh()->load('stores')),
         ]);
     }
 

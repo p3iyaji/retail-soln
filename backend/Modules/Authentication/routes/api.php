@@ -38,6 +38,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::get('/users/{user}', [UserController::class, 'show']);
+        Route::patch('/users/{user}', [UserController::class, 'update']);
+        Route::put('/users/{user}', [UserController::class, 'update']);
         Route::patch('/users/{user}/roles', [UserController::class, 'assignRole']);
         Route::patch('/users/{user}/stores', [UserController::class, 'assignStores']);
 

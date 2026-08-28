@@ -37,7 +37,7 @@ const canView = computed(() => auth.user?.permissions?.includes('users.view') ==
 const canManage = computed(() => auth.user?.permissions?.includes('users.manage') === true)
 const canAssignRoles = computed(() => auth.user?.permissions?.includes('users.assign-roles') === true)
 const canAssignStores = computed(() => auth.user?.permissions?.includes('users.assign-stores') === true)
-const canEdit = computed(() => canAssignRoles.value || canAssignStores.value)
+const canEdit = computed(() => canManage.value || canAssignRoles.value || canAssignStores.value)
 
 const users = ref<UserRow[]>([])
 const roles = ref<RoleOption[]>([])
@@ -60,6 +60,9 @@ const createForm = reactive({
 })
 
 const editForm = reactive({
+  name: '',
+  email: '',
+  password: '',
   role: '',
   storeIds: [] as number[],
   defaultStoreId: null as number | null,
@@ -88,6 +91,9 @@ function resetCreateForm() {
 
 function resetEditForm() {
   editingId.value = null
+  editForm.name = ''
+  editForm.email = ''
+  editForm.password = ''
   editForm.role = ''
   editForm.storeIds = []
   editForm.defaultStoreId = null
@@ -111,12 +117,18 @@ async function openEdit(user: UserRow) {
   try {
     const res = await api.get<{ data: UserRow }>(`/users/${user.id}`)
     const detail = res.data
+    editForm.name = detail.name
+    editForm.email = detail.email
+    editForm.password = ''
     editForm.role = detail.role
     editForm.storeIds = detail.storeAccess.map((s) => s.id)
     editForm.defaultStoreId =
       detail.storeAccess.find((s) => s.isDefault)?.id ?? detail.storeAccess[0]?.id ?? null
   } catch (e) {
     error.value = formatError(e, 'Failed to load user')
+    editForm.name = user.name
+    editForm.email = user.email
+    editForm.password = ''
     editForm.role = user.role
     editForm.storeIds = user.storeAccess.map((s) => s.id)
     editForm.defaultStoreId =
@@ -224,6 +236,18 @@ async function onSaveEdit() {
   message.value = ''
   try {
     let updated: UserRow | null = null
+
+    if (canManage.value) {
+      const body: Record<string, string> = {
+        name: editForm.name.trim(),
+        email: editForm.email.trim(),
+      }
+      if (editForm.password.trim() !== '') {
+        body.password = editForm.password
+      }
+      const res = await api.patch<{ data: UserRow }>(`/users/${editingId.value}`, body)
+      updated = res.data
+    }
 
     if (canAssignRoles.value) {
       const res = await api.patch<{ data: UserRow }>(`/users/${editingId.value}/roles`, {
@@ -382,6 +406,39 @@ onMounted(refresh)
         </button>
       </div>
       <form class="space-y-4" @submit.prevent="onSaveEdit">
+        <div v-if="canManage" class="grid gap-3 md:grid-cols-2">
+          <label class="block text-sm">
+            <span class="text-[var(--muted)]">Name</span>
+            <input
+              v-model="editForm.name"
+              required
+              maxlength="255"
+              class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2"
+            />
+          </label>
+          <label class="block text-sm">
+            <span class="text-[var(--muted)]">Email</span>
+            <input
+              v-model="editForm.email"
+              type="email"
+              required
+              maxlength="255"
+              class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2"
+            />
+          </label>
+          <label class="block text-sm md:col-span-2">
+            <span class="text-[var(--muted)]">New password</span>
+            <input
+              v-model="editForm.password"
+              type="password"
+              minlength="8"
+              autocomplete="new-password"
+              placeholder="Leave blank to keep current password"
+              class="mt-1 w-full max-w-md rounded-md border border-[var(--line)] px-3 py-2"
+            />
+          </label>
+        </div>
+
         <label v-if="canAssignRoles" class="block max-w-md text-sm">
           <span class="text-[var(--muted)]">Role</span>
           <select
@@ -428,7 +485,7 @@ onMounted(refresh)
         <button
           type="submit"
           class="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm text-white hover:opacity-90 disabled:opacity-60"
-          :disabled="saving || (canAssignStores && editForm.storeIds.length === 0)"
+          :disabled="saving"
         >
           {{ saving ? 'Saving…' : 'Save changes' }}
         </button>
