@@ -2,7 +2,7 @@
 title: 'Story 4.6: Hold, suspend, and void sales'
 type: 'feature'
 created: '2026-08-28'
-status: 'in-review'
+status: 'done'
 baseline_commit: 'e631849'
 ---
 

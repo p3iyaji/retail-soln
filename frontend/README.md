@@ -39,3 +39,19 @@ API must be running (`cd backend && php artisan serve --port=8001` or Docker ngi
 4. Log in with a user that has store access (e.g. seeded `admin@retail.local` / `password`, or a cashier assigned to a store).
 5. Select a store on the picker screen — then you get the POS floor (cart, hold, pay).
 
+## Troubleshooting
+
+### `Request failed (502)` on login
+
+Usually a **stale Vite dev server** on port 5174 is proxying to the wrong API port.
+
+1. API must be up: `cd backend && php artisan serve` → **http://127.0.0.1:8000**
+2. Check proxy: `curl http://localhost:5174/api/v1/health` should return `200` (not `502`).
+3. If `502`, stop all POS dev servers and restart one:
+   ```bash
+   lsof -ti :5174 | xargs kill
+   cd frontend && npm run dev:pos
+   ```
+4. Confirm `frontend/pos/.env` has `VITE_PROXY_TARGET=http://127.0.0.1:8000` (same port as `artisan serve`).
+5. If Vite moved to **5175** because 5174 was busy, use that URL or free 5174 first.
+

@@ -89,6 +89,18 @@ class RbacApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.role', 'store_manager');
 
+        $this->patchJson("/api/v1/users/{$userId}", [
+            'name' => 'Sam Manager',
+            'email' => 'sam.manager@example.com',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Sam Manager')
+            ->assertJsonPath('data.email', 'sam.manager@example.com');
+
+        $this->patchJson("/api/v1/users/{$userId}", [
+            'password' => 'newpassword123',
+        ])->assertOk();
+
         $this->patchJson("/api/v1/users/{$userId}/stores", [
             'storeIds' => [$store->id],
             'defaultStoreId' => $store->id,

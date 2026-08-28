@@ -59,7 +59,7 @@ development_status:
   4-3-pos-vue-shell: done
   4-4-cart-product-search: done
   4-5-sale-atomic-transaction: done
-  4-6-hold-suspend-void: in-progress
+  4-6-hold-suspend-void: done
   4-7-cashier-sessions: backlog
   4-8-returns-refunds-pos: backlog
   4-9-installment-plan-create: backlog
