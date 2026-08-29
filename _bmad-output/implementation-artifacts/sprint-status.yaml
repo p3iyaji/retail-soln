@@ -101,7 +101,7 @@ development_status:
 
   epic-9: in-progress
   9-1-security-review: done
-  9-2-performance-optimization: backlog
+  9-2-performance-optimization: review
   9-3-observability: backlog
   9-4-backup-dr-load-testing: backlog
   9-5-e2e-offline-test-suite: backlog

@@ -3,9 +3,9 @@
 namespace Modules\Reporting\Services;
 
 use App\Models\User;
+use App\Support\DecimalAggregator;
 use Carbon\CarbonImmutable;
 use DateTimeZone;
-use Illuminate\Database\Eloquent\Builder;
 use Modules\CustomerPortal\Services\PortalFulfilmentService;
 use Modules\CustomerPortal\Support\PortalOrderStatuses;
 use Modules\Inventory\Services\LowStockAlertService;
@@ -23,8 +23,6 @@ use Modules\Sync\Services\OversellExceptionService;
  */
 class DashboardSummaryService
 {
-    private const SCALE = 4;
-
     public function __construct(
         private readonly LowStockAlertService $lowStock,
         private readonly PortalFulfilmentService $fulfilment,
@@ -51,6 +49,8 @@ class DashboardSummaryService
             ->where('created_at', '>=', $dayStart)
             ->where('created_at', '<', $dayEnd);
 
+        $todayTotals = DecimalAggregator::countAndSum($completedToday, 'total');
+
         $canViewInventory = $user->hasPermission('inventory.view');
         $canApproveOversell = $user->hasPermission('inventory.approve-oversell');
         $canViewSales = $user->hasPermission('sales.view');
@@ -63,8 +63,8 @@ class DashboardSummaryService
             'date' => $today->toDateString(),
             'timezone' => $timezone,
             'currency' => $organization->default_currency,
-            'todaySalesTotal' => $this->sumTotals($completedToday),
-            'todaySalesCount' => (clone $completedToday)->count(),
+            'todaySalesTotal' => $todayTotals['sum'],
+            'todaySalesCount' => $todayTotals['count'],
             'pendingOrdersCount' => $this->fulfilment->queueCountForStore($organization->id, $store->id),
             'lowStockCount' => $canViewInventory
                 ? $this->lowStock->count($organization->id, storeId: $store->id)
@@ -92,33 +92,6 @@ class DashboardSummaryService
                     : null,
             ],
         ];
-    }
-
-    /**
-     * Summed in PHP with bcmath: money is DECIMAL and SQL SUM() is float-typed on sqlite.
-     *
-     * @param  Builder<Sale>  $sales
-     */
-    private function sumTotals(Builder $sales): string
-    {
-        $total = '0';
-
-        (clone $sales)
-            ->select(['id', 'total'])
-            ->lazyById(500)
-            ->each(function (Sale $sale) use (&$total): void {
-                $raw = $sale->total;
-                if ($raw === null || $raw === '') {
-                    return;
-                }
-                $amount = is_numeric($raw) ? (string) $raw : null;
-                if ($amount === null) {
-                    return;
-                }
-                $total = bcadd($total, $amount, self::SCALE);
-            });
-
-        return bcadd($total, '0', self::SCALE);
     }
 
     private function resolveTimezone(Organization $organization): string

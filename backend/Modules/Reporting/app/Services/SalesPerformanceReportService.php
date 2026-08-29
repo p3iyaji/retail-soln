@@ -2,6 +2,7 @@
 
 namespace Modules\Reporting\Services;
 
+use App\Support\DecimalAggregator;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use DateTimeZone;
@@ -32,29 +33,12 @@ class SalesPerformanceReportService
      */
     public function summary(Organization $organization, Store $store, SalesReportFilters $filters): array
     {
-        $total = '0';
-        $count = 0;
-        /** @var array<int, array{salesCount: int, salesTotal: string}> $byCashier */
-        $byCashier = [];
+        $baseQuery = $this->baseQuery($organization, $store, $filters);
+        $overall = DecimalAggregator::countAndSum($baseQuery, 'total');
+        $byCashier = DecimalAggregator::countAndSumGrouped($baseQuery, 'cashier_id', 'total');
 
-        $this->baseQuery($organization, $store, $filters)
-            ->select(['id', 'total', 'cashier_id'])
-            ->lazyById(500)
-            ->each(function (Sale $sale) use (&$total, &$count, &$byCashier): void {
-                $amount = $this->money($sale->total);
-                $count++;
-                $total = bcadd($total, $amount, self::SCALE);
-
-                if ($sale->cashier_id === null) {
-                    return;
-                }
-
-                $cashierId = (int) $sale->cashier_id;
-                $bucket = $byCashier[$cashierId] ?? ['salesCount' => 0, 'salesTotal' => '0'];
-                $bucket['salesCount']++;
-                $bucket['salesTotal'] = bcadd($bucket['salesTotal'], $amount, self::SCALE);
-                $byCashier[$cashierId] = $bucket;
-            });
+        $total = $overall['sum'];
+        $count = $overall['count'];
 
         return [
             'salesTotal' => bcadd($total, '0', self::SCALE),
@@ -62,7 +46,7 @@ class SalesPerformanceReportService
             'averageOrderValue' => $count > 0
                 ? bcdiv($total, (string) $count, self::SCALE)
                 : bcadd('0', '0', self::SCALE),
-            'cashiers' => $this->cashierRows($byCashier),
+            'cashiers' => $this->cashierRowsFromBuckets($byCashier),
         ];
     }
 
@@ -282,6 +266,27 @@ class SalesPerformanceReportService
         }
 
         return $query;
+    }
+
+    /**
+     * @param  array<int, array{count: int, sum: string}>  $byCashier
+     * @return list<array<string, mixed>>
+     */
+    private function cashierRowsFromBuckets(array $byCashier): array
+    {
+        if ($byCashier === []) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($byCashier as $cashierId => $totals) {
+            $normalized[$cashierId] = [
+                'salesCount' => $totals['count'],
+                'salesTotal' => $totals['sum'],
+            ];
+        }
+
+        return $this->cashierRows($normalized);
     }
 
     /**

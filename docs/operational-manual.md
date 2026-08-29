@@ -824,6 +824,15 @@ Footer reminder on POS floor: `F2 search · F4 customer · F8 discount · F9 pay
   backend `.env`. Wait a minute or raise the limit for bulk/import work.
 - `GET /api/v1/health` is deliberately exempt, so it stays usable for liveness checks during a flood.
 
+### Performance (database indexes and search)
+
+- Hot-path composite indexes cover sales reporting windows, product/customer/price sync watermarks,
+  fulfilment queue counts, and payment-method report filters. Apply migrations after deploy.
+- Product search uses an **exact-match fast path** (SKU/barcode equality) before fuzzy name search.
+  Scans should hit indexed lookups; partial one-character queries return empty unless an exact hit exists.
+- Documented latency targets (not enforced in CI): `SEARCH_P95_MS` (default 200) and
+  `SALE_COMPLETION_MS` (default 3000) in backend `.env`.
+
 ### Migrations / empty database
 
 ```bash
