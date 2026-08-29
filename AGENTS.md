@@ -3,7 +3,7 @@
 
 ## retail-soln
 
-Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA, Customer Portal) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epics 0–7 done**; **next: Epic 8** reporting & notifications — see `_bmad-output/planning-artifacts/epics.md` and `_bmad-output/implementation-artifacts/sprint-status.yaml`.
+Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA, Customer Portal) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epics 0–8 done**; **next: Epic 9** production hardening — see `_bmad-output/planning-artifacts/epics.md` and `_bmad-output/implementation-artifacts/sprint-status.yaml`.
 
 ## Policy
 
@@ -37,7 +37,7 @@ Multi-store offline-first POS and retail management platform. Stack: Laravel 13 
 - Auth smoke: `curl -sf -X POST http://localhost:8001/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@retail.local","password":"password"}'`
 - Admin / POS / portal: `npm install && npm run build` (or `npm run dev`) in each app under `frontend/`.
 - Local without Docker: sqlite default in `.env.example` is fine for unit/feature tests. Host scheduler: `php artisan schedule:work` (or cron) so unpaid portal holds expire.
-- **Current story:** Epic 8 next (reporting & notifications). Never mutate `inventory_balances` quantities outside `InventoryLedgerService` (AD-2).
+- **Current story:** Epic 9 next (production hardening). Never mutate `inventory_balances` quantities outside `InventoryLedgerService` (AD-2).
 
 ## Conventions that differ from defaults
 
