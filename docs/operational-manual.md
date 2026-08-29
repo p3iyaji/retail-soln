@@ -216,6 +216,17 @@ Landing page after login: a store-scoped operations snapshot for the store picke
 
 "Today" is the organization's calendar day (**Organization → timezone**), not the server's, and the figures are an operational read of sales/inventory/fulfilment facts — not an accounting ledger.
 
+### Reports
+
+Store performance over a date range, for the store picked in the filter bar. Requires `reports.view` — the nav item is hidden without it and a deep link shows a permission notice.
+
+1. Pick the **store** and a **From** / **To** range (inclusive calendar days in the organization timezone).
+2. Optionally narrow by **payment method**, **cashier**, **category**, or a product (select a row in **Top products**; use *clear* to drop the filter).
+3. **Run report** — summary tiles show sales total, sales count, and average order value; the table lists the completed sales, with cashier performance and top products beside it.
+4. **Export CSV** downloads exactly the filtered set (`sale_id`, `uuid`, `sold_at`, `cashier`, `total`, `payment_methods`).
+
+Only **completed** POS sales count; held, voided, and other-store sales are excluded. Totals are **gross** sale amounts — POS returns/refunds are not netted off. Date range is inclusive calendar days in the **organization timezone** (set under Organization); the browser’s local calendar may differ if you are not in that timezone. Exports are synchronous and capped at 10,000 sales — narrow the range or filters if you hit the limit. Like the dashboard, this is an operational read, not the books of record.
+
 ### Fulfilment (online orders)
 
 Staff workflow for **Customer portal** orders at a selected store (`X-Store-Id`). Requires `fulfilment.pick`, `fulfilment.ship`, and/or `fulfilment.pickup` (re-run `php artisan db:seed` after upgrading so roles pick up these permissions).
@@ -813,6 +824,7 @@ Features **not yet available** or intentionally thin in Epics 1–7:
 | Menu | Primary tasks |
 |------|----------------|
 | Dashboard | Store KPI snapshot, low stock, needs-attention queues |
+| Reports | Store sales performance by date range, cashier/product breakdowns, CSV export |
 | Organization | Business profile |
 | Stores | Locations, tax config |
 | Products | Catalog, variants, selling price & cost, import — see [Products & variants](#products--variants) |

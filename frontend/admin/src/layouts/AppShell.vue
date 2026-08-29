@@ -8,6 +8,7 @@ const route = useRoute()
 const router = useRouter()
 
 const nav = [
+  { name: 'reports', label: 'Reports', to: '/reports', permission: 'reports.view' },
   { name: 'organization', label: 'Organization', to: '/organization' },
   { name: 'stores', label: 'Stores', to: '/stores' },
   { name: 'products', label: 'Products', to: '/products' },
