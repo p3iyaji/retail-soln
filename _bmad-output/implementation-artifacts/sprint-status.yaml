@@ -103,7 +103,7 @@ development_status:
   9-1-security-review: done
   9-2-performance-optimization: done
   9-3-observability: done
-  9-4-backup-dr-load-testing: backlog
+  9-4-backup-dr-load-testing: done
   9-5-e2e-offline-test-suite: backlog
   epic-9-retrospective: optional
 
