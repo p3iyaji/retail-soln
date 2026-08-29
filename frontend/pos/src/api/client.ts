@@ -14,6 +14,7 @@ export type AuthUser = {
 
 type ApiErrorBody = {
   message?: string
+  code?: string
   errors?: Record<string, string[]>
 }
 
@@ -26,6 +27,21 @@ export class ApiError extends Error {
     this.status = status
     this.body = body
   }
+
+  get code(): string | undefined {
+    return this.body.code
+  }
+}
+
+/** Map sync 403 device codes to cashier-facing copy. */
+export function formatDeviceSyncError(err: ApiError): string {
+  if (err.code === 'device_unregistered') {
+    return 'Device is not registered — register this UUID in Admin Devices'
+  }
+  if (err.code === 'device_disabled') {
+    return 'Device is disabled and cannot sync'
+  }
+  return err.message
 }
 
 /** Allowed store IDs from the current user's storeAccess (avoids Pinia import cycle). */
