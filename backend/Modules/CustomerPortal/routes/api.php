@@ -7,6 +7,7 @@ use Modules\CustomerPortal\Http\Controllers\Api\PortalCartController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalCatalogueController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalCheckoutController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalOrderController;
+use Modules\CustomerPortal\Http\Controllers\Api\PortalReturnRequestController;
 
 Route::prefix('v1/portal')->group(function (): void {
     Route::prefix('auth')->group(function (): void {
@@ -58,5 +59,12 @@ Route::prefix('v1/portal')->group(function (): void {
             ->whereNumber('order');
         Route::get('/orders/{order}/invoice', [PortalOrderController::class, 'invoice'])
             ->whereNumber('order');
+    });
+
+    Route::middleware(['auth:sanctum', 'portal', 'portal.verified', 'throttle:portal-returns'])->group(function (): void {
+        Route::get('/return-requests', [PortalReturnRequestController::class, 'index']);
+        Route::post('/return-requests', [PortalReturnRequestController::class, 'store']);
+        Route::get('/return-requests/{returnRequest}', [PortalReturnRequestController::class, 'show'])
+            ->whereNumber('returnRequest');
     });
 });

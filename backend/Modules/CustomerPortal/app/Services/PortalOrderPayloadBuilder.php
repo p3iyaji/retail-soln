@@ -9,6 +9,7 @@ class PortalOrderPayloadBuilder
 {
     public function __construct(
         private readonly PortalOrderTimelineService $timeline,
+        private readonly PortalReturnRequestService $returns,
     ) {}
 
     /**
@@ -60,11 +61,31 @@ class PortalOrderPayloadBuilder
         ];
 
         if ($enriched) {
+            $remaining = $this->returns->remainingReturnableByItem($order);
+            $activeReturn = $this->returns->activeRequestSummary($order);
+            $latestReturn = $this->returns->latestRequestSummary($order);
+
+            $payload['returnEligible'] = $this->returns->isEligible($order);
+            $payload['activeReturnRequest'] = $activeReturn;
+            $payload['returnRequest'] = $activeReturn ?? $latestReturn;
+            $payload['items'] = $order->items->map(fn ($item) => [
+                'id' => $item->id,
+                'variantId' => $item->product_variant_id,
+                'productName' => $item->product_name,
+                'variantName' => $item->variant_name,
+                'sku' => $item->sku,
+                'qty' => (string) $item->quantity,
+                'returnableQty' => $remaining[$item->id] ?? '0.0000',
+                'unitGrossPrice' => (string) $item->unit_gross_price,
+                'lineTax' => (string) $item->line_tax,
+                'lineTotal' => (string) $item->line_total,
+            ])->values();
             $payload['timeline'] = $this->timeline->build($order);
             $payload['customer'] = [
                 'name' => $order->customer?->name,
                 'email' => $order->customer?->email,
             ];
+            $payload['refunds'] = [];
         }
 
         if ($payment !== null) {

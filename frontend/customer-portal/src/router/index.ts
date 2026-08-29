@@ -53,6 +53,24 @@ const router = createRouter({
           component: () => import('@/views/OrderDetailView.vue'),
           meta: { requiresAuth: true },
         },
+        {
+          path: 'orders/:id/return',
+          name: 'order-return',
+          component: () => import('@/views/ReturnRequestView.vue'),
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'returns',
+          name: 'returns',
+          component: () => import('@/views/ReturnsListView.vue'),
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'returns/:id',
+          name: 'return-detail',
+          component: () => import('@/views/ReturnDetailView.vue'),
+          meta: { requiresAuth: true },
+        },
       ],
     },
     {
