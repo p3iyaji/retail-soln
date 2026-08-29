@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Services\Payments\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Services\Payments\PaymentService;
 use Modules\CustomerPortal\Services\PortalCheckoutService;
 use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -44,6 +45,10 @@ class PaymentWebhookController
         try {
             $result = $payments->handleWebhook($provider, $request);
         } catch (RuntimeException $e) {
+            Log::warning('payments.webhook_failed', [
+                'provider' => $provider,
+                'reason' => $e->getMessage(),
+            ]);
             throw new HttpException(400, $e->getMessage(), $e);
         }
 

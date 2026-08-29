@@ -19,6 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->throttleApi();
 
+        $middleware->api(prepend: [
+            \App\Http\Middleware\AssignRequestCorrelationId::class,
+            \App\Http\Middleware\RecordRequestMetrics::class,
+        ]);
+
         $middleware->api(append: [
             \App\Http\Middleware\SecurityHeaders::class,
         ]);
