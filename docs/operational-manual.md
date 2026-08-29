@@ -826,12 +826,29 @@ Footer reminder on POS floor: `F2 search · F4 customer · F8 discount · F9 pay
 
 ### Performance (database indexes and search)
 
+
 - Hot-path composite indexes cover sales reporting windows, product/customer/price sync watermarks,
   fulfilment queue counts, and payment-method report filters. Apply migrations after deploy.
 - Product search uses an **exact-match fast path** (SKU/barcode equality) before fuzzy name search.
   Scans should hit indexed lookups; partial one-character queries return empty unless an exact hit exists.
 - Documented latency targets (not enforced in CI): `SEARCH_P95_MS` (default 200) and
   `SALE_COMPLETION_MS` (default 3000) in backend `.env`.
+
+### Observability (Sentry, metrics, correlation)
+
+- Every API response includes `X-Request-Id` for log correlation. Pass the same header on retries
+  when debugging with support.
+- Optional **Sentry**: set `SENTRY_LARAVEL_DSN` in backend `.env` (never commit a live DSN). Queue
+  job failures and unhandled exceptions are reported when DSN is present.
+- **Structured JSON logs**: set `OBSERVABILITY_LOG_JSON=true` and include `json` in `LOG_STACK`
+  (e.g. `LOG_STACK=single,json`) for log aggregators.
+- **Slow queries**: logged as `db.slow_query` when duration exceeds `OBSERVABILITY_SLOW_QUERY_MS`
+  (default 500ms). Disable with `OBSERVABILITY_SLOW_QUERY_LOG=false`.
+- **Prometheus metrics**: enable with `OBSERVABILITY_METRICS_ENABLED=true`. Scrape
+  `GET /api/v1/metrics` with `Authorization: Bearer {OBSERVABILITY_METRICS_TOKEN}` when a token is
+  set. Metrics are per-worker counters suitable for request-rate dashboards.
+- **Readiness**: `GET /api/v1/health/ready` checks database and Redis (503 when degraded). Liveness
+  remains `GET /api/v1/health`.
 
 ### Migrations / empty database
 

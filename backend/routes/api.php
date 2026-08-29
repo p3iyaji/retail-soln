@@ -1,16 +1,17 @@
 <?php
 
+use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\MetricsController;
 use App\Http\Controllers\Api\PaymentWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
-    // Liveness must stay answerable while the rest of the API is being throttled.
-    Route::get('/health', function () {
-        return response()->json([
-            'status' => 'ok',
-            'service' => 'retail-soln',
-        ]);
-    })->withoutMiddleware('throttle:api');
+    Route::get('/health', [HealthController::class, 'live'])
+        ->withoutMiddleware('throttle:api');
+    Route::get('/health/ready', [HealthController::class, 'ready'])
+        ->withoutMiddleware('throttle:api');
+    Route::get('/metrics', MetricsController::class)
+        ->withoutMiddleware('throttle:api');
 
     Route::prefix('webhooks/payments')
         ->middleware('throttle:payment-webhooks')

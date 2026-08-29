@@ -3,6 +3,7 @@
 namespace Modules\Sync\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sales\Enums\CashierSessionStatus;
 use Modules\Sales\Models\CashierSession;
 use Modules\Sales\Services\CashierSessionService;
@@ -390,6 +391,13 @@ class SyncPushService
         } else {
             $record = SyncRecord::query()->create($attrs);
         }
+
+        Log::warning('sync.push_record_failed', [
+            'batch_id' => $batch->id,
+            'uuid' => $uuid,
+            'payload_type' => $payloadType,
+            'errors' => $errors,
+        ]);
 
         return $this->itemFromRecord($record);
     }
