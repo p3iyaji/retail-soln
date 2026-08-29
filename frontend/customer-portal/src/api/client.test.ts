@@ -120,10 +120,13 @@ describe('portal client', () => {
     await ordersApi.list(2)
     await ordersApi.list(0)
     await ordersApi.get(42)
+    await ordersApi.cancel(42)
 
     expect(fetchMock.mock.calls[0][0]).toContain('/portal/orders?page=2')
     expect(fetchMock.mock.calls[1][0]).toMatch(/\/portal\/orders$/)
     expect(fetchMock.mock.calls[2][0]).toContain('/portal/orders/42')
+    expect(fetchMock.mock.calls[3][0]).toContain('/portal/orders/42/cancel')
+    expect((fetchMock.mock.calls[3][1] as RequestInit).method).toBe('POST')
   })
 
   it('returnsApi hits list, detail, and create with Idempotency-Key', async () => {

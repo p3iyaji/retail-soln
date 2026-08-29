@@ -7,14 +7,15 @@ use App\Services\Payments\PaymentRedirectUrl;
 use App\Services\Payments\PaymentService;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Modules\CustomerPortal\Models\CustomerAccount;
 use Modules\CustomerPortal\Models\PortalOrder;
 use Modules\CustomerPortal\Models\PortalOrderItem;
 use Modules\Customers\Models\CustomerAddress;
-use Modules\Inventory\Enums\LocationType;
-use Modules\Inventory\Models\InventoryBalance;
+use Modules\CustomerPortal\Support\PortalOrderStatuses;
+use Modules\Inventory\Services\StockReservationService;
 use Modules\Organization\Models\Organization;
 use Modules\Organization\Models\Store;
 use Modules\Products\Models\ProductVariant;
@@ -27,12 +28,15 @@ class PortalCheckoutService
     /** @var list<string> */
     private const PAYMENT_STATUSES = ['awaiting_payment', 'paid', 'failed'];
 
+    public const RESERVATION_REFERENCE_TYPE = 'portal_order';
+
     public function __construct(
         private readonly PortalCartService $cart,
         private readonly PortalStoreResolver $stores,
         private readonly PortalOrganizationResolver $organizations,
         private readonly PaymentService $payments,
         private readonly PaymentRedirectUrl $redirectUrls,
+        private readonly StockReservationService $reservations,
     ) {}
 
     /**
@@ -181,8 +185,6 @@ class PortalCheckoutService
                     ];
                 }
 
-                $this->assertAvailableStock($organization->id, $store->id, $lines);
-
                 $linePayloads = array_map(function (array $row) {
                     /** @var ProductVariant $variant */
                     $variant = $row['variant'];
@@ -270,6 +272,8 @@ class PortalCheckoutService
                     ]);
                 }
 
+                $this->reserveOrderStock($order->fresh(['items']));
+
                 $urls = $this->redirectUrls->resolve(
                     $input['successUrl'] ?? null,
                     $input['cancelUrl'] ?? null,
@@ -328,6 +332,112 @@ class PortalCheckoutService
         }
 
         return $this->markPaymentStatus($order, 'paid');
+    }
+
+    /**
+     * Customer self-cancel for unpaid orders; releases reserved stock.
+     *
+     * Order `status` becomes cancelled (primary). Payment enum stays
+     * awaiting_payment|failed|paid — no new payment_status without migration.
+     */
+    public function cancelAwaitingPayment(CustomerAccount $account, int $orderId): PortalOrder
+    {
+        return DB::transaction(function () use ($account, $orderId) {
+            /** @var PortalOrder $locked */
+            $locked = PortalOrder::query()
+                ->where('customer_account_id', $account->id)
+                ->where('id', $orderId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($locked->status === PortalOrderStatuses::CANCELLED) {
+                return $locked->load(['items', 'store']);
+            }
+
+            if (! $this->isUnpaidPendingHold($locked)) {
+                throw ValidationException::withMessages([
+                    'order' => ['Only unpaid pending orders can be cancelled.'],
+                ]);
+            }
+
+            $locked->loadMissing('items');
+            if ($locked->items->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'order' => ['Cannot cancel an order with no line items to release.'],
+                ]);
+            }
+
+            $locked->status = PortalOrderStatuses::CANCELLED;
+            $locked->save();
+
+            $this->releaseOrderStock($locked->fresh(['items']));
+
+            return $locked->fresh(['items', 'store']);
+        });
+    }
+
+    /**
+     * Cancel unpaid awaiting_payment / failed orders past reservation TTL and release stock.
+     *
+     * @return array{expired: int, failures: int}
+     */
+    public function expireUnpaidReservations(?int $ttlMinutes = null): array
+    {
+        $ttl = $ttlMinutes ?? (int) config('customer_portal.reservation_ttl_minutes', 60);
+        if ($ttl < 1) {
+            $ttl = 60;
+        }
+
+        $cutoff = now()->subMinutes($ttl);
+        $expired = 0;
+        $failures = 0;
+
+        PortalOrder::query()
+            ->whereIn('payment_status', ['awaiting_payment', 'failed'])
+            ->where('status', PortalOrderStatuses::PENDING)
+            ->where('created_at', '<=', $cutoff)
+            ->orderBy('id')
+            ->chunkById(50, function ($orders) use (&$expired, &$failures, $cutoff): void {
+                foreach ($orders as $order) {
+                    try {
+                        DB::transaction(function () use ($order, &$expired, $cutoff): void {
+                            /** @var PortalOrder $locked */
+                            $locked = PortalOrder::query()->whereKey($order->id)->lockForUpdate()->first();
+                            if ($locked === null) {
+                                return;
+                            }
+
+                            if (! $this->isUnpaidPendingHold($locked)) {
+                                return;
+                            }
+
+                            if ($locked->created_at !== null && $locked->created_at->gt($cutoff)) {
+                                return;
+                            }
+
+                            $locked->loadMissing('items');
+                            if ($locked->items->isEmpty()) {
+                                throw new RuntimeException(
+                                    'Cannot expire portal order #'.$locked->id.': no line items to release.',
+                                );
+                            }
+
+                            $locked->status = PortalOrderStatuses::CANCELLED;
+                            $locked->save();
+                            $this->releaseOrderStock($locked->fresh(['items']));
+                            $expired++;
+                        });
+                    } catch (\Throwable $e) {
+                        $failures++;
+                        Log::warning('portal.expire_unpaid_reservation_failed', [
+                            'portal_order_id' => $order->id,
+                            'message' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            });
+
+        return ['expired' => $expired, 'failures' => $failures];
     }
 
     /**
@@ -582,29 +692,56 @@ class PortalCheckoutService
     }
 
     /**
-     * @param  list<array{variant: ProductVariant, qty: string, priced: array<string, mixed>}>  $lines
+     * Dual-post available→reserved for order lines (same txn as place-order).
      */
-    private function assertAvailableStock(int $organizationId, int $storeId, array $lines): void
+    private function reserveOrderStock(PortalOrder $order): void
     {
-        $needed = [];
-        foreach ($lines as $row) {
-            $variantId = $row['variant']->id;
-            $needed[$variantId] = bcadd($needed[$variantId] ?? '0.0000', $row['qty'], 4);
+        $order->loadMissing('items');
+        $this->reservations->reserve([
+            'organizationId' => (int) $order->organization_id,
+            'locationId' => (int) $order->store_id,
+            'lines' => $order->items->map(fn (PortalOrderItem $item) => [
+                'productVariantId' => (int) $item->product_variant_id,
+                'quantity' => (string) $item->quantity,
+            ])->all(),
+            'referenceType' => self::RESERVATION_REFERENCE_TYPE,
+            'referenceId' => (int) $order->id,
+            'notes' => 'Portal order '.$order->order_number,
+        ]);
+    }
+
+    /**
+     * Dual-post reserved→available; idempotent via movement UUIDs.
+     */
+    private function releaseOrderStock(PortalOrder $order): void
+    {
+        $order->loadMissing('items');
+        if ($order->items->isEmpty()) {
+            throw new RuntimeException(
+                'Cannot release reservation: order #'.$order->id.' has no line items.',
+            );
         }
 
-        foreach ($needed as $variantId => $qty) {
-            $balance = InventoryBalance::query()
-                ->where('organization_id', $organizationId)
-                ->where('location_type', LocationType::Store->value)
-                ->where('location_id', $storeId)
-                ->where('product_variant_id', $variantId)
-                ->first();
+        $this->reservations->release([
+            'organizationId' => (int) $order->organization_id,
+            'locationId' => (int) $order->store_id,
+            'lines' => $order->items->map(fn (PortalOrderItem $item) => [
+                'productVariantId' => (int) $item->product_variant_id,
+                'quantity' => (string) $item->quantity,
+            ])->all(),
+            'referenceType' => self::RESERVATION_REFERENCE_TYPE,
+            'referenceId' => (int) $order->id,
+            'notes' => 'Release portal order '.$order->order_number,
+        ]);
+    }
 
-            $available = $balance !== null ? (string) $balance->available : '0.0000';
-            if (bccomp($available, $qty, 4) < 0) {
-                throw new RuntimeException('Insufficient available stock for one or more items.');
-            }
-        }
+    /**
+     * Unpaid pending hold eligible for cancel / TTL release (not yet paid or fulfilled).
+     */
+    private function isUnpaidPendingHold(PortalOrder $order): bool
+    {
+        return in_array((string) $order->payment_status, ['awaiting_payment', 'failed'], true)
+            && (string) $order->status === PortalOrderStatuses::PENDING;
     }
 
     /**

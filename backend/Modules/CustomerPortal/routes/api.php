@@ -53,6 +53,8 @@ Route::prefix('v1/portal')->group(function (): void {
         Route::post('/checkout/place', [PortalCheckoutController::class, 'place']);
         Route::post('/orders/{order}/confirm-payment', [PortalCheckoutController::class, 'confirmManual'])
             ->whereNumber('order');
+        Route::post('/orders/{order}/cancel', [PortalOrderController::class, 'cancel'])
+            ->whereNumber('order');
 
         Route::get('/orders', [PortalOrderController::class, 'index']);
         Route::get('/orders/{order}', [PortalOrderController::class, 'show'])

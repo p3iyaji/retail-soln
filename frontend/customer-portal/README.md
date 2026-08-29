@@ -17,6 +17,15 @@ API: `VITE_PROXY_TARGET` (default `http://127.0.0.1:8000`).
 - `CUSTOMER_PORTAL_ORGANIZATION_ID` — empty = first organization
 - `CUSTOMER_PORTAL_DEFAULT_STORE_ID` — empty = first **active** store in that org (catalogue + default fulfilment store)
 - `CUSTOMER_PORTAL_DELIVERY_FEE` — flat home-delivery fee (`DECIMAL` string; default `0.0000`; negative rejected)
+- `CUSTOMER_PORTAL_RESERVATION_TTL` — unpaid order hold TTL in minutes (default `60`); scheduler runs `portal:expire-unpaid-reservations` every minute
+
+**Stock reservation (Story 7.1):**
+- Place-order dual-posts **available→reserved** via `InventoryLedgerService` (hard reject if insufficient available; no portal oversell)
+- Pay success **keeps** the reserved hold — **reserved→sale consume is Story 7.2** (pick/fulfil)
+- Cancel unpaid/failed (`POST /api/v1/portal/orders/{id}/cancel`) or TTL expiry releases **reserved→available**
+- Cancel sets order `status=cancelled` as the primary terminal signal; `payment_status` stays `awaiting_payment` / `failed` (no new payment enum without migration)
+- Order detail shows **Cancel order** (confirm dialog) while `cancellable` (pending + awaiting_payment|failed) and displays `reservationExpiresAt`
+- TTL job requires a running scheduler (`php artisan schedule:work` or cron); Docker Compose scheduler service is deferred
 
 **Payments (AD-10):**
 - Adapters: `manual` (local confirm), `stripe`, `paystack`

@@ -307,3 +307,19 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-6-5-returns-request.md`
   summary: Vue component tests for OrderDetailView returnEligible CTA gating.
   evidence: Returns API client is covered; order-detail eligibility UI remains manual/backend-asserted.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-1-stock-reservation.md`
+  summary: Add a Docker Compose scheduler service for `portal:expire-unpaid-reservations` / Laravel schedule.
+  evidence: TTL command is registered with withoutOverlapping; Compose does not yet run schedule:work.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-1-stock-reservation.md`
+  summary: Concurrent place-order race load test under inventory row locks.
+  evidence: Feature tests cover sequential oversell; true parallel race not load-tested.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-1-stock-reservation.md`
+  summary: Paid-webhook-after-cancel reconciliation / ops alert when late paid arrives on cancelled order.
+  evidence: markPaymentStatus already ignores paid on cancelled; no ops alert or reconciliation job.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-1-stock-reservation.md`
+  summary: Update docs/operational-manual.md for portal stock reservation, cancel, and TTL ops.
+  evidence: Customer-portal README updated; operational manual not yet revised for 7.1.

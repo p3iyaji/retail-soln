@@ -37,4 +37,16 @@ return [
     |--------------------------------------------------------------------------
     */
     'delivery_fee' => env('CUSTOMER_PORTAL_DELIVERY_FEE', '0.0000'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Unpaid reservation TTL (minutes)
+    |--------------------------------------------------------------------------
+    |
+    | Awaiting-payment portal orders older than this are cancelled by
+    | `portal:expire-unpaid-reservations`, releasing reserved stock back to
+    | available. Paid orders are never expired by this job.
+    |
+    */
+    'reservation_ttl_minutes' => (int) env('CUSTOMER_PORTAL_RESERVATION_TTL', 60),
 ];
