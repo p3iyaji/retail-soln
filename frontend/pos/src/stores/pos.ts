@@ -16,9 +16,15 @@ import {
   type SearchVariant,
 } from '@/lib/cartPricing'
 import { holdSale, listHeldSales, voidSale, type SaleResource } from '@/api/posSales'
+import { type CustomerResource } from '@/api/posCustomers'
+import {
+  fetchCurrentSession,
+  openCashierSession,
+  type CashierSessionResource,
+} from '@/api/posSessions'
 import { useAuthStore } from '@/stores/auth'
 
-export type StubPanel = 'customer' | 'discount' | 'payment' | 'held' | null
+export type StubPanel = 'customer' | 'discount' | 'payment' | 'held' | 'session' | 'return' | 'installment' | null
 
 function readTerminal(): string {
   return localStorage.getItem(TERMINAL_KEY) ?? 'POS-001'
@@ -40,6 +46,10 @@ export const usePosStore = defineStore('pos', () => {
   const heldSales = ref<SaleResource[]>([])
   const heldBusy = ref(false)
 
+  const cashierSession = ref<CashierSessionResource | null>(null)
+  const sessionBusy = ref(false)
+  const sessionError = ref<string | null>(null)
+
   const searchQuery = ref('')
   const categoryId = ref<number | null>(null)
   const categories = ref<Category[]>([])
@@ -47,6 +57,8 @@ export const usePosStore = defineStore('pos', () => {
   const searchElapsedMs = ref<number | null>(null)
   const searchLoading = ref(false)
   const searchError = ref<string | null>(null)
+
+  const selectedCustomer = ref<CustomerResource | null>(null)
 
   let searchTimer: ReturnType<typeof setTimeout> | null = null
   let searchSeq = 0
@@ -60,12 +72,24 @@ export const usePosStore = defineStore('pos', () => {
 
   const hasSelectedStore = computed(() => selectedStore.value != null)
 
+  const hasOpenSession = computed(
+    () => cashierSession.value != null && cashierSession.value.status === 'open',
+  )
+
   const cartTotals = computed(() => sumLineTotals(cartLines.value))
 
   const lineCount = computed(() => cartLines.value.length)
 
   const allowPriceOverride = computed(() =>
     canPriceOverride(useAuthStore().user?.permissions),
+  )
+
+  const canProcessRefund = computed(() =>
+    Boolean(useAuthStore().user?.permissions?.includes('sales.refund')),
+  )
+
+  const canCollectInstallments = computed(() =>
+    Boolean(useAuthStore().user?.permissions?.includes('sales.installments.collect')),
   )
 
   function invalidateSearchInFlight(): void {
@@ -94,7 +118,62 @@ export const usePosStore = defineStore('pos', () => {
     if (changed) {
       clearCart()
       clearSearch()
+      clearSession()
+      selectedCustomer.value = null
       void loadCategories()
+    }
+  }
+
+  function clearSession(): void {
+    cashierSession.value = null
+    sessionError.value = null
+  }
+
+  async function refreshSession(): Promise<void> {
+    if (!hasSelectedStore.value) {
+      clearSession()
+      return
+    }
+
+    sessionBusy.value = true
+    sessionError.value = null
+    try {
+      const res = await fetchCurrentSession(terminalLabel.value)
+      cashierSession.value = res.data
+    } catch (err) {
+      sessionError.value = err instanceof ApiError ? err.message : 'Could not load session'
+      cashierSession.value = null
+    } finally {
+      sessionBusy.value = false
+    }
+  }
+
+  function openPaymentOrSession(): void {
+    if (!hasOpenSession.value) {
+      openStub('session')
+      return
+    }
+    openStub('payment')
+  }
+
+  async function openSession(openingFloat: string): Promise<void> {
+    if (!hasSelectedStore.value) {
+      throw new Error('Select a store first')
+    }
+
+    sessionBusy.value = true
+    sessionError.value = null
+    try {
+      const res = await openCashierSession({
+        terminalName: terminalLabel.value,
+        openingFloat: Number(openingFloat || 0).toFixed(4),
+      })
+      cashierSession.value = res.data
+    } catch (err) {
+      sessionError.value = err instanceof ApiError ? err.message : 'Could not open session'
+      throw err
+    } finally {
+      sessionBusy.value = false
     }
   }
 
@@ -103,6 +182,7 @@ export const usePosStore = defineStore('pos', () => {
     setStoredStoreId(null)
     clearCart()
     clearSearch()
+    clearSession()
   }
 
   function setTerminalLabel(label: string): void {
@@ -130,6 +210,29 @@ export const usePosStore = defineStore('pos', () => {
     if (!stillValid) {
       clearStore()
     }
+  }
+
+  function pricingCustomerId(): number | undefined {
+    const customer = selectedCustomer.value
+    if (!customer || customer.isWalkIn) return undefined
+    return customer.id
+  }
+
+  async function repriceAllCartLines(): Promise<void> {
+    for (const line of [...cartLines.value]) {
+      await repriceLine(line, line.qty)
+    }
+  }
+
+  async function setSelectedCustomer(customer: CustomerResource): Promise<void> {
+    selectedCustomer.value = customer
+    if (cartLines.value.length > 0) {
+      await repriceAllCartLines()
+    }
+  }
+
+  function clearSelectedCustomer(): void {
+    selectedCustomer.value = null
   }
 
   function clearCart(): void {
@@ -273,6 +376,7 @@ export const usePosStore = defineStore('pos', () => {
         variantId: variant.id,
         storeId,
         qty: nextQty,
+        customerId: pricingCustomerId(),
       })
       const priced = priceFieldsFromResolve(res.data, nextQty, override)
       const label = variantLabel(product, variant)
@@ -314,6 +418,7 @@ export const usePosStore = defineStore('pos', () => {
         variantId: line.variantId,
         storeId,
         qty,
+        customerId: pricingCustomerId(),
       })
       const priced = priceFieldsFromResolve(res.data, qty, line.priceOverride)
       Object.assign(line, priced)
@@ -385,7 +490,10 @@ export const usePosStore = defineStore('pos', () => {
     try {
       await holdSale({
         uuid: crypto.randomUUID(),
-        customerId: null,
+        customerId:
+          selectedCustomer.value && !selectedCustomer.value.isWalkIn
+            ? selectedCustomer.value.id
+            : null,
         items: cartLines.value.map((line) => ({
           variantId: line.variantId,
           qty: line.qty,
@@ -406,6 +514,23 @@ export const usePosStore = defineStore('pos', () => {
 
   function resumeHeldSale(sale: SaleResource): void {
     activeHeldSaleId.value = sale.id
+    if (sale.customer) {
+      if (sale.customer.isWalkIn) {
+        selectedCustomer.value = null
+      } else {
+        selectedCustomer.value = {
+          id: sale.customer.id,
+          name: sale.customer.name,
+          phone: null,
+          email: null,
+          accountNumber: '',
+          isWalkIn: false,
+          creditLimit: '0.0000',
+          balance: '0.0000',
+          isActive: true,
+        }
+      }
+    }
     cartLines.value = sale.items.map((item) => ({
       lineKey: newLineKey(),
       variantId: item.variantId,
@@ -483,6 +608,10 @@ export const usePosStore = defineStore('pos', () => {
     selectedStoreId,
     terminalLabel,
     activeStub,
+    cashierSession,
+    sessionBusy,
+    sessionError,
+    hasOpenSession,
     selectedStore,
     hasSelectedStore,
     cartLines,
@@ -490,7 +619,10 @@ export const usePosStore = defineStore('pos', () => {
     cartError,
     cartTotals,
     lineCount,
+    selectedCustomer,
     allowPriceOverride,
+    canProcessRefund,
+    canCollectInstallments,
     searchQuery,
     categoryId,
     categories,
@@ -505,6 +637,8 @@ export const usePosStore = defineStore('pos', () => {
     closeStub,
     syncSelectedStoreWithAccess,
     clearCart,
+    setSelectedCustomer,
+    clearSelectedCustomer,
     clearSearch,
     loadCategories,
     setCategoryFilter,
@@ -524,5 +658,9 @@ export const usePosStore = defineStore('pos', () => {
     voidCurrentTransaction,
     voidHeldAfterComplete,
     clearPriceOverride,
+    refreshSession,
+    openSession,
+    clearSession,
+    openPaymentOrSession,
   }
 })

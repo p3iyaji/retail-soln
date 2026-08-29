@@ -36,9 +36,12 @@ class PosSaleController
                 'userId' => $request->user()->id,
                 'uuid' => $attrs['uuid'],
                 'customerId' => $attrs['customerId'],
+                'sessionId' => $attrs['sessionId'],
+                'terminalId' => $attrs['terminalId'],
                 'idempotencyKey' => $idempotencyKey,
                 'items' => $attrs['items'],
                 'payments' => $attrs['payments'],
+                'installmentPlan' => $attrs['installmentPlan'] ?? null,
             ]);
         } catch (IdempotencyConflictException $e) {
             return response()->json(['message' => $e->getMessage()], 409);

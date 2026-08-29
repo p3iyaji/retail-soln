@@ -25,7 +25,7 @@ type Product = {
   brandId: number | null
   unitId: number | null
   supplierId: number | null
-  basePrice: string
+  sellingPrice: string
   costPrice: string | null
   reorderLevel: string | null
   minStock: string | null
@@ -63,7 +63,7 @@ const form = reactive({
   brandId: '' as string | number,
   unitId: '' as string | number,
   supplierId: '' as string | number,
-  basePrice: '0.0000',
+  sellingPrice: '0.0000',
   costPrice: '',
   reorderLevel: '',
   minStock: '',
@@ -79,6 +79,7 @@ const variantForm = reactive({
   price: '0.0000',
   costPrice: '',
   isDefault: false,
+  isActive: true,
 })
 
 const formTitle = computed(() => (editingId.value ? 'Edit product' : 'New product'))
@@ -187,7 +188,7 @@ function resetForm() {
   form.brandId = ''
   form.unitId = ''
   form.supplierId = ''
-  form.basePrice = '0.0000'
+  form.sellingPrice = '0.0000'
   form.costPrice = ''
   form.reorderLevel = ''
   form.minStock = ''
@@ -207,6 +208,7 @@ function resetVariantForm() {
   variantForm.price = '0.0000'
   variantForm.costPrice = ''
   variantForm.isDefault = false
+  variantForm.isActive = true
 }
 
 async function loadVariants(productId: number) {
@@ -229,7 +231,7 @@ function openEdit(product: Product) {
   form.brandId = product.brandId ?? ''
   form.unitId = product.unitId ?? ''
   form.supplierId = product.supplierId ?? ''
-  form.basePrice = product.basePrice
+  form.sellingPrice = product.sellingPrice
   form.costPrice = product.costPrice ?? ''
   form.reorderLevel = product.reorderLevel ?? ''
   form.minStock = product.minStock ?? ''
@@ -245,6 +247,12 @@ function openEdit(product: Product) {
 
 function openVariantCreate() {
   resetVariantForm()
+  variantForm.name = 'Default'
+  variantForm.sku = form.sku
+  variantForm.barcode = form.barcode
+  variantForm.price = form.sellingPrice || '0.0000'
+  variantForm.costPrice = form.costPrice
+  variantForm.isDefault = variants.value.length === 0
   showVariantForm.value = true
 }
 
@@ -256,6 +264,7 @@ function openVariantEdit(variant: ProductVariant) {
   variantForm.price = variant.price
   variantForm.costPrice = variant.costPrice ?? ''
   variantForm.isDefault = variant.isDefault
+  variantForm.isActive = variant.isActive
   showVariantForm.value = true
 }
 
@@ -271,6 +280,7 @@ async function onVariantSubmit() {
       price: variantForm.price,
       costPrice: variantForm.costPrice || null,
       isDefault: variantForm.isDefault,
+      isActive: variantForm.isActive,
     }
     if (editingVariantId.value) {
       await api.patch(`/products/${editingId.value}/variants/${editingVariantId.value}`, body)
@@ -313,7 +323,7 @@ function payload() {
     brandId: form.brandId === '' ? null : Number(form.brandId),
     unitId: form.unitId === '' ? null : Number(form.unitId),
     supplierId: form.supplierId === '' ? null : Number(form.supplierId),
-    basePrice: form.basePrice,
+    sellingPrice: form.sellingPrice,
     costPrice: form.costPrice || null,
     reorderLevel: form.reorderLevel || null,
     minStock: form.minStock || null,
@@ -455,8 +465,8 @@ onMounted(refresh)
           <input v-model="form.barcode" class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
         </label>
         <label class="block text-sm">
-          <span class="text-[var(--muted)]">Base price</span>
-          <input v-model="form.basePrice" required class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
+          <span class="text-[var(--muted)]">Selling price</span>
+          <input v-model="form.sellingPrice" required class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
         </label>
         <label class="block text-sm">
           <span class="text-[var(--muted)]">Cost price</span>
@@ -559,11 +569,15 @@ onMounted(refresh)
           <input v-model="variantForm.name" required placeholder="Name" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
           <input v-model="variantForm.sku" required placeholder="SKU" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm font-mono" />
           <input v-model="variantForm.barcode" placeholder="Barcode" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm font-mono" />
-          <input v-model="variantForm.price" required placeholder="Price" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
+          <input v-model="variantForm.price" required placeholder="Selling price" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
           <input v-model="variantForm.costPrice" placeholder="Cost" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
           <label class="flex items-center gap-2 text-sm">
             <input v-model="variantForm.isDefault" type="checkbox" />
             Default variant
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input v-model="variantForm.isActive" type="checkbox" />
+            Active
           </label>
           <div class="flex gap-2 sm:col-span-3">
             <button type="submit" class="rounded-md bg-[var(--brand)] px-2 py-1 text-xs text-white disabled:opacity-60" :disabled="variantSaving">
@@ -579,7 +593,8 @@ onMounted(refresh)
               <th class="py-1 pr-3 font-medium">Name</th>
               <th class="py-1 pr-3 font-medium">SKU</th>
               <th class="py-1 pr-3 font-medium">Barcode</th>
-              <th class="py-1 pr-3 font-medium">Price</th>
+              <th class="py-1 pr-3 font-medium">Selling price</th>
+              <th class="py-1 pr-3 font-medium">Status</th>
               <th class="py-1 font-medium" />
             </tr>
           </thead>
@@ -589,6 +604,7 @@ onMounted(refresh)
               <td class="py-2 pr-3 font-mono text-xs">{{ v.sku }}</td>
               <td class="py-2 pr-3 font-mono text-xs">{{ v.barcode ?? '—' }}</td>
               <td class="py-2 pr-3">{{ v.price }}</td>
+              <td class="py-2 pr-3">{{ v.isActive ? 'Active' : 'Inactive' }}</td>
               <td class="py-2 text-right">
                 <button type="button" class="mr-2 text-[var(--brand)]" @click="openVariantEdit(v)">Edit</button>
                 <button type="button" class="text-red-700" @click="onVariantDelete(v)">Delete</button>
@@ -596,7 +612,7 @@ onMounted(refresh)
             </tr>
           </tbody>
         </table>
-        <p v-else class="mt-2 text-sm text-[var(--muted)]">No variants yet — add sellable SKUs with their own barcode and price.</p>
+        <p v-else class="mt-2 text-sm text-[var(--muted)]">No extra variants — a default sellable SKU is created automatically when you save the product.</p>
       </div>
     </div>
 
@@ -607,7 +623,7 @@ onMounted(refresh)
             <th class="px-3 py-2 font-medium">Name</th>
             <th class="px-3 py-2 font-medium">SKU</th>
             <th class="px-3 py-2 font-medium">Category</th>
-            <th class="px-3 py-2 font-medium">Price</th>
+            <th class="px-3 py-2 font-medium">Selling price</th>
             <th class="px-3 py-2 font-medium">Variants</th>
             <th class="px-3 py-2 font-medium">Reorder</th>
             <th class="px-3 py-2 font-medium" />
@@ -621,7 +637,7 @@ onMounted(refresh)
             <td class="px-3 py-2">{{ p.name }}</td>
             <td class="px-3 py-2 font-mono text-xs">{{ p.sku }}</td>
             <td class="px-3 py-2">{{ p.category?.name ?? '—' }}</td>
-            <td class="px-3 py-2">{{ p.basePrice }}</td>
+            <td class="px-3 py-2">{{ p.sellingPrice }}</td>
             <td class="px-3 py-2">{{ p.variants?.length ?? 0 }}</td>
             <td class="px-3 py-2">{{ p.reorderLevel ?? '—' }}</td>
             <td class="px-3 py-2 text-right">

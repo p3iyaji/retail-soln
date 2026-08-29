@@ -10,6 +10,7 @@ use Modules\Products\Http\Requests\StoreProductRequest;
 use Modules\Products\Http\Requests\UpdateProductRequest;
 use Modules\Products\Http\Resources\ProductResource;
 use Modules\Products\Models\Product;
+use Modules\Products\Services\ProductVariantProvisioner;
 
 class ProductController
 {
@@ -54,12 +55,13 @@ class ProductController
     public function store(
         StoreProductRequest $request,
         OrganizationService $organizations,
+        ProductVariantProvisioner $variantProvisioner,
     ): JsonResponse {
         $this->authorize($request, 'create', Product::class);
 
         $organization = $organizations->current();
 
-        $product = DB::transaction(function () use ($request, $organization) {
+        $product = DB::transaction(function () use ($request, $organization, $variantProvisioner) {
             $product = Product::query()->create([
                 ...$request->productAttributes(),
                 'organization_id' => $organization->id,
@@ -68,6 +70,8 @@ class ProductController
             foreach ($request->imageAttributes() as $image) {
                 $product->images()->create($image);
             }
+
+            $variantProvisioner->ensureDefaultVariant($product);
 
             return $product->load(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes']);
         });

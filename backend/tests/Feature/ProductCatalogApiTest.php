@@ -60,7 +60,7 @@ class ProductCatalogApiTest extends TestCase
             'brandId' => $brand->id,
             'unitId' => $unit->id,
             'supplierId' => $supplier->id,
-            'basePrice' => '2.5000',
+            'sellingPrice' => '2.5000',
             'costPrice' => '1.2500',
             'reorderLevel' => '10.0000',
             'minStock' => '5.0000',
@@ -83,13 +83,25 @@ class ProductCatalogApiTest extends TestCase
             ->assertJsonPath('data.brandId', $brand->id)
             ->assertJsonPath('data.unitId', $unit->id)
             ->assertJsonPath('data.supplierId', $supplier->id)
-            ->assertJsonPath('data.basePrice', '2.5000')
+            ->assertJsonPath('data.sellingPrice', '2.5000')
             ->assertJsonPath('data.reorderLevel', '10.0000')
             ->assertJsonPath('data.minStock', '5.0000')
             ->assertJsonPath('data.maxStock', '200.0000')
             ->assertJsonPath('data.images.0.url', 'https://cdn.example.com/cola.jpg');
 
         $productId = $create->json('data.id');
+
+        $create->assertJsonPath('data.variants.0.name', 'Default')
+            ->assertJsonPath('data.variants.0.sku', 'COLA-500')
+            ->assertJsonPath('data.variants.0.barcode', '1234567890123')
+            ->assertJsonPath('data.variants.0.price', '2.5000')
+            ->assertJsonPath('data.variants.0.isDefault', true);
+
+        $this->assertDatabaseHas('product_variants', [
+            'product_id' => $productId,
+            'sku' => 'COLA-500',
+            'is_default' => true,
+        ]);
 
         $this->getJson('/api/v1/products')
             ->assertOk()
@@ -126,7 +138,7 @@ class ProductCatalogApiTest extends TestCase
         $this->postJson('/api/v1/products', [
             'name' => 'Nope',
             'sku' => 'NOPE',
-            'basePrice' => '1.00',
+            'sellingPrice' => '1.00',
         ])->assertForbidden();
     }
 
@@ -172,7 +184,7 @@ class ProductCatalogApiTest extends TestCase
         $this->postJson('/api/v1/products', [
             'name' => 'Other',
             'sku' => 'DUP-1',
-            'basePrice' => '3.00',
+            'sellingPrice' => '3.00',
         ])->assertStatus(422);
     }
 }

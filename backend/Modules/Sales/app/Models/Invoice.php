@@ -11,6 +11,7 @@ class Invoice extends Model
     protected $fillable = [
         'organization_id',
         'sale_id',
+        'proforma_invoice_id',
         'invoice_number',
         'status',
         'subtotal',
@@ -32,6 +33,11 @@ class Invoice extends Model
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
+    }
+
+    public function proformaInvoice(): BelongsTo
+    {
+        return $this->belongsTo(ProformaInvoice::class);
     }
 
     public function items(): HasMany

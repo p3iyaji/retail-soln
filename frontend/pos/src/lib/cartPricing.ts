@@ -1,4 +1,15 @@
-import { decimalAdd, decimalCmp, decimalDiv, decimalMul, decimalSub, fromScaled, money, toScaled } from '@/lib/decimal'
+import {
+  decimalAdd,
+  decimalCmp,
+  decimalDiv,
+  decimalMul,
+  decimalSub,
+  formatCurrency,
+  fromScaled,
+  money,
+  roundCurrency,
+  toScaled,
+} from '@/lib/decimal'
 
 export type ResolvedTax = {
   name: string
@@ -148,60 +159,53 @@ export function priceFieldsFromResolve(
   const taxRate = money(resolved.tax.rate)
   const taxInclusive = Boolean(resolved.tax.inclusive)
 
-  if (priceOverride == null || priceOverride === '') {
-    return {
-      qty: qtyMoney,
-      unitPrice: money(resolved.unitPrice),
-      listPrice,
-      discountAmount: money(resolved.discountAmount),
-      taxAmount: money(resolved.tax.amount),
-      taxName,
-      taxRate,
-      taxInclusive,
-      lineTotal: money(resolved.lineTotal),
-      priceOverride: null,
-    }
-  }
+  const unitPrice =
+    priceOverride == null || priceOverride === '' ? money(resolved.unitPrice) : money(priceOverride)
+  const discountAmount =
+    priceOverride == null || priceOverride === '' ? money(resolved.discountAmount) : '0.0000'
 
-  const override = money(priceOverride)
-  const resolvedUnit = money(resolved.unitPrice)
-  let taxAmount: string
-
-  if (decimalCmp(resolvedUnit, '0') === 0) {
-    taxAmount = taxFromRate(override, qtyMoney, taxRate, taxInclusive)
-  } else {
-    // Scale resolve tax by override/unit so tax tracks the authorized unit.
-    const ratio = decimalDiv(override, resolvedUnit)
-    taxAmount = decimalMul(money(resolved.tax.amount), ratio)
-  }
-
-  const lineNet = decimalMul(override, qtyMoney)
-  const lineTotal = taxInclusive ? lineNet : decimalAdd(lineNet, taxAmount)
+  const lineNet = decimalSub(decimalMul(unitPrice, qtyMoney), discountAmount)
+  const normalizedNet = decimalCmp(lineNet, '0') < 0 ? '0.0000' : money(lineNet)
+  const taxed = taxOnLineNet(normalizedNet, taxRate, taxInclusive)
 
   return {
     qty: qtyMoney,
-    unitPrice: override,
+    unitPrice,
     listPrice,
-    discountAmount: '0.0000',
-    taxAmount,
+    discountAmount,
+    taxAmount: taxed.taxAmount,
     taxName,
     taxRate,
     taxInclusive,
-    lineTotal,
-    priceOverride: override,
+    lineTotal: taxed.lineTotal,
+    priceOverride: priceOverride == null || priceOverride === '' ? null : unitPrice,
   }
 }
 
-function taxFromRate(unit: string, qty: string, rate: string, inclusive: boolean): string {
-  const line = decimalMul(unit, qty)
-  if (decimalCmp(rate, '0') === 0) return '0.0000'
+function taxOnLineNet(
+  lineNet: string,
+  rate: string,
+  inclusive: boolean,
+): { taxAmount: string; lineTotal: string } {
+  if (decimalCmp(rate, '0') === 0) {
+    const total = roundCurrency(lineNet)
+    return { taxAmount: roundCurrency('0'), lineTotal: total }
+  }
+
   if (inclusive) {
     const divisor = decimalAdd('1', rate)
-    if (decimalCmp(divisor, '0') <= 0) return '0.0000'
-    const net = decimalDiv(line, divisor)
-    return decimalSub(line, net)
+    if (decimalCmp(divisor, '0') <= 0) {
+      const total = roundCurrency(lineNet)
+      return { taxAmount: roundCurrency('0'), lineTotal: total }
+    }
+    const net = roundCurrency(decimalDiv(lineNet, divisor))
+    const taxAmount = roundCurrency(decimalSub(lineNet, net))
+    return { taxAmount, lineTotal: roundCurrency(lineNet) }
   }
-  return decimalMul(line, rate)
+
+  const taxAmount = roundCurrency(decimalMul(lineNet, rate))
+  const lineTotal = roundCurrency(decimalAdd(lineNet, taxAmount))
+  return { taxAmount, lineTotal }
 }
 
 export function sumLineTotals(lines: CartLine[]): {
@@ -225,12 +229,14 @@ export function sumLineTotals(lines: CartLine[]): {
   }
 
   return {
-    subtotal: fromScaled(subtotal),
-    tax: fromScaled(tax),
-    discount: fromScaled(discount),
-    total: fromScaled(total),
+    subtotal: roundCurrency(fromScaled(subtotal)),
+    tax: roundCurrency(fromScaled(tax)),
+    discount: roundCurrency(fromScaled(discount)),
+    total: roundCurrency(fromScaled(total)),
   }
 }
+
+export { formatCurrency }
 
 export function canPriceOverride(permissions: string[] | undefined | null): boolean {
   return Boolean(permissions?.includes('sales.price-override'))

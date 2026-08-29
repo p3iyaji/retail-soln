@@ -109,7 +109,7 @@ describe('qty stepper + merge pricing fields', () => {
     expect(decrementQty('1.0000')).toBeNull()
   })
 
-  it('resolve without override keeps promo tax/line totals', () => {
+  it('resolve without override recomputes tax/line totals from unit × qty − discount', () => {
     const priced = priceFieldsFromResolve(
       resolveFixture({
         unitPrice: '9.0000',
@@ -122,21 +122,17 @@ describe('qty stepper + merge pricing fields', () => {
     )
     expect(priced.unitPrice).toBe('9.0000')
     expect(priced.discountAmount).toBe('1.0000')
-    expect(priced.taxAmount).toBe('1.8000')
-    expect(priced.lineTotal).toBe('19.8000')
+    expect(priced.taxAmount).toBe('1.7000')
+    expect(priced.lineTotal).toBe('18.7000')
   })
 
-  it('price override scales tax and zeros discount', () => {
+  it('price override recomputes tax from line net at 2dp', () => {
     const priced = priceFieldsFromResolve(resolveFixture(), '2', '8.0000')
     expect(priced.unitPrice).toBe('8.0000')
     expect(priced.discountAmount).toBe('0.0000')
     expect(priced.priceOverride).toBe('8.0000')
-    // tax 1.0000 * (8/10) for qty1 fixture scaled... wait resolve tax is for qty in fixture
-    // We pass qty 2 but fixture tax is for qty1 — proportional from unit only:
-    // taxAmount = 1.0000 * (8/10) = 0.8000
-    expect(priced.taxAmount).toBe('0.8000')
-    // lineNet = 8*2 = 16; exclusive + tax 0.8 = 16.8
-    expect(priced.lineTotal).toBe('16.8000')
+    expect(priced.taxAmount).toBe('1.6000')
+    expect(priced.lineTotal).toBe('17.6000')
   })
 })
 

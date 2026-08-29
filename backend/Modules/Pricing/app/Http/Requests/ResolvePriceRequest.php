@@ -11,10 +11,24 @@ class ResolvePriceRequest extends FormRequest
     public function authorize(): bool
     {
         $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
 
-        return $user?->hasPermission('sales.create') === true
-            || $user?->hasPermission('pricing.manage') === true
-            || $user?->hasPermission('promotions.manage') === true;
+        if (
+            $user->hasPermission('sales.create') !== true
+            && $user->hasPermission('pricing.manage') !== true
+            && $user->hasPermission('promotions.manage') !== true
+        ) {
+            return false;
+        }
+
+        $storeId = $this->input('storeId');
+        if ($storeId === null || ! is_numeric($storeId)) {
+            return true;
+        }
+
+        return $user->canAccessStore((int) $storeId);
     }
 
     /**

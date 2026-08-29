@@ -5,7 +5,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const proxyTarget = env.VITE_PROXY_TARGET || 'http://localhost:8001'
+  const proxyTarget = env.VITE_PROXY_TARGET || 'http://127.0.0.1:8000'
 
   return {
     plugins: [vue(), tailwindcss()],

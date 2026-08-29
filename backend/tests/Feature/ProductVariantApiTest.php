@@ -50,6 +50,13 @@ class ProductVariantApiTest extends TestCase
 
         $variantId = $create->json('data.id');
 
+        $this->postJson("/api/v1/products/{$product->id}/variants", [
+            'name' => '1L',
+            'sku' => 'COLA-1L',
+            'barcode' => '3333333333333',
+            'price' => '3.5000',
+        ])->assertCreated();
+
         $this->getJson("/api/v1/products/{$product->id}/variants")
             ->assertOk()
             ->assertJsonPath('data.0.id', $variantId);
@@ -66,6 +73,9 @@ class ProductVariantApiTest extends TestCase
             ->assertOk();
 
         $this->assertDatabaseMissing('product_variants', ['id' => $variantId]);
+
+        $this->deleteJson("/api/v1/products/{$product->id}/variants/".$this->getJson("/api/v1/products/{$product->id}/variants")->json('data.0.id'))
+            ->assertStatus(422);
     }
 
     public function test_barcode_uniqueness_enforced_across_products_and_variants(): void
@@ -78,6 +88,15 @@ class ProductVariantApiTest extends TestCase
             'sku' => 'PARENT-2',
             'barcode' => '3333333333333',
         ]);
+
+        $this->postJson("/api/v1/products/{$product->id}/variants", [
+            'name' => 'Default',
+            'sku' => 'PARENT-2',
+            'barcode' => '3333333333333',
+            'price' => '1.0000',
+        ])->assertCreated()
+            ->assertJsonPath('data.sku', 'PARENT-2')
+            ->assertJsonPath('data.barcode', '3333333333333');
 
         $this->postJson("/api/v1/products/{$product->id}/variants", [
             'name' => 'Duplicate barcode',
@@ -111,7 +130,7 @@ class ProductVariantApiTest extends TestCase
             'name' => 'New product',
             'sku' => 'NEW-PROD',
             'barcode' => '4444444444444',
-            'basePrice' => '5.0000',
+            'sellingPrice' => '5.0000',
         ])->assertStatus(422);
 
         $this->patchJson("/api/v1/products/{$other->id}/variants/{$variantId}", [
@@ -139,6 +158,12 @@ class ProductVariantApiTest extends TestCase
             'sku' => 'SHARED-SKU',
             'price' => '1.0000',
         ])->assertStatus(422);
+
+        $this->postJson("/api/v1/products/{$product->id}/variants", [
+            'name' => 'Parent sku ok',
+            'sku' => 'PARENT-4',
+            'price' => '1.0000',
+        ])->assertCreated();
     }
 
     public function test_cashier_cannot_manage_variants(): void

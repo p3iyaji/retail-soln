@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, watch } from 'vue'
+import CustomerPanel from '@/components/CustomerPanel.vue'
+import InstallmentCollectPanel from '@/components/InstallmentCollectPanel.vue'
 import PaymentPanel from '@/components/PaymentPanel.vue'
 import HeldPanel from '@/components/HeldPanel.vue'
+import ReturnPanel from '@/components/ReturnPanel.vue'
+import SessionPanel from '@/components/SessionPanel.vue'
 import { usePosStore, type StubPanel } from '@/stores/pos'
 
 const pos = usePosStore()
@@ -11,18 +15,25 @@ const titles: Record<Exclude<StubPanel, null>, string> = {
   discount: 'Discount',
   payment: 'Payment',
   held: 'Held sales',
+  session: 'Register session',
+  return: 'Return & refund',
+  installment: 'Collect installment',
 }
 
 const storyHints: Record<Exclude<StubPanel, null>, string> = {
-  customer: 'Coming in a later story',
+  customer: 'Search and attach a registered customer for installment sales',
   discount: 'Line discount engine deferred — use price override when permitted',
-  payment: 'Tender cash/card to complete the sale',
+  payment: 'Tender deposit or full payment; optional installment schedule',
   held: 'Tap a sale to resume it in the cart',
+  session: 'Open, manage cash, or close your register session',
+  return: 'Look up a completed sale and issue a partial or full refund',
+  installment: 'Find an open plan and collect the next due installment',
 }
 
 const open = computed(() => pos.activeStub != null)
 const title = computed(() => (pos.activeStub ? titles[pos.activeStub] : ''))
 const hint = computed(() => (pos.activeStub ? storyHints[pos.activeStub] : ''))
+const panelWidth = computed(() => (pos.activeStub === 'payment' ? 'max-w-2xl' : 'max-w-md'))
 
 function onBackdrop() {
   pos.closeStub()
@@ -54,9 +65,10 @@ watch(
     >
       <div
         data-stub-panel
-        class="w-full max-w-md rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] shadow-lg"
+        class="flex max-h-[min(90vh,720px)] w-full flex-col rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] shadow-lg"
+        :class="panelWidth"
       >
-        <div class="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+        <div class="flex flex-shrink-0 items-center justify-between border-b border-[var(--line)] px-4 py-3">
           <h2 class="font-display text-lg font-semibold">{{ title }}</h2>
           <button
             type="button"
@@ -67,11 +79,16 @@ watch(
             Esc
           </button>
         </div>
-        <PaymentPanel v-if="pos.activeStub === 'payment'" />
-        <HeldPanel v-else-if="pos.activeStub === 'held'" />
-        <div v-else class="px-4 py-6 text-[var(--muted)]">
-          <p>{{ hint }}</p>
-          <p class="mt-2 text-sm">Shell stub — no customer / discount completion yet.</p>
+        <div class="min-h-0 flex-1 overflow-y-auto">
+          <PaymentPanel v-if="pos.activeStub === 'payment'" />
+          <CustomerPanel v-else-if="pos.activeStub === 'customer'" />
+          <HeldPanel v-else-if="pos.activeStub === 'held'" />
+          <SessionPanel v-else-if="pos.activeStub === 'session'" />
+          <ReturnPanel v-else-if="pos.activeStub === 'return'" />
+          <InstallmentCollectPanel v-else-if="pos.activeStub === 'installment'" />
+          <div v-else class="px-4 py-6 text-[var(--muted)]">
+            <p>{{ hint }}</p>
+          </div>
         </div>
       </div>
     </div>

@@ -24,7 +24,7 @@ class Product extends Model
         'brand_id',
         'unit_id',
         'supplier_id',
-        'base_price',
+        'selling_price',
         'cost_price',
         'reorder_level',
         'min_stock',
@@ -35,7 +35,7 @@ class Product extends Model
     protected function casts(): array
     {
         return [
-            'base_price' => 'decimal:4',
+            'selling_price' => 'decimal:4',
             'cost_price' => 'decimal:4',
             'reorder_level' => 'decimal:4',
             'min_stock' => 'decimal:4',

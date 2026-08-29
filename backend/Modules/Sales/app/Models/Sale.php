@@ -78,4 +78,24 @@ class Sale extends Model
     {
         return $this->belongsTo(User::class, 'cashier_id');
     }
+
+    public function cashierSession(): BelongsTo
+    {
+        return $this->belongsTo(CashierSession::class, 'session_id');
+    }
+
+    public function terminal(): BelongsTo
+    {
+        return $this->belongsTo(Terminal::class);
+    }
+
+    public function saleReturns(): HasMany
+    {
+        return $this->hasMany(SaleReturn::class);
+    }
+
+    public function installmentPlan(): HasOne
+    {
+        return $this->hasOne(InstallmentPlan::class);
+    }
 }

@@ -39,10 +39,14 @@ class StoreProductVariantRequest extends FormRequest
                 return;
             }
 
+            /** @var Product $product */
+            $product = $this->route('product');
+
             CatalogCodeValidator::validate($v, [
                 'organizationId' => app(OrganizationService::class)->current()->id,
                 'sku' => $this->input('sku'),
                 'barcode' => $this->input('barcode'),
+                'ignoreProductId' => $product->id,
             ]);
         });
     }

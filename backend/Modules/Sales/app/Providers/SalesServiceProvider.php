@@ -3,11 +3,19 @@
 namespace Modules\Sales\Providers;
 
 use Modules\Audit\Observers\AuditableObserver;
+use Modules\Sales\Models\CashierSession;
+use Modules\Sales\Models\CashMovement;
 use Modules\Sales\Models\Invoice;
 use Modules\Sales\Models\InvoiceItem;
+use Modules\Sales\Models\Refund;
 use Modules\Sales\Models\Sale;
 use Modules\Sales\Models\SaleItem;
 use Modules\Sales\Models\SalePayment;
+use Modules\Sales\Models\SaleReturn;
+use Modules\Sales\Models\ProformaInvoice;
+use Modules\Sales\Models\ProformaInvoiceItem;
+use Modules\Sales\Models\SaleReturnItem;
+use Modules\Sales\Models\Terminal;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class SalesServiceProvider extends ModuleServiceProvider
@@ -32,5 +40,13 @@ class SalesServiceProvider extends ModuleServiceProvider
         SalePayment::observe(AuditableObserver::class);
         Invoice::observe(AuditableObserver::class);
         InvoiceItem::observe(AuditableObserver::class);
+        CashierSession::observe(AuditableObserver::class);
+        CashMovement::observe(AuditableObserver::class);
+        Terminal::observe(AuditableObserver::class);
+        SaleReturn::observe(AuditableObserver::class);
+        SaleReturnItem::observe(AuditableObserver::class);
+        Refund::observe(AuditableObserver::class);
+        ProformaInvoice::observe(AuditableObserver::class);
+        ProformaInvoiceItem::observe(AuditableObserver::class);
     }
 }

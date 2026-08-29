@@ -46,6 +46,7 @@ class UpdateProductVariantRequest extends FormRequest
                 'organizationId' => app(OrganizationService::class)->current()->id,
                 'sku' => $this->has('sku') ? $this->input('sku') : null,
                 'barcode' => $this->has('barcode') ? $this->input('barcode') : null,
+                'ignoreProductId' => $variant->product_id,
                 'ignoreVariantId' => $variant->id,
             ]);
         });

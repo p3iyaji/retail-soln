@@ -58,7 +58,7 @@ class UpdateProductRequest extends FormRequest
                     fn ($q) => $q->where('organization_id', $organizationId)
                 ),
             ],
-            'basePrice' => ['sometimes', 'regex:/^\d+(\.\d{1,4})?$/'],
+            'sellingPrice' => ['sometimes', 'regex:/^\d+(\.\d{1,4})?$/'],
             'costPrice' => ['nullable', 'regex:/^\d+(\.\d{1,4})?$/'],
             'reorderLevel' => ['nullable', 'regex:/^\d+(\.\d{1,4})?$/'],
             'minStock' => ['nullable', 'regex:/^\d+(\.\d{1,4})?$/'],
@@ -106,7 +106,7 @@ class UpdateProductRequest extends FormRequest
             'brandId' => 'brand_id',
             'unitId' => 'unit_id',
             'supplierId' => 'supplier_id',
-            'basePrice' => 'base_price',
+            'sellingPrice' => 'selling_price',
             'costPrice' => 'cost_price',
             'reorderLevel' => 'reorder_level',
             'minStock' => 'min_stock',

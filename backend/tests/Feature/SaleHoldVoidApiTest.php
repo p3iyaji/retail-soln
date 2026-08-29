@@ -102,6 +102,20 @@ class SaleHoldVoidApiTest extends TestCase
         return $user;
     }
 
+    private function openSessionFor(User $user, string $terminal = 'POS-HV'): int
+    {
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/pos/sessions/open', [
+            'terminalName' => $terminal,
+            'openingFloat' => '0.0000',
+        ], ['X-Store-Id' => (string) $this->store->id]);
+
+        $response->assertCreated();
+
+        return (int) $response->json('data.id');
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      */
@@ -164,9 +178,11 @@ class SaleHoldVoidApiTest extends TestCase
     public function test_void_completed_sale_reverses_inventory(): void
     {
         $cashier = $this->actingCashier();
+        $sessionId = $this->openSessionFor($cashier, 'POS-HV-1');
 
         $complete = $this->postJson('/api/v1/pos/sales', [
             'uuid' => '770e8400-e29b-41d4-a716-446655440002',
+            'sessionId' => $sessionId,
             'items' => $this->cartPayload()['items'],
             'payments' => [['method' => 'cash', 'amount' => '21.5000', 'provider' => 'manual']],
         ], [
@@ -202,10 +218,12 @@ class SaleHoldVoidApiTest extends TestCase
 
     public function test_cashier_cannot_void_completed_sale(): void
     {
-        $this->actingCashier();
+        $cashier = $this->actingCashier();
+        $sessionId = $this->openSessionFor($cashier, 'POS-HV-2');
 
         $saleId = $this->postJson('/api/v1/pos/sales', [
             'uuid' => '880e8400-e29b-41d4-a716-446655440003',
+            'sessionId' => $sessionId,
             'items' => $this->cartPayload()['items'],
             'payments' => [['method' => 'cash', 'amount' => '21.5000', 'provider' => 'manual']],
         ], [

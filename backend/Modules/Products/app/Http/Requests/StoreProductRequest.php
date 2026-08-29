@@ -55,7 +55,7 @@ class StoreProductRequest extends FormRequest
                     fn ($q) => $q->where('organization_id', $organizationId)
                 ),
             ],
-            'basePrice' => ['required', 'regex:/^\d+(\.\d{1,4})?$/'],
+            'sellingPrice' => ['required', 'regex:/^\d+(\.\d{1,4})?$/'],
             'costPrice' => ['nullable', 'regex:/^\d+(\.\d{1,4})?$/'],
             'reorderLevel' => ['nullable', 'regex:/^\d+(\.\d{1,4})?$/'],
             'minStock' => ['nullable', 'regex:/^\d+(\.\d{1,4})?$/'],
@@ -100,7 +100,7 @@ class StoreProductRequest extends FormRequest
             'brand_id' => $v['brandId'] ?? null,
             'unit_id' => $v['unitId'] ?? null,
             'supplier_id' => $v['supplierId'] ?? null,
-            'base_price' => $v['basePrice'],
+            'selling_price' => $v['sellingPrice'],
             'cost_price' => $v['costPrice'] ?? null,
             'reorder_level' => $v['reorderLevel'] ?? null,
             'min_stock' => $v['minStock'] ?? null,

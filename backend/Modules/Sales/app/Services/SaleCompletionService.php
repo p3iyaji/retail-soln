@@ -2,6 +2,7 @@
 
 namespace Modules\Sales\Services;
 
+use App\Support\Money;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Modules\Customers\Models\Customer;
@@ -11,8 +12,12 @@ use Modules\Inventory\Enums\LocationType;
 use Modules\Inventory\Enums\MovementType;
 use Modules\Inventory\Services\InventoryLedgerService;
 use Modules\Organization\Models\Store;
+use Modules\Sales\Enums\InstallmentPlanStatus;
+use Modules\Sales\Enums\InstallmentStatus;
 use Modules\Sales\Enums\SaleStatus;
 use Modules\Sales\Jobs\SendSaleReceipt;
+use Modules\Sales\Models\Installment;
+use Modules\Sales\Models\InstallmentPlan;
 use Modules\Sales\Models\Invoice;
 use Modules\Sales\Models\Sale;
 use Ramsey\Uuid\Uuid;
@@ -24,6 +29,8 @@ class SaleCompletionService
         private readonly InventoryLedgerService $ledger,
         private readonly CustomerService $customers,
         private readonly SaleLineCalculator $lineCalculator,
+        private readonly CashierSessionService $sessions,
+        private readonly InstallmentPlanService $installmentPlans,
     ) {}
 
     /**
@@ -34,8 +41,14 @@ class SaleCompletionService
      *   uuid: string,
      *   customerId?: ?int,
      *   idempotencyKey?: ?string,
+     *   sessionId: int,
+     *   terminalId?: ?int,
      *   items: list<array{variantId: int, qty: string, unitPrice: string, discount: string}>,
      *   payments: list<array{method: string, amount: string, provider: string, reference?: ?string}>,
+     *   installmentPlan?: ?array{
+     *     mode: string,
+     *     installments: list<array{sequence: int, amount: string, dueAt: string}>,
+     *   },
      * }  $input
      * @return array{sale: Sale, created: bool}
      */
@@ -70,6 +83,13 @@ class SaleCompletionService
             throw new RuntimeException('Sale requires at least one payment.');
         }
 
+        $session = $this->sessions->assertOpenSessionForSale(
+            $input['organizationId'],
+            $input['storeId'],
+            $input['userId'],
+            $input['sessionId'],
+        );
+
         $store = Store::query()
             ->where('organization_id', $input['organizationId'])
             ->whereKey($input['storeId'])
@@ -81,18 +101,30 @@ class SaleCompletionService
 
         $customer = $this->resolveCustomer($input['organizationId'], $input['customerId'] ?? null);
         $computed = $this->lineCalculator->compute($store, $input['items']);
+        $installmentPlanInput = $input['installmentPlan'] ?? null;
 
         $paymentTotal = '0.0000';
         foreach ($input['payments'] as $payment) {
             $paymentTotal = bcadd($paymentTotal, bcadd((string) $payment['amount'], '0', 4), 4);
         }
 
-        if (bccomp($paymentTotal, $computed['total'], 4) !== 0) {
+        $planData = null;
+        if ($installmentPlanInput !== null) {
+            if ($input['customerId'] === null) {
+                throw new RuntimeException('Installment plans require a registered customer.');
+            }
+            $planData = $this->installmentPlans->validateForSale(
+                $customer,
+                $computed['total'],
+                $paymentTotal,
+                $installmentPlanInput,
+            );
+        } elseif (! Money::equalsAtCurrency($paymentTotal, $computed['total'])) {
             throw new RuntimeException('Payment total must equal sale total.');
         }
 
         try {
-            $result = DB::transaction(function () use ($input, $idempotencyKey, $store, $customer, $computed) {
+            $result = DB::transaction(function () use ($input, $idempotencyKey, $store, $customer, $computed, $session, $planData, $paymentTotal) {
                 if ($idempotencyKey !== null && $idempotencyKey !== '') {
                     $existing = Sale::query()
                         ->where('organization_id', $input['organizationId'])
@@ -136,6 +168,8 @@ class SaleCompletionService
                         'total' => $computed['total'],
                         'status' => SaleStatus::Completed,
                         'idempotency_key' => ($idempotencyKey !== null && $idempotencyKey !== '') ? $idempotencyKey : null,
+                        'terminal_id' => $input['terminalId'] ?? $session->terminal_id,
+                        'session_id' => $session->id,
                     ]);
                 } catch (QueryException $e) {
                     if ($this->isUniqueIdempotencyViolation($e) && $idempotencyKey !== null && $idempotencyKey !== '') {
@@ -230,6 +264,53 @@ class SaleCompletionService
                     ]);
                 }
 
+                $this->sessions->recordSaleCashPayments($sale->fresh(['payments']), $input['userId']);
+
+                if ($planData !== null) {
+                    $lockedCustomer = Customer::query()
+                        ->where('organization_id', $input['organizationId'])
+                        ->whereKey($customer->id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($lockedCustomer === null) {
+                        throw new RuntimeException('Customer not found.');
+                    }
+
+                    $this->installmentPlans->validateForSale(
+                        $lockedCustomer,
+                        $computed['total'],
+                        $paymentTotal,
+                        $input['installmentPlan'] ?? [],
+                    );
+
+                    $plan = InstallmentPlan::query()->create([
+                        'organization_id' => $input['organizationId'],
+                        'store_id' => $store->id,
+                        'customer_id' => $lockedCustomer->id,
+                        'sale_id' => $sale->id,
+                        'invoice_id' => $invoice->id,
+                        'principal' => $planData['principal'],
+                        'fee_total' => $planData['fee_total'],
+                        'mode' => $planData['mode'],
+                        'status' => InstallmentPlanStatus::Open,
+                    ]);
+
+                    foreach ($planData['installments'] as $line) {
+                        Installment::query()->create([
+                            'organization_id' => $input['organizationId'],
+                            'installment_plan_id' => $plan->id,
+                            'sequence' => $line['sequence'],
+                            'amount' => $line['amount'],
+                            'due_at' => $line['due_at'],
+                            'status' => InstallmentStatus::Pending,
+                        ]);
+                    }
+
+                    $lockedCustomer->balance = bcadd((string) $lockedCustomer->balance, $planData['principal'], 4);
+                    $lockedCustomer->save();
+                }
+
                 return [
                     'sale' => $this->loadSale($sale->fresh()),
                     'created' => true,
@@ -288,6 +369,7 @@ class SaleCompletionService
             'customer',
             'store',
             'invoice.items',
+            'installmentPlan.installments',
         ]);
     }
 
@@ -298,6 +380,10 @@ class SaleCompletionService
      *   customerId?: ?int,
      *   items: list<array{variantId: int, qty: string, unitPrice: string, discount: string}>,
      *   payments: list<array{method: string, amount: string, provider: string}>,
+     *   installmentPlan?: ?array{
+     *     mode: string,
+     *     installments: list<array{sequence: int, amount: string, dueAt: string}>,
+     *   },
      * }  $input
      */
     private function assertIdempotentPayloadMatches(Sale $existing, array $input): void
@@ -316,6 +402,10 @@ class SaleCompletionService
      *   customerId?: ?int,
      *   items: list<array{variantId: int, qty: string, unitPrice: string, discount: string}>,
      *   payments: list<array{method: string, amount: string, provider: string}>,
+     *   installmentPlan?: ?array{
+     *     mode: string,
+     *     installments: list<array{sequence: int, amount: string, dueAt: string}>,
+     *   },
      * }  $input
      */
     private function fingerprintFromInput(array $input): string
@@ -343,16 +433,56 @@ class SaleCompletionService
                 ->sortBy(fn (array $p) => $p['method'].$p['amount'])
                 ->values()
                 ->all(),
+            'installmentPlan' => $this->normalizeInstallmentPlanFingerprint($input['installmentPlan'] ?? null),
         ];
 
         return hash('sha256', json_encode($normalized, JSON_THROW_ON_ERROR));
     }
 
+    /**
+     * @param  ?array{
+     *   mode: string,
+     *   installments: list<array{sequence: int, amount: string, dueAt: string}>,
+     * }  $plan
+     * @return ?array<string, mixed>
+     */
+    private function normalizeInstallmentPlanFingerprint(?array $plan): ?array
+    {
+        if ($plan === null) {
+            return null;
+        }
+
+        return [
+            'mode' => $plan['mode'],
+            'installments' => collect($plan['installments'])
+                ->map(fn (array $row) => [
+                    'sequence' => (int) $row['sequence'],
+                    'amount' => bcadd((string) $row['amount'], '0', 4),
+                    'dueAt' => $row['dueAt'],
+                ])
+                ->sortBy('sequence')
+                ->values()
+                ->all(),
+        ];
+    }
+
     private function fingerprintFromSale(Sale $sale): string
     {
-        $sale->loadMissing(['items', 'payments', 'customer']);
+        $sale->loadMissing(['items', 'payments', 'customer', 'installmentPlan.installments']);
 
         $customerId = $sale->customer?->is_walk_in ? null : $sale->customer_id;
+
+        $installmentPlan = null;
+        if ($sale->installmentPlan !== null) {
+            $installmentPlan = [
+                'mode' => $sale->installmentPlan->mode->value ?? $sale->installmentPlan->mode,
+                'installments' => $sale->installmentPlan->installments->map(fn (Installment $row) => [
+                    'sequence' => $row->sequence,
+                    'amount' => (string) $row->amount,
+                    'dueAt' => $row->due_at?->toDateString(),
+                ])->all(),
+            ];
+        }
 
         return $this->fingerprintFromInput([
             'uuid' => $sale->uuid,
@@ -369,6 +499,7 @@ class SaleCompletionService
                 'amount' => (string) $payment->amount,
                 'provider' => $payment->provider,
             ])->all(),
+            'installmentPlan' => $installmentPlan,
         ]);
     }
 

@@ -5,15 +5,26 @@ namespace Modules\Sales\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Organization\Services\OrganizationService;
+use Modules\Sales\Enums\InstallmentPlanMode;
 use Modules\Sales\Enums\PaymentMethod;
 use Modules\Sales\Http\Concerns\ResolvesPosStore;
 
 class StoreSaleRequest extends FormRequest
 {
     use ResolvesPosStore;
+
     public function authorize(): bool
     {
-        return $this->user()?->hasPermission('sales.create') === true;
+        $user = $this->user();
+        if ($user?->hasPermission('sales.create') !== true) {
+            return false;
+        }
+
+        if ($this->has('installmentPlan') && $user->hasPermission('sales.installments.create') !== true) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -26,13 +37,33 @@ class StoreSaleRequest extends FormRequest
         return [
             'uuid' => ['required', 'uuid'],
             'customerId' => [
+                Rule::requiredIf($this->has('installmentPlan')),
                 'nullable',
                 'integer',
                 Rule::exists('customers', 'id')->where(
+                    fn ($q) => $q->where('organization_id', $organizationId)->where('is_walk_in', false)
+                ),
+            ],
+            'installmentPlan' => ['sometimes', 'array'],
+            'installmentPlan.mode' => ['required_with:installmentPlan', 'string', Rule::in(InstallmentPlanMode::values())],
+            'installmentPlan.installments' => ['required_with:installmentPlan', 'array', 'min:1'],
+            'installmentPlan.installments.*.sequence' => ['required', 'integer', 'min:1'],
+            'installmentPlan.installments.*.amount' => ['required', 'regex:/^\d+(\.\d{1,4})?$/', 'numeric', 'gt:0'],
+            'installmentPlan.installments.*.dueAt' => ['required', 'date'],
+            'sessionId' => [
+                'required',
+                'integer',
+                Rule::exists('cashier_sessions', 'id')->where(
                     fn ($q) => $q->where('organization_id', $organizationId)
                 ),
             ],
-            'installmentPlan' => ['prohibited'],
+            'terminalId' => [
+                'nullable',
+                'integer',
+                Rule::exists('terminals', 'id')->where(
+                    fn ($q) => $q->where('organization_id', $organizationId)
+                ),
+            ],
             'items' => ['required', 'array', 'min:1'],
             'items.*.variantId' => [
                 'required',
@@ -56,17 +87,25 @@ class StoreSaleRequest extends FormRequest
      * @return array{
      *   uuid: string,
      *   customerId: ?int,
+     *   sessionId: int,
+     *   terminalId: ?int,
      *   items: list<array{variantId: int, qty: string, unitPrice: string, discount: string}>,
      *   payments: list<array{method: string, amount: string, provider: string, reference?: ?string}>,
+     *   installmentPlan?: array{
+     *     mode: string,
+     *     installments: list<array{sequence: int, amount: string, dueAt: string}>,
+     *   },
      * }
      */
     public function saleAttributes(): array
     {
         $validated = $this->validated();
 
-        return [
+        $attrs = [
             'uuid' => $validated['uuid'],
             'customerId' => isset($validated['customerId']) ? (int) $validated['customerId'] : null,
+            'sessionId' => (int) $validated['sessionId'],
+            'terminalId' => isset($validated['terminalId']) ? (int) $validated['terminalId'] : null,
             'items' => collect($validated['items'])->map(fn (array $item) => [
                 'variantId' => (int) $item['variantId'],
                 'qty' => bcadd((string) $item['qty'], '0', 4),
@@ -80,6 +119,21 @@ class StoreSaleRequest extends FormRequest
                 'reference' => $payment['reference'] ?? null,
             ])->all(),
         ];
+
+        if (isset($validated['installmentPlan'])) {
+            $attrs['installmentPlan'] = [
+                'mode' => $validated['installmentPlan']['mode'],
+                'installments' => collect($validated['installmentPlan']['installments'])
+                    ->map(fn (array $row) => [
+                        'sequence' => (int) $row['sequence'],
+                        'amount' => bcadd((string) $row['amount'], '0', 4),
+                        'dueAt' => $row['dueAt'],
+                    ])
+                    ->all(),
+            ];
+        }
+
+        return $attrs;
     }
 
     public function storeId(): int

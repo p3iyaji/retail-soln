@@ -70,14 +70,24 @@ async function loadStores() {
 
 async function loadVariants() {
   const products = await api.get<{
-    data: Array<{ name: string; variants?: Array<{ id: number; name: string; sku: string }> }>
-  }>('/products?per_page=50')
+    data: Array<{ name: string; variants?: Array<{ id: number; name: string; sku: string; isActive?: boolean }> }>
+    meta?: { lastPage: number }
+  }>('/products?per_page=200')
 
-  variants.value = products.data.flatMap((p) =>
-    (p.variants ?? []).map((v) => ({
-      id: v.id,
-      label: `${p.name} — ${v.name} (${v.sku})`,
-    })),
+  let all = [...products.data]
+  const lastPage = products.meta?.lastPage ?? 1
+  for (let p = 2; p <= Math.min(lastPage, 5); p++) {
+    const pageRes = await api.get<{ data: typeof products.data }>(`/products?per_page=200&page=${p}`)
+    all = all.concat(pageRes.data)
+  }
+
+  variants.value = all.flatMap((p) =>
+    (p.variants ?? [])
+      .filter((v) => v.isActive !== false)
+      .map((v) => ({
+        id: v.id,
+        label: `${p.name} — ${v.name} (${v.sku})`,
+      })),
   )
 }
 

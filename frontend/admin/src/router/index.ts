@@ -43,6 +43,11 @@ const router = createRouter({
           component: () => import('@/views/SettingsView.vue'),
         },
         {
+          path: 'audit-logs',
+          name: 'audit-logs',
+          component: () => import('@/views/AuditLogsView.vue'),
+        },
+        {
           path: 'products',
           name: 'products',
           component: () => import('@/views/ProductsView.vue'),
@@ -76,6 +81,11 @@ const router = createRouter({
           path: 'customers',
           name: 'customers',
           component: () => import('@/views/CustomersView.vue'),
+        },
+        {
+          path: 'proforma-invoices',
+          name: 'proforma-invoices',
+          component: () => import('@/views/ProformaInvoicesView.vue'),
         },
       ],
     },

@@ -2,6 +2,7 @@
 
 namespace Modules\Sales\Services;
 
+use App\Support\Money;
 use Modules\Organization\Models\Store;
 use Modules\Pricing\Services\TaxService;
 use Modules\Products\Models\ProductVariant;
@@ -66,23 +67,27 @@ class SaleLineCalculator
                 $lineNet = '0.0000';
             }
 
-            $taxResult = $this->tax->apply($store, $lineNet);
+            $taxResult = $this->tax->apply($store, bcadd($lineNet, '0', 4));
+
+            $net = Money::toStorage($taxResult['net']);
+            $taxAmount = Money::toStorage($taxResult['amount']);
+            $lineTotal = Money::toStorage($taxResult['gross']);
 
             $lines[] = [
                 'variant_id' => $variant->id,
                 'qty' => $qty,
                 'unit_price' => $unitPrice,
                 'discount' => $discount,
-                'tax_amount' => $taxResult['amount'],
-                'line_total' => $taxResult['gross'],
-                'net' => $taxResult['net'],
+                'tax_amount' => $taxAmount,
+                'line_total' => $lineTotal,
+                'net' => $net,
             ];
 
             $qtyByVariant[$variant->id] = bcadd($qtyByVariant[$variant->id] ?? '0.0000', $qty, 4);
-            $subtotal = bcadd($subtotal, $taxResult['net'], 4);
+            $subtotal = bcadd($subtotal, $net, 4);
             $discountTotal = bcadd($discountTotal, $discount, 4);
-            $taxTotal = bcadd($taxTotal, $taxResult['amount'], 4);
-            $total = bcadd($total, $taxResult['gross'], 4);
+            $taxTotal = bcadd($taxTotal, $taxAmount, 4);
+            $total = bcadd($total, $lineTotal, 4);
         }
 
         return [

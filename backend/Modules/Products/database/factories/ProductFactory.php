@@ -23,7 +23,7 @@ class ProductFactory extends Factory
             'sku' => strtoupper(fake()->unique()->bothify('SKU-####??')),
             'barcode' => fake()->unique()->ean13(),
             'description' => fake()->optional()->sentence(),
-            'base_price' => fake()->randomFloat(4, 1, 500),
+            'selling_price' => fake()->randomFloat(4, 1, 500),
             'cost_price' => fake()->optional()->randomFloat(4, 0.5, 400),
             'reorder_level' => '5.0000',
             'min_stock' => '2.0000',

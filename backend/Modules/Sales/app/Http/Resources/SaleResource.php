@@ -29,6 +29,8 @@ class SaleResource extends JsonResource
             'voidedAt' => $this->voided_at?->toIso8601String(),
             'voidedBy' => $this->voided_by,
             'idempotencyKey' => $this->idempotency_key,
+            'sessionId' => $this->session_id,
+            'terminalId' => $this->terminal_id,
             'customer' => $this->whenLoaded('customer', fn () => $this->customer === null ? null : [
                 'id' => $this->customer->id,
                 'name' => $this->customer->name,
@@ -46,6 +48,9 @@ class SaleResource extends JsonResource
                 'status' => $this->invoice->status,
                 'total' => $this->invoice->total,
             ]),
+            'installmentPlan' => $this->whenLoaded('installmentPlan', fn () => $this->installmentPlan === null
+                ? null
+                : new InstallmentPlanResource($this->installmentPlan)),
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
         ];
