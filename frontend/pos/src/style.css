@@ -15,6 +15,9 @@
   --ink: #12181f;
   --muted: #5c6b7a;
   --online: #0b6e4f;
+  --offline: #c47a1a;
+  --syncing: #1d6fb8;
+  --sync-error: #b42318;
   --danger: #b42318;
   --radius: 8px;
 }

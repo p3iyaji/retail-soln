@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import StubPanel from '@/components/StubPanel.vue'
+import SyncBadge from '@/components/SyncBadge.vue'
 import { usePosShortcuts } from '@/composables/usePosShortcuts'
 import { activeVariants, type SearchProduct, type SearchVariant } from '@/lib/cartPricing'
 import { decimalCmp, formatCurrency, isDecimalString } from '@/lib/decimal'
@@ -221,13 +222,7 @@ function productVariants(product: SearchProduct): SearchVariant[] {
 
       <span class="flex-1" />
 
-      <span
-        class="inline-flex items-center gap-1.5 rounded border border-[var(--ember)] bg-[var(--online)] px-2.5 py-1 text-xs font-semibold tracking-wide text-white"
-        title="Sync status"
-      >
-        <span class="inline-block h-1.5 w-1.5 rounded-full bg-white" aria-hidden="true" />
-        ONLINE
-      </span>
+      <SyncBadge />
 
       <button
         type="button"
