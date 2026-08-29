@@ -96,17 +96,19 @@ onMounted(async () => {
     <div>
       <h2 class="text-xl font-semibold tracking-tight">Welcome</h2>
       <p class="mt-2 text-sm text-[var(--muted)]">
-        Signed in as {{ auth.displayName }}. Use the navigation to open foundation modules.
-        Full CRUD UIs land in later stories; stubs are ready for wiring.
+        Signed in as {{ auth.displayName }}. Use the sidebar for catalog, inventory, purchasing, POS
+        support screens, and online order fulfilment.
       </p>
     </div>
 
     <div class="grid gap-3 sm:grid-cols-2">
       <RouterLink
         v-for="item in [
-          { to: '/organization', label: 'Organization' },
+          { to: '/products', label: 'Products' },
+          { to: '/inventory', label: 'Inventory' },
+          { to: '/fulfilment', label: 'Fulfilment' },
+          { to: '/customers', label: 'Customers' },
           { to: '/stores', label: 'Stores' },
-          { to: '/users', label: 'Users' },
           { to: '/settings', label: 'Settings' },
         ]"
         :key="item.to"

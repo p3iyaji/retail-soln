@@ -1,13 +1,13 @@
 <!-- bmad:context -->
-<!-- Verified 2026-08-24 against unborn main (no commits). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-08-29. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## retail-soln
 
-Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epic 3 done** (Stories 3.1–3.5); **next: Epic 4** pricing/POS foundation — see `_bmad-output/planning-artifacts/epics.md`.
+Multi-store offline-first POS and retail management platform. Stack: Laravel 13 modular monolith (nWidart) under `backend/` + Vue 3 SPAs (Admin/SM, POS PWA, Customer Portal) over `/api/v1` — **no Inertia**. Planning lives in `_bmad-output/planning-artifacts/`; source brief in `docs/proposal.md`. **Epics 0–7 done**; **next: Epic 8** reporting & notifications — see `_bmad-output/planning-artifacts/epics.md` and `_bmad-output/implementation-artifacts/sprint-status.yaml`.
 
 ## Policy
 
-- Start application code only for the current sprint story (Epic 1+). Follow `_bmad-output/handover-epic-1.md` when beginning implementation.
+- Start application code only for the current sprint story. Follow `_bmad-output/handover-epic-1.md` only when revisiting early Epic 1 context.
 - Follow architecture invariants in `_bmad-output/planning-artifacts/architecture/architecture-retail-soln-2026-08-24/ARCHITECTURE-SPINE.md` (AD-1–AD-15). On conflict with older prose in `docs/proposal.md`, the spine and PRD win (notably: **no Inertia**).
 - Never mutate inventory quantity except via the inventory ledger service (AD-2). Never use floats for money — `DECIMAL` only.
 - Never commit secrets, `.env`, or live payment credentials. Payment webhooks must verify signatures and be idempotent.
@@ -22,22 +22,22 @@ Multi-store offline-first POS and retail management platform. Stack: Laravel 13 
 - UX spines (before POS UI): `_bmad-output/planning-artifacts/ux-designs/ux-retail-soln-2026-08-24/DESIGN.md` and `EXPERIENCE.md`
 - Sprint tracking: `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - Session handover for Epic 1: `_bmad-output/handover-epic-1.md`
-- Layout: `backend/` (Laravel + `Modules/`), `frontend/admin/` (Vue SPA), `frontend/pos/` (Vue POS SPA scaffolded Story 4.3), `docker/`, root `docker-compose.yml`
-- Modules: Authentication, Organization, Settings, Audit, Products, Inventory, Purchasing
-- Admin SPA: `frontend/admin/` (Vue 3 + Vite + TS + Tailwind); POS SPA: `frontend/pos/` (Vue 3 + Vite + Pinia; port 5174; Story 4.3 shell)
+- Layout: `backend/` (Laravel + `Modules/`), `frontend/admin/`, `frontend/pos/`, `frontend/customer-portal/`, `docker/`, root `docker-compose.yml`
+- Modules: Authentication, Organization, Settings, Audit, Products, Inventory, Purchasing, Pricing, Sales, Sync, CustomerPortal (+ payment adapters)
+- Admin SPA: `frontend/admin/` (Vue 3 + Vite + TS + Tailwind; port 5173); POS SPA: `frontend/pos/` (port 5174); Customer portal: `frontend/customer-portal/` (port 5175)
 
 ## Running and verifying
 
 - First boot (host): `cd backend && composer install && cp -n .env.example .env && php artisan key:generate` (Compose does **not** require `backend/.env`; it injects MySQL/Redis via service `environment`).
-- Docker stack (from repo root): `docker compose up -d --build` — services: `mysql`, `redis`, `app` (PHP-FPM), `nginx` (http://localhost:8080), `queue` (`php artisan queue:work`). Validate with `docker compose config`. Smoke: `curl -sf http://localhost:8080/api/v1/health`.
+- Docker stack (from repo root): `docker compose up -d --build` — services: `mysql`, `redis`, `app` (PHP-FPM), `nginx` (http://localhost:8080), `queue` (`php artisan queue:work`), `scheduler` (`php artisan schedule:work` — low-stock + portal reservation TTL). Validate with `docker compose config`. Smoke: `curl -sf http://localhost:8080/api/v1/health`.
 - Backend tests (Herd PHP 8.4, from `backend/`): `composer install` then `php artisan test` (uses sqlite `:memory:` via `phpunit.xml`).
-- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/health`, `/auth/*`, org/stores, RBAC, settings/audit, catalog `/products`…, inventory, `/suppliers`, `/purchase-orders`, `/goods-receipts`, `/purchase-returns`, `/supplier-invoices`, `/supplier-payments`.
-- Seed RBAC + dev users: `cd backend && php artisan db:seed` (permission matrix + role maps).
-- **Dev login** (after seed): `admin@retail.local` / `password` (org admin); `inventory@retail.local` / `password` (products/receive); `procurement@retail.local` / `password` (suppliers/POs/pay). Start API: `cd backend && php artisan serve --port=8001` (avoid `:8000` if another Herd site uses it). Admin SPA: `cd frontend/admin && npm run dev` → http://localhost:5173 (`VITE_PROXY_TARGET` in `frontend/admin/.env`; use `:8080` for Docker nginx).
+- API routes: `cd backend && php artisan route:list --path=api/v1` — expect `/health`, `/auth/*`, org/stores, RBAC, catalog, inventory, purchasing, pricing, sales/POS, sync, `/portal/*`, `/fulfilment/*`, payment webhooks.
+- Seed RBAC + dev users: `cd backend && php artisan db:seed` (permission matrix + role maps). Re-seed after new permissions (e.g. `fulfilment.pick|ship|pickup`).
+- **Dev login** (after seed): `admin@retail.local` / `password` (org admin); `inventory@retail.local` / `password` (products/receive); `procurement@retail.local` / `password` (suppliers/POs/pay). Start API: `cd backend && php artisan serve --port=8001` (avoid `:8000` if another Herd site uses it). Admin: http://localhost:5173; POS: http://localhost:5174; Portal: http://localhost:5175 (`VITE_PROXY_TARGET` in each app `.env`; use `:8080` for Docker nginx).
 - Auth smoke: `curl -sf -X POST http://localhost:8001/api/v1/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@retail.local","password":"password"}'`
-- Admin SPA: `cd frontend/admin && npm install && npm run dev` (http://localhost:5173). Build: `npm run build`.
-- Local without Docker: sqlite default in `.env.example` is fine for unit/feature tests.
-- **Current story:** Epic 4 next (pricing/POS). Never mutate `inventory_balances` quantities outside `InventoryLedgerService` (AD-2).
+- Admin / POS / portal: `npm install && npm run build` (or `npm run dev`) in each app under `frontend/`.
+- Local without Docker: sqlite default in `.env.example` is fine for unit/feature tests. Host scheduler: `php artisan schedule:work` (or cron) so unpaid portal holds expire.
+- **Current story:** Epic 8 next (reporting & notifications). Never mutate `inventory_balances` quantities outside `InventoryLedgerService` (AD-2).
 
 ## Conventions that differ from defaults
 

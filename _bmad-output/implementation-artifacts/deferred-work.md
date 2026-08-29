@@ -265,10 +265,6 @@
   evidence: client.test.ts covers helpers/API paths; views remain manual-check only.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-6-3-cart-checkout.md`
-  summary: Move available→reserved via InventoryLedgerService on portal place-order (Epic 7.1).
-  evidence: Story 6.3 stock-checks only; concurrent place can still oversell available until reservation exists.
-
-- source_spec: `_bmad-output/implementation-artifacts/spec-6-3-cart-checkout.md`
   summary: Replace Stripe/Paystack stub redirects with live Checkout Session / Initialize API capture.
   evidence: Adapters return configured_stub URLs when keys present; no real provider session create yet.
 
@@ -283,10 +279,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-6-3-cart-checkout.md`
   summary: Persist line-level discount amounts on portal_order_items for promotion audit.
   evidence: Only header discount_total is stored after checkout.
-
-- source_spec: `_bmad-output/implementation-artifacts/spec-6-4-order-tracking-invoices.md`
-  summary: Staff Admin mutators to advance portal order fulfilment statuses (processing → delivered).
-  evidence: Timeline supports advanced statuses in tests only; Epic 7 owns pick/pack/ship ops.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-6-4-order-tracking-invoices.md`
   summary: Persist portal order status transition history instead of deriving timeline from current status.
@@ -309,20 +301,12 @@
   evidence: Returns API client is covered; order-detail eligibility UI remains manual/backend-asserted.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-1-stock-reservation.md`
-  summary: Add a Docker Compose scheduler service for `portal:expire-unpaid-reservations` / Laravel schedule.
-  evidence: TTL command is registered with withoutOverlapping; Compose does not yet run schedule:work.
-
-- source_spec: `_bmad-output/implementation-artifacts/spec-7-1-stock-reservation.md`
   summary: Concurrent place-order race load test under inventory row locks.
   evidence: Feature tests cover sequential oversell; true parallel race not load-tested.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-1-stock-reservation.md`
   summary: Paid-webhook-after-cancel reconciliation / ops alert when late paid arrives on cancelled order.
   evidence: markPaymentStatus already ignores paid on cancelled; no ops alert or reconciliation job.
-
-- source_spec: `_bmad-output/implementation-artifacts/spec-7-1-stock-reservation.md`
-  summary: Update docs/operational-manual.md for portal stock reservation, cancel, and TTL ops.
-  evidence: Customer-portal README updated; operational manual not yet revised for 7.1.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-2-picking-packing.md`
   summary: Replace inline hasPermission checks on staff fulfilment APIs with a Laravel Policy class (AD-4).
@@ -355,15 +339,3 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-3-shipment-delivery.md`
   summary: Multi-parcel / multi-carrier shipments per order.
   evidence: Spec Ask First default is single shipment per order; multi-parcel deferred.
-
-- source_spec: `_bmad-output/implementation-artifacts/spec-7-4-store-pickup.md`
-  summary: Emphasize order number on fulfilment list rows (not only detail panel).
-  evidence: Review polish; detail already shows prominent order number for pickup counter handoff.
-
-- source_spec: `_bmad-output/implementation-artifacts/spec-7-4-store-pickup.md`
-  summary: Hide home_delivery carrier/tracking fields for pickup-only staff (no fulfilment.ship).
-  evidence: Review polish; carrier fields already gated to home_delivery mode; pickup-only role UX trim deferred.
-
-- source_spec: `_bmad-output/implementation-artifacts/spec-7-4-store-pickup.md`
-  summary: Emphasize order number on fulfilment list rows for pickup queue matching; hide HD carrier fields for pickup-only staff.
-  evidence: Detail panel shows order number; list rows and carrier UI polish deferred after 7.4 review.

@@ -30,7 +30,7 @@ API: `VITE_PROXY_TARGET` (default `http://127.0.0.1:8000`).
 - Cancel unpaid/failed (`POST /api/v1/portal/orders/{id}/cancel`) or TTL expiry releases **reserved→available**
 - Cancel sets order `status=cancelled` as the primary terminal signal; `payment_status` stays `awaiting_payment` / `failed` (no new payment enum without migration)
 - Order detail shows **Cancel order** (confirm dialog) while `cancellable` (pending + awaiting_payment|failed) and displays `reservationExpiresAt`
-- TTL job requires a running scheduler (`php artisan schedule:work` or cron); Docker Compose scheduler service is deferred
+- TTL job requires a running scheduler (`php artisan schedule:work` or cron). Docker Compose includes a `scheduler` service that runs `schedule:work` (low-stock hourly + unpaid reservation TTL every minute).
 
 **Payments (AD-10):**
 - Adapters: `manual` (local confirm), `stripe`, `paystack`
