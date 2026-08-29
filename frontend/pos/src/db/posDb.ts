@@ -1,4 +1,4 @@
-import Dexie, { type EntityTable } from 'dexie'
+import Dexie, { type EntityTable, type Table } from 'dexie'
 
 export type SyncMetaRow = {
   key: string
@@ -8,6 +8,53 @@ export type SyncMetaRow = {
 /** Placeholder row shape for stores filled by later Epic 5 stories. */
 export type IdRow = {
   id?: number
+}
+
+export type CachedProductVariant = {
+  id: number
+  name: string
+  sku: string
+  barcode: string | null
+  isActive: boolean
+  isDefault?: boolean
+  /** Variant list/base price (DECIMAL string). */
+  price: string
+}
+
+export type CachedProduct = {
+  id: number
+  name: string
+  sku: string
+  barcode: string | null
+  categoryId: number | null
+  isActive: boolean
+  variants: CachedProductVariant[]
+}
+
+export type CachedPrice = {
+  variantId: number
+  storeId: number
+  unitPrice: string
+  listPrice: string
+}
+
+export type CachedTax = {
+  storeId: number
+  name: string
+  rate: string
+  inclusive: boolean
+}
+
+export type CachedInventorySnapshot = {
+  variantId: number
+  storeId: number
+  available: string
+}
+
+export type CachedPosConfig = {
+  storeId: number
+  storeName: string
+  currency: string
 }
 
 const DEVICE_UUID_KEY = 'deviceUuid'
@@ -31,12 +78,12 @@ function createDeviceUuid(): string {
 }
 
 export class PosDatabase extends Dexie {
-  products!: EntityTable<IdRow, 'id'>
-  prices!: EntityTable<IdRow, 'id'>
-  taxes!: EntityTable<IdRow, 'id'>
+  products!: EntityTable<CachedProduct, 'id'>
+  prices!: Table<CachedPrice, [number, number]>
+  taxes!: EntityTable<CachedTax, 'storeId'>
   customers!: EntityTable<IdRow, 'id'>
-  inventory_snapshot!: EntityTable<IdRow, 'id'>
-  pos_config!: EntityTable<IdRow, 'id'>
+  inventory_snapshot!: Table<CachedInventorySnapshot, [number, number]>
+  pos_config!: EntityTable<CachedPosConfig, 'storeId'>
   pending_sales!: EntityTable<IdRow, 'id'>
   sync_meta!: EntityTable<SyncMetaRow, 'key'>
 
@@ -49,6 +96,25 @@ export class PosDatabase extends Dexie {
       customers: '++id',
       inventory_snapshot: '++id',
       pos_config: '++id',
+      pending_sales: '++id',
+      sync_meta: 'key',
+    })
+    // Drop placeholder tables before redefining primary keys (Dexie cannot alter PK in place).
+    this.version(2).stores({
+      products: null,
+      prices: null,
+      taxes: null,
+      inventory_snapshot: null,
+      pos_config: null,
+    })
+    // Typed catalog cache (Story 5.2).
+    this.version(3).stores({
+      products: 'id, sku, barcode, categoryId',
+      prices: '[variantId+storeId], storeId, variantId',
+      taxes: 'storeId',
+      customers: '++id',
+      inventory_snapshot: '[variantId+storeId], storeId, variantId',
+      pos_config: 'storeId',
       pending_sales: '++id',
       sync_meta: 'key',
     })

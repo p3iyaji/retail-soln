@@ -167,3 +167,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-1-pwa-offline-shell.md`
   summary: Add automated post-build assertion that generated SW precaches shell and denylists `/api`.
   evidence: Spec Verification relies on manual DevTools + successful `npm run build`; vitest does not inspect workbox output.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-2-local-cache-sync.md`
+  summary: Surface advisory inventory_snapshot qty on POS search/cart UI when offline.
+  evidence: Warm writes snapshot but floor UI does not display it; AD-9 still forbids hard-blocking.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-2-local-cache-sync.md`
+  summary: Use warmed pos_config (store name/currency) in POS chrome/formatting.
+  evidence: Rows are stored for later stories but unused in 5.2 UI.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-2-local-cache-sync.md`
+  summary: Add Dexie v1→v3 upgrade fixture test and API query-contract unit tests for warm helpers.
+  evidence: Current tests greenfield-open DB and mock catalog APIs entirely.

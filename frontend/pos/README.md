@@ -2,12 +2,15 @@
 
 Vue 3 + TypeScript + Vite + Tailwind CSS 4. Consumes `/api/v1` with Sanctum Bearer tokens (`retail_soln_pos_token`). Sends `X-Store-Id` after store selection. **No Inertia.**
 
-## PWA / offline shell (Story 5.1)
+## PWA / offline shell (Story 5.1) + local catalog cache (Story 5.2)
 
 - Install metadata: `public/manifest.webmanifest`
 - Production builds register a service worker via `vite-plugin-pwa` (app-shell precache). **Dev (`npm run dev`) does not register a SW** so Vite HMR stays intact.
-- Local store: Dexie IndexedDB (`src/db/posDb.ts`) with offline-sync tables; stable `deviceUuid` in `sync_meta` on first open.
-- Sync badge (chrome): ONLINE / OFFLINE / SYNCING / SYNC ERROR — driven by `stores/sync.ts` + browser connectivity. Catalog cache and offline sale queue are Stories 5.2–5.3 (not yet).
+- Local store: Dexie IndexedDB (`src/db/posDb.ts`) — typed `products`, `prices`, `taxes`, `inventory_snapshot`, `pos_config` (schema v3); stable `deviceUuid` in `sync_meta`.
+- **Cache warm** on store select / floor mount (`src/sync/cacheWarm.ts`): paginates existing `GET /products`, `GET /inventory/balances?storeId=`, `GET /stores/{id}` (taxConfig). Badge → SYNCING → ONLINE; failure → SYNC ERROR.
+- **Online:** search + cart pricing stay on live `GET /products/search` and `POST /pricing/resolve`.
+- **Offline:** search Dexie (`src/sync/localCatalog.ts`); cart lines from cached unit price + store tax (no promos). Inventory snapshot is advisory only.
+- Sync badge (chrome): ONLINE / OFFLINE / SYNCING / SYNC ERROR — driven by `stores/sync.ts` + browser connectivity. Offline sale queue is Story 5.3 (not yet). Formal cursor pull is Story 5.5.
 
 ## Run
 

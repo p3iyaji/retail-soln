@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ApiError } from '@/api/client'
+import Dexie from 'dexie'
+import { posDb } from '@/db/posDb'
 
 const resolvePrice = vi.fn()
 const searchProducts = vi.fn()
 const listCategories = vi.fn()
+const warmCache = vi.fn().mockResolvedValue(undefined)
+const searchLocalCatalog = vi.fn()
+const localCatalogProductCount = vi.fn()
 
 const authState = {
   user: { permissions: ['sales.create', 'sales.price-override'] as string[] },
@@ -18,6 +23,15 @@ vi.mock('@/api/posCatalog', () => ({
   resolvePrice: (...args: unknown[]) => resolvePrice(...args),
   searchProducts: (...args: unknown[]) => searchProducts(...args),
   listCategories: (...args: unknown[]) => listCategories(...args),
+}))
+
+vi.mock('@/sync/cacheWarm', () => ({
+  warmCache: (...args: unknown[]) => warmCache(...args),
+}))
+
+vi.mock('@/sync/localCatalog', () => ({
+  searchLocalCatalog: (...args: unknown[]) => searchLocalCatalog(...args),
+  localCatalogProductCount: (...args: unknown[]) => localCatalogProductCount(...args),
 }))
 
 vi.mock('@/stores/auth', () => ({
@@ -56,10 +70,15 @@ describe('pos cart store resolve/merge', () => {
     resolvePrice.mockReset()
     searchProducts.mockReset()
     listCategories.mockReset()
+    warmCache.mockReset()
+    warmCache.mockResolvedValue(undefined)
+    searchLocalCatalog.mockReset()
+    localCatalogProductCount.mockReset()
     listCategories.mockResolvedValue({ data: [{ id: 1, name: 'Snacks', slug: 'snacks', isActive: true }] })
     authState.user.permissions = ['sales.create', 'sales.price-override']
     localStorage.clear()
     localStorage.setItem('retail_soln_pos_store_id', '1')
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true })
   })
 
   it('adds via resolve; duplicate variant increments qty', async () => {
@@ -134,6 +153,7 @@ describe('pos cart store resolve/merge', () => {
     expect(pos.categoryId).toBeNull()
     expect(pos.selectedStoreId).toBe(2)
     expect(listCategories).toHaveBeenCalled()
+    expect(warmCache).toHaveBeenCalledWith(2)
   })
 
   it('setPriceOverride success applies override unit', async () => {
@@ -293,5 +313,124 @@ describe('pos cart store resolve/merge', () => {
     await pos.addFirstHit()
     expect(pos.cartLines).toHaveLength(1)
     expect(pos.cartLines[0]!.variantId).toBe(10)
+  })
+
+  it('online search uses live API not local catalog', async () => {
+    const { usePosStore } = await import('@/stores/pos')
+    const pos = usePosStore()
+    pos.selectStore(1)
+
+    searchProducts.mockResolvedValue({
+      data: [sampleProduct],
+      meta: { count: 1, elapsedMs: 5 },
+    })
+
+    await pos.runSearch('Chips', { immediate: true, allowAutoAdd: false })
+
+    expect(searchProducts).toHaveBeenCalled()
+    expect(searchLocalCatalog).not.toHaveBeenCalled()
+    expect(resolvePrice).not.toHaveBeenCalled()
+  })
+
+  it('offline search uses local catalog without /products/search', async () => {
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
+    const { usePosStore } = await import('@/stores/pos')
+    const pos = usePosStore()
+    pos.selectStore(1)
+
+    searchLocalCatalog.mockResolvedValue({
+      data: [sampleProduct],
+      meta: { count: 1, elapsedMs: 1 },
+    })
+
+    await pos.runSearch('CHIP', { immediate: true, allowAutoAdd: false })
+
+    expect(searchLocalCatalog).toHaveBeenCalled()
+    expect(searchProducts).not.toHaveBeenCalled()
+    expect(pos.searchResults).toHaveLength(1)
+  })
+
+  it('offline add-to-cart prices from cache without /pricing/resolve', async () => {
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
+    posDb.close()
+    await Dexie.delete('retail_soln_pos')
+    await posDb.open()
+    await posDb.prices.put({
+      variantId: 10,
+      storeId: 1,
+      unitPrice: '10.0000',
+      listPrice: '10.0000',
+    })
+    await posDb.taxes.put({
+      storeId: 1,
+      name: 'VAT',
+      rate: '0.1000',
+      inclusive: false,
+    })
+
+    const { usePosStore } = await import('@/stores/pos')
+    const pos = usePosStore()
+    pos.selectStore(1)
+
+    await pos.addVariantToCart(sampleProduct, sampleProduct.variants[0]!)
+
+    expect(resolvePrice).not.toHaveBeenCalled()
+    expect(pos.cartLines).toHaveLength(1)
+    expect(pos.cartLines[0]!.unitPrice).toBe('10.0000')
+    expect(pos.cartLines[0]!.taxAmount).toBe('1.0000')
+    expect(pos.cartLines[0]!.lineTotal).toBe('11.0000')
+  })
+
+  it('offline add with missing price surfaces cart error', async () => {
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
+    posDb.close()
+    await Dexie.delete('retail_soln_pos')
+    await posDb.open()
+
+    const { usePosStore } = await import('@/stores/pos')
+    const pos = usePosStore()
+    pos.selectStore(1)
+
+    await pos.addVariantToCart(sampleProduct, sampleProduct.variants[0]!)
+
+    expect(pos.cartLines).toHaveLength(0)
+    expect(pos.cartError).toContain('Price not available offline')
+    expect(resolvePrice).not.toHaveBeenCalled()
+  })
+
+  it('offline cold cache surfaces catalog-not-synced message', async () => {
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
+    const { usePosStore } = await import('@/stores/pos')
+    const pos = usePosStore()
+    pos.selectStore(1)
+
+    searchLocalCatalog.mockResolvedValue({ data: [], meta: { count: 0, elapsedMs: 1 } })
+    localCatalogProductCount.mockResolvedValue(0)
+
+    await pos.runSearch('nothing', { immediate: true, allowAutoAdd: false })
+
+    expect(pos.searchError).toContain('Catalog not synced')
+  })
+
+  it('offline add with missing tax surfaces cart error', async () => {
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
+    posDb.close()
+    await Dexie.delete('retail_soln_pos')
+    await posDb.open()
+    await posDb.prices.put({
+      variantId: 10,
+      storeId: 1,
+      unitPrice: '10.0000',
+      listPrice: '10.0000',
+    })
+
+    const { usePosStore } = await import('@/stores/pos')
+    const pos = usePosStore()
+    pos.selectStore(1)
+
+    await pos.addVariantToCart(sampleProduct, sampleProduct.variants[0]!)
+
+    expect(pos.cartLines).toHaveLength(0)
+    expect(pos.cartError).toContain('Tax not available offline')
   })
 })
