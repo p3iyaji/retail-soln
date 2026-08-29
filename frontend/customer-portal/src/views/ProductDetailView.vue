@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { catalogueApi, formatPortalMoney, type CatalogueProductDetail } from '@/api/client'
+import { useRoute, useRouter } from 'vue-router'
+import { ApiError, catalogueApi, formatPortalMoney, hasToken, type CatalogueProductDetail } from '@/api/client'
+import { useCartStore } from '@/stores/cart'
 
 const route = useRoute()
+const router = useRouter()
+const cart = useCartStore()
 
 const product = ref<CatalogueProductDetail | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const selectedVariantId = ref<number | null>(null)
+const qty = ref(1)
+const adding = ref(false)
+const addMessage = ref<string | null>(null)
 
 let detailAbort: AbortController | null = null
 
@@ -37,6 +43,7 @@ async function load() {
   error.value = null
   product.value = null
   selectedVariantId.value = null
+  addMessage.value = null
 
   const id = Number(route.params.id)
   if (!Number.isFinite(id)) {
@@ -58,6 +65,29 @@ async function load() {
     if (!controller.signal.aborted) {
       loading.value = false
     }
+  }
+}
+
+async function addToCart() {
+  addMessage.value = null
+  if (!selectedVariant.value) return
+  if (!hasToken()) {
+    await router.push({
+      name: 'login',
+      query: { redirect: route.fullPath },
+    })
+    return
+  }
+  adding.value = true
+  try {
+    const safeQty = Number.isFinite(qty.value) && qty.value >= 1 ? Math.floor(qty.value) : 1
+    qty.value = safeQty
+    await cart.addItem(selectedVariant.value.id, safeQty)
+    addMessage.value = 'Added to cart'
+  } catch (err) {
+    addMessage.value = err instanceof ApiError ? err.message : 'Could not add to cart'
+  } finally {
+    adding.value = false
   }
 }
 
@@ -136,15 +166,27 @@ watch(
           </li>
         </ul>
 
+        <div class="mb-4">
+          <label class="mb-2 block text-sm text-[var(--muted)]" for="qty">Quantity</label>
+          <input
+            id="qty"
+            v-model.number="qty"
+            type="number"
+            min="1"
+            step="1"
+            class="h-11 w-24 rounded-[var(--radius)] border border-[var(--line)] px-3 text-sm"
+          />
+        </div>
+
         <button
           type="button"
-          disabled
-          class="brand h-[52px] w-full cursor-not-allowed rounded-[var(--radius)] bg-[var(--brand)] text-base font-semibold text-[var(--brand-fg)] opacity-50"
-          title="Add to cart arrives in Story 6.3"
+          class="brand h-[52px] w-full rounded-[var(--radius)] bg-[var(--brand)] text-base font-semibold text-[var(--brand-fg)] disabled:opacity-50"
+          :disabled="adding || !selectedVariant"
+          @click="addToCart"
         >
-          Add to cart
+          {{ adding ? 'Adding…' : 'Add to cart' }}
         </button>
-        <p class="mt-4 text-[13px] text-[var(--muted)]">Online checkout coming soon</p>
+        <p v-if="addMessage" class="mt-4 text-[13px] text-[var(--muted)]">{{ addMessage }}</p>
       </div>
     </div>
   </div>

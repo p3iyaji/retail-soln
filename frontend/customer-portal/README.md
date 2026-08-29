@@ -1,6 +1,6 @@
 # Customer Portal SPA
 
-Vue 3 + Vite + TypeScript + Tailwind + Pinia customer-facing shop + account app (Stories 6.1–6.2).
+Vue 3 + Vite + TypeScript + Tailwind + Pinia customer-facing shop + account app (Stories 6.1–6.3).
 
 **Dev URL:** http://localhost:5175
 
@@ -15,6 +15,15 @@ API: `VITE_PROXY_TARGET` (default `http://127.0.0.1:8000`).
 
 **Backend env (portal):**
 - `CUSTOMER_PORTAL_ORGANIZATION_ID` — empty = first organization
-- `CUSTOMER_PORTAL_DEFAULT_STORE_ID` — empty = first **active** store in that org (used for catalogue price + stock signal)
+- `CUSTOMER_PORTAL_DEFAULT_STORE_ID` — empty = first **active** store in that org (catalogue + default fulfilment store)
+- `CUSTOMER_PORTAL_DELIVERY_FEE` — flat home-delivery fee (`DECIMAL` string; default `0.0000`; negative rejected)
 
-**Flows:** guest shop browse/search (`/shop`, `/shop/products/:id`) → register → verify email → login → profile / addresses. Cart/checkout/orders are not implemented yet (Stories 6.3–6.5). Add to cart is a disabled stub.
+**Payments (AD-10):**
+- Adapters: `manual` (local confirm), `stripe`, `paystack`
+- Shoppers confirm manual pay via authenticated `POST /api/v1/portal/orders/{id}/confirm-payment`
+- Provider-style manual webhook: `POST /api/v1/webhooks/payments/manual` requires `PAYMENT_MANUAL_WEBHOOK_SECRET` + header `X-Manual-Webhook-Secret` (not for browser checkout)
+- Stripe/Paystack webhooks: signature verify + idempotent event storage; provider must match the order
+- Without live keys, Stripe/Paystack return placeholder redirect URLs (include `orderId` + `payment_ref`); production fails closed with 503 if misconfigured
+- `PORTAL_FRONTEND_URL` / `PAYMENT_ALLOWED_REDIRECT_ORIGINS` — success/cancel URLs must match allowlisted origins (no open redirects)
+
+**Flows:** guest browse/search → register → verify → login → **add to cart** → `/shop/cart` → `/shop/checkout` (delivery / click & collect / pickup + pay) → `/shop/confirmation?orderId=…`. Orders list / invoice / returns remain stubs (6.4–6.5).

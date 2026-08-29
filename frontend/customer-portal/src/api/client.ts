@@ -235,3 +235,138 @@ export const catalogueApi = {
       init,
     ),
 }
+
+export type CartTotals = {
+  subtotal: string
+  discountTotal: string
+  taxTotal: string
+  deliveryFee: string
+  grandTotal: string
+}
+
+export type CartLine = {
+  id: number
+  variantId: number
+  productId: number
+  productName: string
+  variantName: string
+  sku: string
+  qty: string
+  unitListPrice: string
+  unitNetPrice: string
+  unitGrossPrice: string
+  lineTax: string
+  lineDiscount: string
+  lineTotal: string
+}
+
+export type CartPayload = {
+  lines: CartLine[]
+  totals: CartTotals
+  store: { id: number; name: string } | null
+}
+
+export type PortalStore = {
+  id: number
+  name: string
+  code: string | null
+}
+
+export type FulfilmentMode = 'home_delivery' | 'click_collect' | 'store_pickup'
+export type PaymentProvider = 'manual' | 'stripe' | 'paystack'
+
+export type CheckoutPreview = {
+  lines: CartLine[]
+  totals: CartTotals
+  fulfilment: {
+    mode: FulfilmentMode
+    addressId: number | null
+    contactPhone: string | null
+  }
+  store: { id: number; name: string }
+}
+
+export type PortalOrder = {
+  id: number
+  uuid: string
+  orderNumber: string
+  status: string
+  paymentStatus: string
+  fulfilmentMode: FulfilmentMode
+  store: { id: number; name: string | null }
+  addressId: number | null
+  contactPhone: string | null
+  totals: CartTotals
+  paymentProvider: PaymentProvider | string | null
+  paymentReference: string | null
+  items: Array<{
+    id: number
+    variantId: number
+    productName: string
+    variantName: string
+    sku: string
+    qty: string
+    unitGrossPrice: string
+    lineTax: string
+    lineTotal: string
+  }>
+  payment?: {
+    provider: string
+    reference: string
+    status: string
+    redirectUrl: string | null
+    requiresClientAction: boolean
+    meta: Record<string, unknown>
+  }
+}
+
+export const cartApi = {
+  get: (storeId?: number | null, init?: RequestInit) =>
+    api.get<{ data: CartPayload }>(
+      `/portal/cart${catalogueQuery({ storeId: storeId ?? undefined })}`,
+      init,
+    ),
+  add: (variantId: number, qty: number, storeId?: number | null) =>
+    api.post<{ data: CartPayload }>('/portal/cart/items', {
+      variantId,
+      qty,
+      ...(storeId != null ? { storeId } : {}),
+    }),
+  update: (lineId: number, qty: number, storeId?: number | null) =>
+    api.patch<{ data: CartPayload }>(`/portal/cart/items/${lineId}`, {
+      qty,
+      ...(storeId != null ? { storeId } : {}),
+    }),
+  remove: (lineId: number, storeId?: number | null) =>
+    api.delete<{ data: CartPayload }>(
+      `/portal/cart/items/${lineId}${catalogueQuery({ storeId: storeId ?? undefined })}`,
+    ),
+}
+
+export const checkoutApi = {
+  stores: (init?: RequestInit) => api.get<{ data: PortalStore[] }>('/portal/stores', init),
+  preview: (payload: {
+    fulfilmentMode: FulfilmentMode
+    storeId?: number | null
+    addressId?: number | null
+    contactPhone?: string | null
+  }) => api.post<{ data: CheckoutPreview }>('/portal/checkout/preview', payload),
+  place: (
+    payload: {
+      fulfilmentMode: FulfilmentMode
+      storeId?: number | null
+      addressId?: number | null
+      contactPhone?: string | null
+      paymentProvider: PaymentProvider
+      successUrl?: string
+      cancelUrl?: string
+    },
+    idempotencyKey: string,
+  ) =>
+    api.post<{ data: PortalOrder }>('/portal/checkout/place', payload, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    }),
+  confirmManual: (orderId: number) =>
+    api.post<{ data: PortalOrder }>(`/portal/orders/${orderId}/confirm-payment`),
+  order: (orderId: number) => api.get<{ data: PortalOrder }>(`/portal/orders/${orderId}`),
+}

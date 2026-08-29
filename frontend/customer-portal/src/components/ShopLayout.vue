@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { hasToken } from '@/api/client'
+import { useCartStore } from '@/stores/cart'
 
 const route = useRoute()
 const router = useRouter()
+const cart = useCartStore()
 
 const searchInput = ref('')
 
@@ -17,6 +19,18 @@ watch(
 )
 
 const accountHref = computed(() => (hasToken() ? { name: 'account' as const } : { name: 'login' as const }))
+const cartLabel = computed(() => {
+  const n = cart.itemCount
+  return n > 0 ? `Cart (${n})` : 'Cart'
+})
+
+onMounted(() => {
+  if (hasToken()) {
+    void cart.fetchCart().catch(() => {
+      /* badge optional */
+    })
+  }
+})
 
 function onSearchSubmit() {
   const q = searchInput.value.trim()
@@ -51,15 +65,15 @@ function onSearchSubmit() {
         </form>
         <nav class="flex items-center gap-4 text-sm text-[var(--muted)]">
           <RouterLink class="hover:text-[var(--ink)]" :to="accountHref">Account</RouterLink>
-          <span class="cursor-not-allowed text-[var(--muted)] opacity-60" title="Coming in a later story">
+          <span class="cursor-not-allowed text-[var(--muted)] opacity-60" title="Coming in Story 6.4">
             Orders
           </span>
-          <span
-            class="cursor-not-allowed font-semibold text-[var(--brand)] opacity-50"
-            title="Cart arrives in Story 6.3"
+          <RouterLink
+            :to="hasToken() ? { name: 'cart' } : { name: 'login', query: { redirect: '/shop/cart' } }"
+            class="font-semibold text-[var(--brand)] no-underline hover:underline"
           >
-            Cart
-          </span>
+            {{ cartLabel }}
+          </RouterLink>
         </nav>
       </div>
     </header>
