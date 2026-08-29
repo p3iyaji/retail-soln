@@ -72,8 +72,8 @@ development_status:
   5-1-pwa-offline-shell: done
   5-2-local-cache-sync: done
   5-3-offline-sale-queue: done
-  5-4-push-sync-api: review
-  5-5-pull-sync-cursors: backlog
+  5-4-push-sync-api: done
+  5-5-pull-sync-cursors: review
   5-6-sync-status-ui: backlog
   5-7-device-registration: backlog
   epic-5-retrospective: optional

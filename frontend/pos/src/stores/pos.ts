@@ -26,7 +26,7 @@ import {
 } from '@/api/posSessions'
 import { useAuthStore } from '@/stores/auth'
 import { money } from '@/lib/decimal'
-import { warmCache } from '@/sync/cacheWarm'
+import { pullCache } from '@/sync/pullCache'
 import { localCatalogProductCount, searchLocalCatalog } from '@/sync/localCatalog'
 
 function isBrowserOffline(): boolean {
@@ -132,9 +132,9 @@ export const usePosStore = defineStore('pos', () => {
       void loadCategories()
     }
 
-    // Warm catalog cache for offline search/pricing (Story 5.2). Online-only.
-    void warmCache(id).catch(() => {
-      // SYNC ERROR already set inside warmCache
+    // Pull catalog deltas for offline search/pricing (Story 5.5). Online-only.
+    void pullCache(id).catch(() => {
+      // SYNC ERROR already set inside pullCache
     })
   }
 
@@ -143,9 +143,9 @@ export const usePosStore = defineStore('pos', () => {
     const id = selectedStoreId.value
     if (id == null) return
     try {
-      await warmCache(id)
+      await pullCache(id)
     } catch {
-      // SYNC ERROR already set inside warmCache
+      // SYNC ERROR already set inside pullCache
     }
   }
 

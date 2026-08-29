@@ -57,6 +57,14 @@ export type CachedPosConfig = {
   currency: string
 }
 
+export type CachedCustomer = {
+  id: number
+  name: string
+  phone: string | null
+  email: string | null
+  isActive: boolean
+}
+
 /** Offline transaction envelope sync status (offline-sync design). */
 export type PendingSyncStatus = 'pending' | 'pushing' | 'synced' | 'error'
 
@@ -105,7 +113,7 @@ export class PosDatabase extends Dexie {
   products!: EntityTable<CachedProduct, 'id'>
   prices!: Table<CachedPrice, [number, number]>
   taxes!: EntityTable<CachedTax, 'storeId'>
-  customers!: EntityTable<IdRow, 'id'>
+  customers!: EntityTable<CachedCustomer, 'id'>
   inventory_snapshot!: Table<CachedInventorySnapshot, [number, number]>
   pos_config!: EntityTable<CachedPosConfig, 'storeId'>
   pending_sales!: EntityTable<PendingSaleEnvelope, 'uuid'>
@@ -148,6 +156,13 @@ export class PosDatabase extends Dexie {
     })
     this.version(5).stores({
       pending_sales: 'uuid, localSequence, syncStatus, storeId, [syncStatus+localSequence]',
+    })
+    // Story 5.5: typed customers PK for pull upserts.
+    this.version(6).stores({
+      customers: null,
+    })
+    this.version(7).stores({
+      customers: 'id, name, phone',
     })
   }
 }

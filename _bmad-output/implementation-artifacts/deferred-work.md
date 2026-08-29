@@ -203,3 +203,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-4-push-sync-api.md`
   summary: Move sync authorize/approve to Policies (AD-4) and audit oversell approvals.
   evidence: Inline hasPermission/canAccessStore checks; no audit event on approve.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-5-pull-sync-cursors.md`
+  summary: Emit pull tombstones for hard-deleted products and removed price/inventory rows (no soft-delete path today).
+  evidence: Pull only surfaces inactive/soft-deleted customers and inactive products; prices/inventory deleted arrays stay empty.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-5-pull-sync-cursors.md`
+  summary: Bump product watermark when variant fields change without touching products.updated_at.
+  evidence: Variant-only edits can skip the products delta watermark.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-5-pull-sync-cursors.md`
+  summary: Decide whether to remove warmCache entirely or keep an explicit full-refresh admin action.
+  evidence: Online paths use pull; cacheWarm.ts remains for tests/legacy without a recorded Ask First resolution.

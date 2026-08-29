@@ -15,8 +15,8 @@ describe('posDb', () => {
     db.close()
   })
 
-  it('opens with offline-sync store names at schema v5', () => {
-    expect(db.verno).toBe(5)
+  it('opens with offline-sync store names at schema v7', () => {
+    expect(db.verno).toBe(7)
     expect(db.tables.map((t) => t.name).sort()).toEqual(
       [
         'customers',
@@ -152,7 +152,7 @@ describe('posDb', () => {
 
     const upgraded = new PosDatabase()
     await upgraded.open()
-    expect(upgraded.verno).toBe(5)
+    expect(upgraded.verno).toBe(7)
     expect(await upgraded.sync_meta.get('deviceUuid')).toMatchObject({ value: 'keep-me' })
     await upgraded.pending_sales.put({
       uuid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
