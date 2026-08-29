@@ -32,6 +32,7 @@ class SyncStatusService
 
         $device = null;
         if ($deviceUuid !== null && $deviceUuid !== '') {
+            $deviceUuid = strtolower($deviceUuid);
             $device = Device::query()
                 ->where('organization_id', $organizationId)
                 ->where('store_id', $storeId)

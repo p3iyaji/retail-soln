@@ -68,14 +68,14 @@ development_status:
   4-12-proforma-convert: done
   epic-4-retrospective: optional
 
-  epic-5: in-progress
+  epic-5: done
   5-1-pwa-offline-shell: done
   5-2-local-cache-sync: done
   5-3-offline-sale-queue: done
   5-4-push-sync-api: done
   5-5-pull-sync-cursors: done
-  5-6-sync-status-ui: review
-  5-7-device-registration: backlog
+  5-6-sync-status-ui: done
+  5-7-device-registration: review
   epic-5-retrospective: optional
 
   epic-6: backlog

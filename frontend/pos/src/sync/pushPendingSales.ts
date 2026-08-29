@@ -1,4 +1,4 @@
-import { api, ApiError } from '@/api/client'
+import { api, ApiError, formatDeviceSyncError } from '@/api/client'
 import { ensureDeviceUuid, posDb, type PosDatabase } from '@/db/posDb'
 import { useSyncStore } from '@/stores/sync'
 import {
@@ -177,16 +177,22 @@ async function runDrain(
   } catch (err) {
     const message =
       err instanceof ApiError
-        ? err.message
+        ? formatDeviceSyncError(err)
         : err instanceof Error
           ? err.message
           : 'Sync push failed'
 
-    const deviceDisabled = err instanceof ApiError && err.status === 403
+    const deviceGate =
+      err instanceof ApiError &&
+      err.status === 403 &&
+      (err.code === 'device_disabled' ||
+        err.code === 'device_unregistered' ||
+        // Legacy/unknown 403: still treat as non-retryable device gate.
+        err.code == null)
 
     // Transport / network failure: leave as pushing so reconnect retries.
-    // Device-disabled (403): mark error; badge still SYNC ERROR either way.
-    if (deviceDisabled) {
+    // Device gate (403): mark error; badge still SYNC ERROR either way.
+    if (deviceGate) {
       for (const row of batch) {
         await markSaleError(row.uuid, { errors: [message] }, db)
       }

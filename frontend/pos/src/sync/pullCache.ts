@@ -1,4 +1,4 @@
-import { api, ApiError } from '@/api/client'
+import { api, ApiError, formatDeviceSyncError } from '@/api/client'
 import {
   ensureDeviceUuid,
   posDb,
@@ -426,7 +426,7 @@ export async function pullCache(
     } catch (err) {
       const message =
         err instanceof ApiError
-          ? err.message
+          ? formatDeviceSyncError(err)
           : err instanceof Error
             ? err.message
             : 'Cache pull failed'

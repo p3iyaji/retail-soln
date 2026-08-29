@@ -51,6 +51,8 @@ describe('SyncBadge', () => {
     countPendingAndError.mockClear()
     countPendingAndError.mockResolvedValue({ pending: 2, error: 1 })
     getStoredStoreId.mockReturnValue(1)
+    ensureDeviceUuid.mockReset()
+    ensureDeviceUuid.mockResolvedValue('550e8400-e29b-41d4-a716-446655440099')
     apiGet.mockClear()
     apiGet.mockResolvedValue({ data: { pendingOversellCount: 0, deviceEnabled: true } })
     Object.defineProperty(navigator, 'onLine', {
@@ -121,7 +123,10 @@ describe('SyncBadge', () => {
     await wrapper.find('button.sync-badge').trigger('click')
     await flushPromises()
 
-    await wrapper.find('#sync-status-panel button').trigger('click')
+    const retryBtn = wrapper
+      .findAll('#sync-status-panel button')
+      .find((b) => b.text().includes('Retry'))
+    await retryBtn!.trigger('click')
     await flushPromises()
 
     expect(drainThenPull).toHaveBeenCalled()
@@ -139,7 +144,10 @@ describe('SyncBadge', () => {
     const wrapper = mount(SyncBadge)
     await wrapper.find('button.sync-badge').trigger('click')
     await flushPromises()
-    await wrapper.find('#sync-status-panel button').trigger('click')
+    const retryBtn = wrapper
+      .findAll('#sync-status-panel button')
+      .find((b) => b.text().includes('Retry'))
+    await retryBtn!.trigger('click')
     await flushPromises()
 
     expect(sync.status).toBe('SYNC_ERROR')
@@ -155,7 +163,10 @@ describe('SyncBadge', () => {
     const wrapper = mount(SyncBadge)
     await wrapper.find('button.sync-badge').trigger('click')
     await flushPromises()
-    await wrapper.find('#sync-status-panel button').trigger('click')
+    const retryBtn = wrapper
+      .findAll('#sync-status-panel button')
+      .find((b) => b.text().includes('Retry'))
+    await retryBtn!.trigger('click')
     await flushPromises()
 
     expect(drainThenPull).not.toHaveBeenCalled()
@@ -163,5 +174,56 @@ describe('SyncBadge', () => {
     expect(sync.lastError).toBe('push failed')
     expect(wrapper.text()).toContain('Select a store before retrying sync')
     expect(wrapper.find('#sync-status-panel').exists()).toBe(true)
+  })
+
+  it('shows full copyable deviceUuid in the panel', async () => {
+    const uuid = '550e8400-e29b-41d4-a716-446655440099'
+    ensureDeviceUuid.mockResolvedValue(uuid)
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+
+    const wrapper = mount(SyncBadge)
+    await wrapper.find('button.sync-badge').trigger('click')
+    await flushPromises()
+
+    const uuidEl = wrapper.find('[data-testid="device-uuid"]')
+    expect(uuidEl.exists()).toBe(true)
+    expect(uuidEl.text()).toBe(uuid)
+
+    const copyBtn = wrapper
+      .findAll('#sync-status-panel button')
+      .find((b) => b.text() === 'Copy')
+    expect(copyBtn).toBeTruthy()
+    await copyBtn!.trigger('click')
+    await flushPromises()
+
+    expect(writeText).toHaveBeenCalledWith(uuid)
+    expect(wrapper.text()).toContain('Copied')
+  })
+
+  it('shows panel error when ensureDeviceUuid fails', async () => {
+    ensureDeviceUuid.mockRejectedValue(new Error('IndexedDB unavailable'))
+
+    const wrapper = mount(SyncBadge)
+    await wrapper.find('button.sync-badge').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="device-uuid"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('IndexedDB unavailable')
+  })
+
+  it('shows register-in-Admin hint when lastError is unregistered', async () => {
+    ensureDeviceUuid.mockResolvedValue('550e8400-e29b-41d4-a716-446655440099')
+    const sync = useSyncStore()
+    sync.setSyncError('Device is not registered — register this UUID in Admin Devices')
+
+    const wrapper = mount(SyncBadge)
+    await wrapper.find('button.sync-badge').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Register this device UUID in Admin → Devices')
   })
 })

@@ -15,12 +15,24 @@ const getMock = vi.fn()
 vi.mock('@/api/client', () => ({
   ApiError: class ApiError extends Error {
     status: number
-    body: unknown
-    constructor(status: number, body: { message?: string }) {
+    body: { message?: string; code?: string }
+    constructor(status: number, body: { message?: string; code?: string }) {
       super(body.message ?? `Request failed (${status})`)
       this.status = status
       this.body = body
     }
+    get code(): string | undefined {
+      return this.body.code
+    }
+  },
+  formatDeviceSyncError: (err: { code?: string; message: string }) => {
+    if (err.code === 'device_unregistered') {
+      return 'Device is not registered — register this UUID in Admin Devices'
+    }
+    if (err.code === 'device_disabled') {
+      return 'Device is disabled and cannot sync'
+    }
+    return err.message
   },
   api: {
     get: (...args: unknown[]) => getMock(...args),
@@ -298,11 +310,33 @@ describe('pullCache', () => {
   it('device disabled 403 sets SYNC ERROR', async () => {
     await ensureDeviceUuid(db)
     const { ApiError } = await import('@/api/client')
-    getMock.mockRejectedValue(new ApiError(403, { message: 'Device is disabled and cannot sync.' }))
+    getMock.mockRejectedValue(
+      new ApiError(403, {
+        message: 'Device is disabled and cannot sync.',
+        code: 'device_disabled',
+      }),
+    )
 
     const sync = useSyncStore()
     await expect(pullCache(1, { db, sync })).rejects.toThrow(/disabled/)
     expect(sync.status).toBe('SYNC_ERROR')
+    expect(sync.lastError).toContain('disabled')
+  })
+
+  it('device unregistered 403 sets SYNC ERROR with Admin register hint', async () => {
+    await ensureDeviceUuid(db)
+    const { ApiError } = await import('@/api/client')
+    getMock.mockRejectedValue(
+      new ApiError(403, {
+        message: 'Device is not registered for this store.',
+        code: 'device_unregistered',
+      }),
+    )
+
+    const sync = useSyncStore()
+    await expect(pullCache(1, { db, sync })).rejects.toThrow(/not registered/)
+    expect(sync.status).toBe('SYNC_ERROR')
+    expect(sync.lastError).toMatch(/register this UUID in Admin/i)
   })
 
   it('offline same store keeps cache and does not call API', async () => {

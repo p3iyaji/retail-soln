@@ -88,6 +88,14 @@ class SyncPullApiTest extends TestCase
         $this->cashier = User::factory()->cashier()->create();
         $this->cashier->stores()->attach($this->store->id, ['is_default' => true]);
         Sanctum::actingAs($this->cashier);
+
+        Device::query()->create([
+            'organization_id' => $this->orgId,
+            'store_id' => $this->store->id,
+            'uuid' => $this->deviceUuid,
+            'name' => 'POS Pull',
+            'enabled' => true,
+        ]);
     }
 
     /**
@@ -220,16 +228,25 @@ class SyncPullApiTest extends TestCase
 
     public function test_disabled_device_returns_403(): void
     {
-        Device::query()->create([
-            'organization_id' => $this->orgId,
-            'store_id' => $this->store->id,
-            'uuid' => $this->deviceUuid,
-            'enabled' => false,
-            'last_seen_at' => now(),
-        ]);
+        Device::query()
+            ->where('organization_id', $this->orgId)
+            ->where('uuid', $this->deviceUuid)
+            ->update(['enabled' => false, 'last_seen_at' => now()]);
 
         $this->pull()->assertForbidden()
             ->assertJsonPath('code', 'device_disabled');
+    }
+
+    public function test_unregistered_device_returns_403_without_creating_row(): void
+    {
+        $unknown = '550e8400-e29b-41d4-a716-4466554400ee';
+        $before = Device::query()->count();
+
+        $this->pull(deviceUuid: $unknown)->assertForbidden()
+            ->assertJsonPath('code', 'device_unregistered');
+
+        $this->assertSame($before, Device::query()->count());
+        $this->assertDatabaseMissing('devices', ['uuid' => $unknown]);
     }
 
     public function test_cursor_store_mismatch_returns_422(): void
@@ -265,6 +282,13 @@ class SyncPullApiTest extends TestCase
     {
         Sanctum::actingAs($this->cashier);
         $uuid = '550e8400-e29b-41d4-a716-446655440088';
+        Device::query()->create([
+            'organization_id' => $this->orgId,
+            'store_id' => $this->store->id,
+            'uuid' => $uuid,
+            'name' => 'Query param device',
+            'enabled' => true,
+        ]);
 
         $response = $this->getJson(
             '/api/v1/sync/pull?'.http_build_query(['deviceUuid' => $uuid]),
