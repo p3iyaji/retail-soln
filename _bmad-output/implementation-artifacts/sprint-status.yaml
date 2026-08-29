@@ -78,12 +78,12 @@ development_status:
   5-7-device-registration: done
   epic-5-retrospective: optional
 
-  epic-6: in-progress
+  epic-6: done
   6-1-customer-registration-auth: done
   6-2-product-catalogue: done
   6-3-cart-checkout: done
   6-4-order-tracking-invoices: done
-  6-5-returns-request: review
+  6-5-returns-request: done
   epic-6-retrospective: optional
 
   epic-7: backlog
