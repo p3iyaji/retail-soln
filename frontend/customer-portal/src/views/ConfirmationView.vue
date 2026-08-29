@@ -41,7 +41,8 @@ onMounted(async () => {
     <template v-else-if="order">
       <h1 class="brand text-2xl font-semibold tracking-tight">Order placed</h1>
       <p class="mt-2 text-sm text-[var(--muted)]">
-        Thanks — your online order is recorded. Full tracking arrives in a later story.
+        Thanks — your online order is recorded. Track status and download your invoice from the order
+        page.
       </p>
       <div class="mt-6 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] p-5">
         <div class="mb-2 text-sm text-[var(--muted)]">Order number</div>
@@ -49,7 +50,7 @@ onMounted(async () => {
         <div class="mt-4 grid gap-2 text-sm">
           <div class="flex justify-between">
             <span class="text-[var(--muted)]">Status</span>
-            <span class="font-semibold capitalize">{{ order.status }}</span>
+            <span class="font-semibold capitalize">{{ order.statusLabel || order.status }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[var(--muted)]">Payment</span>
@@ -61,12 +62,20 @@ onMounted(async () => {
           </div>
         </div>
       </div>
-      <RouterLink
-        :to="{ name: 'shop' }"
-        class="mt-6 inline-flex h-11 items-center rounded-[var(--radius)] bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--brand-fg)] no-underline"
-      >
-        Back to shop
-      </RouterLink>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <RouterLink
+          :to="{ name: 'order-detail', params: { id: order.id } }"
+          class="inline-flex h-11 items-center rounded-[var(--radius)] bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--brand-fg)] no-underline"
+        >
+          View order tracking
+        </RouterLink>
+        <RouterLink
+          :to="{ name: 'shop' }"
+          class="inline-flex h-11 items-center rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] px-5 text-sm font-semibold text-[var(--ink)] no-underline"
+        >
+          Back to shop
+        </RouterLink>
+      </div>
     </template>
   </div>
 </template>

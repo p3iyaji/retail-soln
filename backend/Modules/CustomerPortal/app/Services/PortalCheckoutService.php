@@ -375,9 +375,19 @@ class PortalCheckoutService
                 return $locked->load(['items', 'store']);
             }
 
+            // Cancelled orders must not be revived by a late paid webhook.
+            if ($status === 'paid' && $locked->status === 'cancelled') {
+                return $locked->load(['items', 'store']);
+            }
+
             $locked->payment_status = $status;
-            if ($status === 'paid' && $locked->status === 'pending') {
-                $locked->status = 'confirmed';
+            if ($status === 'paid') {
+                if ($locked->paid_at === null) {
+                    $locked->paid_at = now();
+                }
+                if ($locked->status === 'pending') {
+                    $locked->status = 'confirmed';
+                }
             }
             $locked->save();
 

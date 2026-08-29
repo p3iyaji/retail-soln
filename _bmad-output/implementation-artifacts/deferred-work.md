@@ -283,3 +283,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-6-3-cart-checkout.md`
   summary: Persist line-level discount amounts on portal_order_items for promotion audit.
   evidence: Only header discount_total is stored after checkout.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-4-order-tracking-invoices.md`
+  summary: Staff Admin mutators to advance portal order fulfilment statuses (processing → delivered).
+  evidence: Timeline supports advanced statuses in tests only; Epic 7 owns pick/pack/ship ops.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-4-order-tracking-invoices.md`
+  summary: Persist portal order status transition history instead of deriving timeline from current status.
+  evidence: Ask First default was derived timeline; audit history deferred.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-4-order-tracking-invoices.md`
+  summary: Replace HTML portal invoice download with fiscal PDF engine if required by locale.
+  evidence: 6.4 ships proforma-style HTML from portal_orders only.

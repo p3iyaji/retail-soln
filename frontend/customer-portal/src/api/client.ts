@@ -286,19 +286,55 @@ export type CheckoutPreview = {
   store: { id: number; name: string }
 }
 
+export type OrderTimelineStep = {
+  key: string
+  label: string
+  state: 'completed' | 'current' | 'upcoming'
+  detail: string | null
+  at: string | null
+}
+
+export type PortalOrderListItem = {
+  id: number
+  orderNumber: string
+  status: string
+  statusLabel: string
+  paymentStatus: string
+  fulfilmentMode: FulfilmentMode
+  store: { id: number; name: string | null }
+  totals: { grandTotal: string }
+  invoiceAvailable: boolean
+  createdAt: string | null
+  paidAt: string | null
+}
+
 export type PortalOrder = {
   id: number
   uuid: string
   orderNumber: string
   status: string
+  statusLabel?: string
   paymentStatus: string
   fulfilmentMode: FulfilmentMode
   store: { id: number; name: string | null }
   addressId: number | null
+  address?: {
+    line1: string | null
+    line2: string | null
+    city: string | null
+    region: string | null
+    postalCode: string | null
+    country: string | null
+  } | null
   contactPhone: string | null
   totals: CartTotals
   paymentProvider: PaymentProvider | string | null
   paymentReference: string | null
+  paidAt?: string | null
+  createdAt?: string | null
+  invoiceAvailable?: boolean
+  timeline?: OrderTimelineStep[]
+  customer?: { name: string | null; email: string | null }
   items: Array<{
     id: number
     variantId: number
@@ -369,4 +405,112 @@ export const checkoutApi = {
   confirmManual: (orderId: number) =>
     api.post<{ data: PortalOrder }>(`/portal/orders/${orderId}/confirm-payment`),
   order: (orderId: number) => api.get<{ data: PortalOrder }>(`/portal/orders/${orderId}`),
+}
+
+export type OrdersListResponse = {
+  data: PortalOrderListItem[]
+  meta: {
+    currentPage: number
+    lastPage: number
+    total: number
+  }
+}
+
+function parseContentDispositionFilename(disposition: string, fallback: string): string {
+  const star = /filename\*\s*=\s*(?:UTF-8''|utf-8'')([^;\s]+)|filename\*\s*=\s*([^;\s]+)/i.exec(
+    disposition,
+  )
+  if (star) {
+    const raw = (star[1] ?? star[2] ?? '').trim().replace(/^"|"$/g, '')
+    try {
+      return decodeURIComponent(raw) || fallback
+    } catch {
+      return raw || fallback
+    }
+  }
+
+  const quoted = /filename\s*=\s*"([^"]+)"/i.exec(disposition)
+  if (quoted?.[1]) {
+    return quoted[1]
+  }
+
+  const plain = /filename\s*=\s*([^;]+)/i.exec(disposition)
+  if (plain?.[1]) {
+    return plain[1].trim().replace(/^"|"$/g, '') || fallback
+  }
+
+  return fallback
+}
+
+function looksLikeJsonBody(contentType: string, sample: string): boolean {
+  if (contentType.includes('application/json')) {
+    return true
+  }
+  const trimmed = sample.trimStart()
+  return trimmed.startsWith('{') || trimmed.startsWith('[')
+}
+
+async function downloadBlob(path: string, fallbackFilename: string): Promise<void> {
+  const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? '/api/v1'
+  const headers = new Headers({ Accept: 'text/html,application/json' })
+  const token = getToken()
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const response = await fetch(`${base}${path}`, {
+    headers,
+    signal: AbortSignal.timeout(30_000),
+  })
+
+  const contentType = response.headers.get('Content-Type') ?? ''
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as ApiErrorBody
+    throw new ApiError(response.status, body)
+  }
+
+  const buffer = await response.arrayBuffer()
+  const sample = new TextDecoder().decode(buffer.slice(0, 64))
+  if (looksLikeJsonBody(contentType, sample)) {
+    let body: ApiErrorBody = { message: 'Unexpected JSON response for invoice download.' }
+    try {
+      body = JSON.parse(new TextDecoder().decode(buffer)) as ApiErrorBody
+    } catch {
+      /* keep default */
+    }
+    throw new ApiError(response.status, body)
+  }
+
+  const disposition = response.headers.get('Content-Disposition') ?? ''
+  const filename = parseContentDispositionFilename(disposition, fallbackFilename)
+  const blob = new Blob([buffer], {
+    type: contentType.includes('text/html') ? 'text/html' : contentType || 'text/html',
+  })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  // Delay revoke so the browser can start the download (Safari/Firefox).
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500)
+}
+
+export const ordersApi = {
+  list: (page = 1, init?: RequestInit) => {
+    const safePage = Math.max(1, Math.floor(Number(page)) || 1)
+    return api.get<OrdersListResponse>(
+      `/portal/orders${safePage > 1 ? `?page=${safePage}` : ''}`,
+      init,
+    )
+  },
+  get: (orderId: number, init?: RequestInit) =>
+    api.get<{ data: PortalOrder }>(`/portal/orders/${orderId}`, init),
+  downloadInvoice: (orderId: number, orderNumber?: string) =>
+    downloadBlob(
+      `/portal/orders/${orderId}/invoice`,
+      `invoice-${orderNumber ?? orderId}.html`,
+    ),
 }

@@ -8,6 +8,7 @@ import {
   catalogueQuery,
   checkoutApi,
   formatPortalMoney,
+  ordersApi,
 } from '@/api/client'
 
 describe('portal client', () => {
@@ -104,5 +105,69 @@ describe('portal client', () => {
     const placeHeaders = new Headers(placeInit.headers)
     expect(fetchMock.mock.calls[1][0]).toContain('/portal/checkout/place')
     expect(placeHeaders.get('Idempotency-Key')).toBe('idem-key-abc')
+  })
+
+  it('ordersApi hits list and detail paths', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: [], meta: { currentPage: 1, lastPage: 1, total: 0 } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await ordersApi.list(2)
+    await ordersApi.list(0)
+    await ordersApi.get(42)
+
+    expect(fetchMock.mock.calls[0][0]).toContain('/portal/orders?page=2')
+    expect(fetchMock.mock.calls[1][0]).toMatch(/\/portal\/orders$/)
+    expect(fetchMock.mock.calls[2][0]).toContain('/portal/orders/42')
+  })
+
+  it('downloadInvoice hits invoice path with Bearer and saves HTML', async () => {
+    setToken('portal-invoice-token')
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('<html><body>invoice</body></html>', {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=UTF-8',
+          'Content-Disposition': "attachment; filename=\"invoice-ORD-1.html\"; filename*=UTF-8''invoice-ORD-1.html",
+        },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const createObjectURL = vi.fn(() => 'blob:invoice')
+    const revokeObjectURL = vi.fn()
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL })
+
+    const click = vi.fn()
+    const remove = vi.fn()
+    const anchor = { href: '', download: '', click, remove } as unknown as HTMLAnchorElement
+    const appendChild = vi.spyOn(document.body, 'appendChild').mockImplementation(() => anchor)
+    vi.spyOn(document, 'createElement').mockReturnValue(anchor)
+
+    vi.useFakeTimers()
+    try {
+      await ordersApi.downloadInvoice(7, 'ORD-1')
+
+      expect(fetchMock).toHaveBeenCalledOnce()
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+      expect(url).toContain('/portal/orders/7/invoice')
+      expect(new Headers(init.headers).get('Authorization')).toBe('Bearer portal-invoice-token')
+      expect(init.signal).toBeDefined()
+      expect(anchor.download).toBe('invoice-ORD-1.html')
+      expect(click).toHaveBeenCalledOnce()
+      expect(remove).toHaveBeenCalledOnce()
+
+      expect(revokeObjectURL).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1500)
+      expect(revokeObjectURL).toHaveBeenCalledWith('blob:invoice')
+    } finally {
+      vi.useRealTimers()
+      appendChild.mockRestore()
+    }
   })
 })

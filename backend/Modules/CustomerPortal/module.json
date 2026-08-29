@@ -1,7 +1,7 @@
 {
     "name": "CustomerPortal",
     "alias": "customerportal",
-    "description": "Customer portal auth, catalogue, cart, and checkout",
+    "description": "Customer portal auth, catalogue, cart, checkout, order tracking, and invoices",
     "keywords": [],
     "priority": 0,
     "providers": [
