@@ -1,0 +1,28 @@
+{
+    "name": "nwidart/sync",
+    "description": "",
+    "authors": [
+        {
+            "name": "Nicolas Widart",
+            "email": "n.widart@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Sync\\": "app/",
+            "Modules\\Sync\\Database\\Factories\\": "database/factories/",
+            "Modules\\Sync\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Sync\\Tests\\": "tests/"
+        }
+    }
+}

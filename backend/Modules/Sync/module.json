@@ -1,0 +1,11 @@
+{
+    "name": "Sync",
+    "alias": "sync",
+    "description": "Offline push sync, devices, and oversell exceptions",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Sync\\Providers\\SyncServiceProvider"
+    ],
+    "files": []
+}

@@ -8,5 +8,6 @@
   "Purchasing": true,
   "Pricing": true,
   "Customers": true,
-  "Sales": true
+  "Sales": true,
+  "Sync": true
 }

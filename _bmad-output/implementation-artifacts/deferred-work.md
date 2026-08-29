@@ -187,3 +187,19 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-3-offline-sale-queue.md`
   summary: Fall back to queue when navigator.onLine is true but API is unreachable (lie-fi).
   evidence: 5.3 gates offline enqueue solely on navigator.onLine === false; failed online POSTs surface as errors without queueing.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-push-sync-api.md`
+  summary: Return all oversell exception ids when a sale oversells multiple variants (response currently keeps first only).
+  evidence: SyncPushService stores a single exception_id on sync_records / item response.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-push-sync-api.md`
+  summary: Create oversell exceptions when concurrent depletion drives balances negative after allowOversell stock check passed.
+  evidence: TOCTOU between pre-check and ledger post can yield negative stock without exception rows.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-push-sync-api.md`
+  summary: List/show pending oversell exceptions for managers (Admin UI) beyond approve-by-id API.
+  evidence: Approve endpoint exists; discovery of ids is only via push response.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-push-sync-api.md`
+  summary: Move sync authorize/approve to Policies (AD-4) and audit oversell approvals.
+  evidence: Inline hasPermission/canAccessStore checks; no audit event on approve.

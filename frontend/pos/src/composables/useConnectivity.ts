@@ -1,4 +1,5 @@
 import { useSyncStore } from '@/stores/sync'
+import { pushPendingSales } from '@/sync/pushPendingSales'
 
 /** Start connectivity listeners outside a component (app bootstrap). Returns stop(). */
 export function startConnectivity(): () => void {
@@ -6,6 +7,7 @@ export function startConnectivity(): () => void {
 
   function onOnline(): void {
     sync.applyConnectivity(true)
+    void pushPendingSales()
   }
 
   function onOffline(): void {
@@ -13,6 +15,10 @@ export function startConnectivity(): () => void {
   }
 
   sync.applyConnectivity(navigator.onLine)
+  if (navigator.onLine) {
+    void pushPendingSales()
+  }
+
   window.addEventListener('online', onOnline)
   window.addEventListener('offline', onOffline)
 
