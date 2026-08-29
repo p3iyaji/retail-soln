@@ -3,8 +3,10 @@ import {
   hasToken,
   setToken,
   api,
+  cartApi,
   catalogueApi,
   catalogueQuery,
+  checkoutApi,
   formatPortalMoney,
 } from '@/api/client'
 
@@ -73,5 +75,34 @@ describe('portal client', () => {
     expect(paths[0]).toContain('/portal/catalogue/categories')
     expect(paths[1]).toContain('/portal/catalogue/products?q=milk&categoryId=2')
     expect(paths[2]).toContain('/portal/catalogue/products/42')
+  })
+
+  it('cart and checkout APIs hit portal paths with Idempotency-Key', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: { lines: [], totals: {} } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await cartApi.add(9, 2)
+    await checkoutApi.place(
+      {
+        fulfilmentMode: 'store_pickup',
+        storeId: 1,
+        paymentProvider: 'manual',
+      },
+      'idem-key-abc',
+    )
+
+    const addInit = fetchMock.mock.calls[0][1] as RequestInit
+    expect(fetchMock.mock.calls[0][0]).toContain('/portal/cart/items')
+    expect(JSON.parse(addInit.body as string)).toEqual({ variantId: 9, qty: 2 })
+
+    const placeInit = fetchMock.mock.calls[1][1] as RequestInit
+    const placeHeaders = new Headers(placeInit.headers)
+    expect(fetchMock.mock.calls[1][0]).toContain('/portal/checkout/place')
+    expect(placeHeaders.get('Idempotency-Key')).toBe('idem-key-abc')
   })
 })

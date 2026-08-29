@@ -3,7 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalAccountController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalAuthController;
+use Modules\CustomerPortal\Http\Controllers\Api\PortalCartController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalCatalogueController;
+use Modules\CustomerPortal\Http\Controllers\Api\PortalCheckoutController;
 
 Route::prefix('v1/portal')->group(function (): void {
     Route::prefix('auth')->group(function (): void {
@@ -33,5 +35,23 @@ Route::prefix('v1/portal')->group(function (): void {
         Route::get('/products', [PortalCatalogueController::class, 'index']);
         Route::get('/products/{product}', [PortalCatalogueController::class, 'show'])
             ->whereNumber('product');
+    });
+
+    Route::middleware('throttle:portal-catalogue')->get('/stores', [PortalCheckoutController::class, 'stores']);
+
+    Route::middleware(['auth:sanctum', 'portal', 'portal.verified', 'throttle:portal-cart'])->group(function (): void {
+        Route::get('/cart', [PortalCartController::class, 'show']);
+        Route::post('/cart/items', [PortalCartController::class, 'add']);
+        Route::patch('/cart/items/{item}', [PortalCartController::class, 'update'])
+            ->whereNumber('item');
+        Route::delete('/cart/items/{item}', [PortalCartController::class, 'destroy'])
+            ->whereNumber('item');
+
+        Route::post('/checkout/preview', [PortalCheckoutController::class, 'preview']);
+        Route::post('/checkout/place', [PortalCheckoutController::class, 'place']);
+        Route::post('/orders/{order}/confirm-payment', [PortalCheckoutController::class, 'confirmManual'])
+            ->whereNumber('order');
+        Route::get('/orders/{order}', [PortalCheckoutController::class, 'showOrder'])
+            ->whereNumber('order');
     });
 });

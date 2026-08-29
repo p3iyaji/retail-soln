@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'staff' => \App\Http\Middleware\EnsureStaffUser::class,
             'portal' => \App\Http\Middleware\EnsurePortalAccount::class,
+            'portal.verified' => \App\Http\Middleware\EnsurePortalEmailVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

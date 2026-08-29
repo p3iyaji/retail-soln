@@ -30,4 +30,11 @@ return [
     'sanctum_token_ability' => 'portal',
 
     'verification_expires_minutes' => (int) env('CUSTOMER_PORTAL_VERIFY_EXPIRES', 60),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Flat delivery fee for home_delivery checkout (MVP)
+    |--------------------------------------------------------------------------
+    */
+    'delivery_fee' => env('CUSTOMER_PORTAL_DELIVERY_FEE', '0.0000'),
 ];

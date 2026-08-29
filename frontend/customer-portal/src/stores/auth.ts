@@ -82,6 +82,12 @@ export const useAuthStore = defineStore('auth', () => {
         tokenPresent.value = true
         account.value = response.account
         clearPendingVerification()
+        try {
+          const { useCartStore } = await import('@/stores/cart')
+          await useCartStore().fetchCart()
+        } catch {
+          // badge refresh is best-effort
+        }
         return 'ok'
       }
 
@@ -105,6 +111,12 @@ export const useAuthStore = defineStore('auth', () => {
       clearPendingVerification()
       sessionStorage.removeItem('retail_soln_portal_verify_token')
       sessionStorage.removeItem('retail_soln_portal_verify_email')
+      try {
+        const { useCartStore } = await import('@/stores/cart')
+        await useCartStore().fetchCart()
+      } catch {
+        // badge refresh is best-effort
+      }
     } catch (err) {
       error.value = err instanceof ApiError ? err.message : 'Verification failed'
       throw err
@@ -134,6 +146,8 @@ export const useAuthStore = defineStore('auth', () => {
     setToken(null)
     tokenPresent.value = false
     account.value = null
+    const { useCartStore } = await import('@/stores/cart')
+    useCartStore().clearLocal()
   }
 
   async function updateProfile(name: string, phone: string | null): Promise<void> {

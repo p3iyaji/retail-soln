@@ -263,3 +263,23 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-6-2-product-catalogue.md`
   summary: Add SPA router/component tests for ShopLayout search wiring, /shop redirect, and ProductDetailView stock label rendering.
   evidence: client.test.ts covers helpers/API paths; views remain manual-check only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-3-cart-checkout.md`
+  summary: Move available→reserved via InventoryLedgerService on portal place-order (Epic 7.1).
+  evidence: Story 6.3 stock-checks only; concurrent place can still oversell available until reservation exists.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-3-cart-checkout.md`
+  summary: Replace Stripe/Paystack stub redirects with live Checkout Session / Initialize API capture.
+  evidence: Adapters return configured_stub URLs when keys present; no real provider session create yet.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-3-cart-checkout.md`
+  summary: Add DB foreign keys for portal cart/order organization, store, customer, address, and variant columns.
+  evidence: Migrations omit FKs; orphaned or cross-org refs are application-enforced only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-3-cart-checkout.md`
+  summary: Differentiate click_collect vs store_pickup fulfilment semantics beyond shared store selection.
+  evidence: Backend resolution currently treats both modes with the same store/fee rules.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-3-cart-checkout.md`
+  summary: Persist line-level discount amounts on portal_order_items for promotion audit.
+  evidence: Only header discount_total is stored after checkout.

@@ -44,5 +44,12 @@ class CustomerPortalServiceProvider extends ModuleServiceProvider
         RateLimiter::for('portal-catalogue', function (Request $request) {
             return Limit::perMinute(60)->by($request->ip());
         });
+
+        RateLimiter::for('portal-cart', function (Request $request) {
+            $user = $request->user();
+            $key = $user?->getAuthIdentifier() ?? $request->ip();
+
+            return Limit::perMinute(60)->by('portal-cart|'.$key);
+        });
     }
 }
