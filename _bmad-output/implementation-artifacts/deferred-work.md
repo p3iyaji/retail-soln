@@ -243,3 +243,23 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-6-1-customer-registration-auth.md`
   summary: Outbound verification email (or signed link delivery) for production portal register/verify.
   evidence: Story 6.1 exposes verificationToken only in local/testing; production needs mail/notification without leaking tokens in API responses.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-2-product-catalogue.md`
+  summary: Batch portal catalogue price/stock resolution to avoid N+1 PricingService and balance queries per list page.
+  evidence: Spec Design Notes allow per-card resolve; full pages still hit PricingService + InventoryBalance once per product.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-2-product-catalogue.md`
+  summary: Drive portal money formatting from org currency instead of hard-coded en-NG / NGN.
+  evidence: formatPortalMoney uses Intl NGN; multi-currency orgs would display the wrong currency.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-2-product-catalogue.md`
+  summary: Validate or warn when CUSTOMER_PORTAL_DEFAULT_STORE_ID is missing/wrong-org/inactive instead of silently falling back to first store.
+  evidence: Misconfiguration currently looks like first-store behavior with no 422 or README-facing alert.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-2-product-catalogue.md`
+  summary: Exclude products whose category is inactive from portal catalogue list/show.
+  evidence: List filters product is_active only; active products under inactive categories can still appear.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-2-product-catalogue.md`
+  summary: Add SPA router/component tests for ShopLayout search wiring, /shop redirect, and ProductDetailView stock label rendering.
+  evidence: client.test.ts covers helpers/API paths; views remain manual-check only.

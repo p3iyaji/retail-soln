@@ -7,7 +7,23 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/account',
+      redirect: '/shop',
+    },
+    {
+      path: '/shop',
+      component: () => import('@/components/ShopLayout.vue'),
+      children: [
+        {
+          path: '',
+          name: 'shop',
+          component: () => import('@/views/CatalogueView.vue'),
+        },
+        {
+          path: 'products/:id',
+          name: 'shop-product',
+          component: () => import('@/views/ProductDetailView.vue'),
+        },
+      ],
     },
     {
       path: '/login',
@@ -63,7 +79,7 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.guest && hasToken() && auth.account?.emailVerified) {
-    return { name: 'account' }
+    return { name: 'shop' }
   }
 
   return true

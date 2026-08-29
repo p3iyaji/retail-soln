@@ -14,6 +14,18 @@ return [
     */
     'organization_id' => env('CUSTOMER_PORTAL_ORGANIZATION_ID'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Default store for catalogue price / stock signal (MVP)
+    |--------------------------------------------------------------------------
+    |
+    | When set, portal catalogue resolves price and stock against this store
+    | unless the request passes a valid storeId. When null, the first active
+    | store in the portal organization is used.
+    |
+    */
+    'default_store_id' => env('CUSTOMER_PORTAL_DEFAULT_STORE_ID'),
+
     'sanctum_token_name' => 'portal',
     'sanctum_token_ability' => 'portal',
 

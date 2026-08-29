@@ -46,6 +46,7 @@ async function onLogout() {
           <h1 class="text-lg font-semibold">Account</h1>
         </div>
         <nav class="flex items-center gap-4 text-sm">
+          <RouterLink class="text-[var(--brand)]" :to="{ name: 'shop' }">Shop</RouterLink>
           <RouterLink class="text-[var(--brand)]" :to="{ name: 'addresses' }">Addresses</RouterLink>
           <button type="button" class="text-[var(--muted)] hover:text-[var(--ink)]" @click="onLogout">Sign out</button>
         </nav>
