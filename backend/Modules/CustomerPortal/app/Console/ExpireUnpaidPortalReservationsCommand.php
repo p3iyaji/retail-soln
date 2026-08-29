@@ -25,8 +25,12 @@ class ExpireUnpaidPortalReservationsCommand extends Command
             $ttl = (int) $ttlOption;
         }
 
-        $expired = $checkout->expireUnpaidReservations($ttl);
-        $this->info("Expired {$expired} unpaid portal order reservation(s).");
+        $result = $checkout->expireUnpaidReservations($ttl);
+        $this->info("Expired {$result['expired']} unpaid portal order reservation(s).");
+
+        if ($result['failures'] > 0) {
+            $this->warn("Failed to expire {$result['failures']} order(s); see application logs.");
+        }
 
         return self::SUCCESS;
     }

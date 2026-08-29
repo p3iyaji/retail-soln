@@ -113,6 +113,13 @@ class PortalStockReservationApiTest extends TestCase
             'payment_status' => 'awaiting_payment',
         ]);
 
+        $placed = $this->getJson('/api/v1/portal/orders/'.$orderId)
+            ->assertOk()
+            ->assertJsonPath('data.cancellable', true)
+            ->assertJsonPath('data.status', PortalOrderStatuses::PENDING);
+
+        $this->assertNotNull($placed->json('data.reservationExpiresAt'));
+
         $this->assertSame(2, InventoryMovement::query()
             ->where('type', MovementType::Reserve->value)
             ->where('reference_type', 'portal_order')
@@ -162,7 +169,10 @@ class PortalStockReservationApiTest extends TestCase
 
         $first = $this->withHeader('Idempotency-Key', 'place-idem')
             ->postJson('/api/v1/portal/checkout/place', $body)
-            ->assertCreated();
+            ->assertCreated()
+            ->assertJsonPath('data.cancellable', true);
+
+        $this->assertNotNull($first->json('data.reservationExpiresAt'));
 
         $second = $this->withHeader('Idempotency-Key', 'place-idem')
             ->postJson('/api/v1/portal/checkout/place', $body)
@@ -256,7 +266,9 @@ class PortalStockReservationApiTest extends TestCase
         $this->postJson('/api/v1/portal/orders/'.$orderId.'/confirm-payment')
             ->assertOk()
             ->assertJsonPath('data.paymentStatus', 'paid')
-            ->assertJsonPath('data.status', PortalOrderStatuses::CONFIRMED);
+            ->assertJsonPath('data.status', PortalOrderStatuses::CONFIRMED)
+            ->assertJsonPath('data.cancellable', false)
+            ->assertJsonPath('data.reservationExpiresAt', null);
 
         $this->assertSame([
             'available' => '8.0000',
@@ -282,6 +294,11 @@ class PortalStockReservationApiTest extends TestCase
         Sanctum::actingAs($this->account, ['portal']);
         $orderId = $this->placeOrder('cancel-paid', 1);
         $this->postJson('/api/v1/portal/orders/'.$orderId.'/confirm-payment')->assertOk();
+
+        $this->getJson('/api/v1/portal/orders/'.$orderId)
+            ->assertOk()
+            ->assertJsonPath('data.cancellable', false)
+            ->assertJsonPath('data.reservationExpiresAt', null);
 
         $this->postJson('/api/v1/portal/orders/'.$orderId.'/cancel')
             ->assertStatus(422);
@@ -309,6 +326,49 @@ class PortalStockReservationApiTest extends TestCase
             'available' => '10.0000',
             'reserved' => '0.0000',
         ], $this->balanceBuckets());
+    }
+
+    public function test_cancel_rejects_empty_line_items_without_marking_cancelled(): void
+    {
+        Sanctum::actingAs($this->account, ['portal']);
+        $orderId = $this->placeOrder('cancel-empty', 1);
+
+        PortalOrder::query()->findOrFail($orderId)->items()->delete();
+
+        $this->postJson('/api/v1/portal/orders/'.$orderId.'/cancel')
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('portal_orders', [
+            'id' => $orderId,
+            'status' => PortalOrderStatuses::PENDING,
+        ]);
+        $this->assertSame([
+            'available' => '9.0000',
+            'reserved' => '1.0000',
+        ], $this->balanceBuckets());
+    }
+
+    public function test_catalogue_stock_signal_uses_available_only_after_reserve(): void
+    {
+        Sanctum::actingAs($this->account, ['portal']);
+        $this->placeOrder('cat-avail-only', 10);
+
+        $this->assertSame([
+            'available' => '0.0000',
+            'reserved' => '10.0000',
+        ], $this->balanceBuckets());
+
+        $this->getJson('/api/v1/portal/catalogue/products/'.$this->variant->product_id.'?storeId='.$this->store->id)
+            ->assertOk()
+            ->assertJsonPath('data.stock.inStock', false)
+            ->assertJsonPath('data.stock.label', 'Out of stock');
+    }
+
+    public function test_expire_unpaid_command_is_scheduled(): void
+    {
+        $this->artisan('schedule:list')
+            ->assertSuccessful()
+            ->expectsOutputToContain('portal:expire-unpaid-reservations');
     }
 
     private function placeOrder(string $idempotencyKey, int $qty = 1): int

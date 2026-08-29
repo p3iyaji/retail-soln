@@ -376,6 +376,7 @@ export type PortalOrder = {
   createdAt?: string | null
   invoiceAvailable?: boolean
   cancellable?: boolean
+  reservationExpiresAt?: string | null
   returnEligible?: boolean
   activeReturnRequest?: PortalReturnRequestSummary | null
   returnRequest?: PortalReturnRequestSummary | null

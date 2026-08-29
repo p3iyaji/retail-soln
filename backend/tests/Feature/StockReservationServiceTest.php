@@ -161,6 +161,46 @@ class StockReservationServiceTest extends TestCase
             ->count());
     }
 
+    public function test_reserve_completes_missing_pair_leg(): void
+    {
+        $refId = 46;
+        $availableUuid = \Ramsey\Uuid\Uuid::uuid5(
+            \Ramsey\Uuid\Uuid::NAMESPACE_URL,
+            sprintf('portal_order:%d:reserve:%d:available', $refId, $this->variant->id),
+        )->toString();
+
+        $this->ledger->post(new PostMovementData(
+            organizationId: $this->orgId,
+            locationType: LocationType::Store,
+            locationId: $this->store->id,
+            productVariantId: $this->variant->id,
+            type: MovementType::Reserve,
+            quantity: '-1.0000',
+            bucket: BalanceBucket::Available,
+            referenceType: 'portal_order',
+            referenceId: $refId,
+            uuid: $availableUuid,
+        ));
+
+        $this->reservations->reserve([
+            'organizationId' => $this->orgId,
+            'locationId' => $this->store->id,
+            'lines' => [
+                ['productVariantId' => $this->variant->id, 'quantity' => '1.0000'],
+            ],
+            'referenceType' => 'portal_order',
+            'referenceId' => $refId,
+        ]);
+
+        $balance = $this->balance();
+        $this->assertSame('19.0000', $balance->available);
+        $this->assertSame('1.0000', $balance->reserved);
+        $this->assertSame(2, InventoryMovement::query()
+            ->where('type', MovementType::Reserve->value)
+            ->where('reference_id', $refId)
+            ->count());
+    }
+
     private function balance(): InventoryBalance
     {
         return InventoryBalance::query()

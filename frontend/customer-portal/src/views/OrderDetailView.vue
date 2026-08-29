@@ -71,6 +71,7 @@ async function downloadInvoice() {
 
 async function cancelOrder() {
   if (!order.value?.cancellable) return
+  if (!window.confirm('Cancel this unpaid order and release held stock?')) return
   cancelBusy.value = true
   cancelError.value = null
   try {
@@ -186,6 +187,13 @@ const ineligibleTitle = computed(() => {
           <div class="mt-2 flex justify-between text-xs text-[var(--muted)]">
             <span>Payment</span>
             <span class="capitalize">{{ order.paymentStatus.replace(/_/g, ' ') }}</span>
+          </div>
+          <div
+            v-if="order.reservationExpiresAt"
+            class="mt-1 flex justify-between text-xs text-[var(--muted)]"
+          >
+            <span>Hold expires</span>
+            <span>{{ new Date(order.reservationExpiresAt).toLocaleString() }}</span>
           </div>
           <div v-if="order.store.name" class="mt-1 flex justify-between text-xs text-[var(--muted)]">
             <span>Store</span>

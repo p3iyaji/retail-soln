@@ -9,4 +9,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('inventory:check-low-stock')->hourly();
-Schedule::command('portal:expire-unpaid-reservations')->everyMinute();
+Schedule::command('portal:expire-unpaid-reservations')
+    ->everyMinute()
+    ->withoutOverlapping();
