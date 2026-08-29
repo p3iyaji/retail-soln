@@ -215,3 +215,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-5-pull-sync-cursors.md`
   summary: Decide whether to remove warmCache entirely or keep an explicit full-refresh admin action.
   evidence: Online paths use pull; cacheWarm.ts remains for tests/legacy without a recorded Ask First resolution.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-6-sync-status-ui.md`
+  summary: Admin oversell list pagination and permission-gated Oversells nav.
+  evidence: List caps at per_page; nav always visible with in-view permission message only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-6-sync-status-ui.md`
+  summary: Focus trap / aria-modal for sync status panel dialog.
+  evidence: Panel is role=dialog with Escape close but no focus trap or restore.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-6-sync-status-ui.md`
+  summary: Persist and return lastPullAt on GET /sync/status from server-known pull activity.
+  evidence: lastPullAt remains null; pull cursors live client-side in Dexie.

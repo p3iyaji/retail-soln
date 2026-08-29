@@ -3,23 +3,28 @@ import { getStoredStoreId } from '@/api/client'
 import { pushPendingSales } from '@/sync/pushPendingSales'
 import { pullCache } from '@/sync/pullCache'
 
+/**
+ * Push pending sales then pull cache for the selected store.
+ * Shared by reconnect and SyncBadge Retry.
+ */
+export async function drainThenPull(): Promise<void> {
+  const sync = useSyncStore()
+  await pushPendingSales()
+  const pushFailed = sync.status === 'SYNC_ERROR'
+  const pushError = sync.lastError
+  const storeId = getStoredStoreId()
+  if (storeId != null) {
+    try {
+      await pullCache(storeId, { priorError: pushFailed ? pushError : null })
+    } catch {
+      // SYNC ERROR already set inside pullCache
+    }
+  }
+}
+
 /** Start connectivity listeners outside a component (app bootstrap). Returns stop(). */
 export function startConnectivity(): () => void {
   const sync = useSyncStore()
-
-  async function drainThenPull(): Promise<void> {
-    await pushPendingSales()
-    const pushFailed = sync.status === 'SYNC_ERROR'
-    const pushError = sync.lastError
-    const storeId = getStoredStoreId()
-    if (storeId != null) {
-      try {
-        await pullCache(storeId, { priorError: pushFailed ? pushError : null })
-      } catch {
-        // SYNC ERROR already set inside pullCache
-      }
-    }
-  }
 
   function onOnline(): void {
     sync.applyConnectivity(true)

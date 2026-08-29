@@ -8,9 +8,11 @@ import { activeVariants, type SearchProduct, type SearchVariant } from '@/lib/ca
 import { decimalCmp, formatCurrency, isDecimalString } from '@/lib/decimal'
 import { useAuthStore } from '@/stores/auth'
 import { usePosStore } from '@/stores/pos'
+import { useSyncStore } from '@/stores/sync'
 
 const auth = useAuthStore()
 const pos = usePosStore()
+const sync = useSyncStore()
 const router = useRouter()
 
 const editingTerminal = ref(false)
@@ -18,9 +20,27 @@ const terminalDraft = ref(pos.terminalLabel)
 const overrideLineKey = ref<string | null>(null)
 const overrideDraft = ref('')
 const toast = ref<string | null>(null)
+/** One-shot offline banner per ONLINE→OFFLINE edge (dismissible until next edge). */
+const offlineBanner = ref(false)
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
 usePosShortcuts()
+
+function onConnectivityOffline(): void {
+  offlineBanner.value = true
+}
+
+function onConnectivityOnline(): void {
+  offlineBanner.value = false
+}
+
+function dismissOfflineBanner(): void {
+  offlineBanner.value = false
+}
+
+function shortSaleRef(uuid: string): string {
+  return uuid.length > 8 ? uuid.slice(0, 8) : uuid
+}
 
 const localSearch = computed({
   get: () => pos.searchQuery,
@@ -39,6 +59,12 @@ watch(overrideLineKey, async (key) => {
 onMounted(async () => {
   document.getElementById('pos-search')?.focus()
   window.addEventListener('keydown', onGlobalKeydown, true)
+  window.addEventListener('offline', onConnectivityOffline)
+  window.addEventListener('online', onConnectivityOnline)
+  // Show banner if already offline on mount (same message as transition).
+  if (!navigator.onLine) {
+    offlineBanner.value = true
+  }
   if (pos.hasSelectedStore) {
     void pos.refreshCatalogCache()
   }
@@ -50,6 +76,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeydown, true)
+  window.removeEventListener('offline', onConnectivityOffline)
+  window.removeEventListener('online', onConnectivityOnline)
   if (toastTimer) clearTimeout(toastTimer)
 })
 
@@ -242,6 +270,43 @@ function productVariants(product: SearchProduct): SearchVariant[] {
         Sign out
       </button>
     </header>
+
+    <div
+      v-if="offlineBanner"
+      class="flex flex-wrap items-center justify-between gap-2 bg-[var(--offline)]/20 px-4 py-2 text-sm text-[var(--ink)]"
+      role="status"
+    >
+      <span>Offline — sales will sync when connected</span>
+      <button
+        type="button"
+        class="min-h-11 rounded border border-[var(--line)] bg-[var(--panel)] px-3 text-sm"
+        @click="dismissOfflineBanner"
+      >
+        Dismiss
+      </button>
+    </div>
+
+    <div
+      v-for="notice in sync.oversellNotices"
+      :key="`${notice.exceptionId}:${notice.uuid}`"
+      class="flex flex-wrap items-center justify-between gap-2 bg-[var(--ember)]/15 px-4 py-2 text-sm text-[var(--ember)]"
+      role="status"
+      :title="`Sale ${notice.uuid}`"
+      :aria-label="`Oversell exception ${notice.exceptionId} for sale ${notice.uuid}`"
+    >
+      <span>
+        Oversell exception #{{ notice.exceptionId }} for sale
+        {{ shortSaleRef(notice.uuid) }}{{ notice.saleId != null ? ` (sale #${notice.saleId})` : '' }}
+        — manager review required
+      </span>
+      <button
+        type="button"
+        class="min-h-11 rounded border border-[var(--line)] bg-[var(--panel)] px-3 text-sm text-[var(--ink)]"
+        @click="sync.dismissOversellNotice(notice.exceptionId)"
+      >
+        Dismiss
+      </button>
+    </div>
 
     <div
       v-if="flashMessage || toast"

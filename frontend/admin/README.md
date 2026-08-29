@@ -2,6 +2,10 @@
 
 Vue 3 + TypeScript + Vite + Tailwind CSS 4. Consumes `/api/v1` with Sanctum Bearer tokens. **No Inertia.**
 
+## Oversell exceptions (Story 5.6)
+
+Nav **Oversells** → `/oversell-exceptions`. Lists pending `inventory_oversell_exceptions` for the selected store (`GET /sync/oversell-exceptions` + `X-Store-Id`) and **Approve** (`POST /sync/oversell-exceptions/{id}/approve`). Requires `inventory.approve-oversell`. Device Admin console remains Story 5.7.
+
 ## Run
 
 ```bash

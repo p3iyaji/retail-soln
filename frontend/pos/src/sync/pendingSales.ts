@@ -86,6 +86,16 @@ export async function listPushableSales(db: PosDatabase = posDb): Promise<Pendin
   return [...pending, ...pushing, ...errored].sort((a, b) => a.localSequence - b.localSequence)
 }
 
+/** Dexie queue counts for SyncBadge panel (no new schema). */
+export async function countPendingAndError(
+  db: PosDatabase = posDb,
+): Promise<{ pending: number; error: number }> {
+  const pending = await db.pending_sales.where('syncStatus').equals('pending').count()
+  const pushing = await db.pending_sales.where('syncStatus').equals('pushing').count()
+  const error = await db.pending_sales.where('syncStatus').equals('error').count()
+  return { pending: pending + pushing, error }
+}
+
 export async function markSalePushing(uuid: string, db: PosDatabase = posDb): Promise<void> {
   await db.pending_sales.update(uuid, { syncStatus: 'pushing' })
 }

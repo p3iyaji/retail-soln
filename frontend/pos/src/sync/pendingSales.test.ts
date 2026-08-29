@@ -2,7 +2,7 @@ import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { CompleteSaleInput } from '@/api/posSales'
 import { PosDatabase, ensureDeviceUuid } from '@/db/posDb'
-import { enqueueSale, listPendingSales, nextLocalSequence } from '@/sync/pendingSales'
+import { enqueueSale, listPendingSales, nextLocalSequence, countPendingAndError } from '@/sync/pendingSales'
 
 function salePayload(uuid: string): CompleteSaleInput {
   return {
@@ -138,6 +138,50 @@ describe('pendingSales', () => {
 
     const listed = await listPendingSales(db)
     expect(listed.map((r) => r.uuid)).toEqual(['55555555-5555-4555-8555-555555555555'])
+  })
+
+  it('countPendingAndError counts pending+pushing and error rows', async () => {
+    await enqueueSale(
+      {
+        storeId: 1,
+        userId: 1,
+        terminalId: null,
+        payload: salePayload('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+      },
+      db,
+    )
+    const pushing = await enqueueSale(
+      {
+        storeId: 1,
+        userId: 1,
+        terminalId: null,
+        payload: salePayload('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+      },
+      db,
+    )
+    await db.pending_sales.update(pushing.uuid, { syncStatus: 'pushing' })
+    const errored = await enqueueSale(
+      {
+        storeId: 1,
+        userId: 1,
+        terminalId: null,
+        payload: salePayload('cccccccc-cccc-4ccc-8ccc-cccccccccccc'),
+      },
+      db,
+    )
+    await db.pending_sales.update(errored.uuid, { syncStatus: 'error' })
+    const synced = await enqueueSale(
+      {
+        storeId: 1,
+        userId: 1,
+        terminalId: null,
+        payload: salePayload('dddddddd-dddd-4ddd-8ddd-dddddddddddd'),
+      },
+      db,
+    )
+    await db.pending_sales.update(synced.uuid, { syncStatus: 'synced' })
+
+    expect(await countPendingAndError(db)).toEqual({ pending: 2, error: 1 })
   })
 
   it('recovers localSequence when sync_meta is corrupt relative to table', async () => {

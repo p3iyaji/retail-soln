@@ -253,6 +253,28 @@ describe('pushPendingSales', () => {
     expect(useSyncStore().status).toBe('SYNC_ERROR')
   })
 
+  it('records oversell notices when push returns exceptionId', async () => {
+    const uuid = 'cccccccc-dddd-4eee-8fff-000000000001'
+    await enqueueSale(
+      { storeId: 1, userId: 2, terminalId: 7, payload: salePayload(uuid) },
+      db,
+    )
+
+    postMock.mockResolvedValue({
+      data: {
+        batchId: 3,
+        items: [{ uuid, status: 'synced', saleId: 99, exceptionId: 17 }],
+      },
+    })
+
+    await pushPendingSales(db)
+
+    expect(useSyncStore().oversellNotices).toEqual([
+      { uuid, exceptionId: 17, saleId: 99 },
+    ])
+    expect(useSyncStore().status).toBe('ONLINE')
+  })
+
   it('no-ops when the queue is empty', async () => {
     await pushPendingSales(db)
     expect(postMock).not.toHaveBeenCalled()
