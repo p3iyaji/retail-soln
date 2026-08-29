@@ -57,14 +57,38 @@ export type CachedPosConfig = {
   currency: string
 }
 
+/** Offline transaction envelope sync status (offline-sync design). */
+export type PendingSyncStatus = 'pending' | 'pushing' | 'synced' | 'error'
+
+export type PendingPayloadType = 'sale' | 'return' | 'cash_movement' | 'session_close'
+
+/**
+ * Offline write envelope persisted in `pending_sales` (Story 5.3).
+ * `payload` for sales matches online `CompleteSaleInput` (JSON-serializable).
+ */
+export type PendingSaleEnvelope = {
+  uuid: string
+  deviceUuid: string
+  storeId: number
+  terminalId: number | null
+  userId: number
+  localSequence: number
+  createdAt: string
+  payloadType: PendingPayloadType
+  payload: Record<string, unknown>
+  syncStatus: PendingSyncStatus
+  serverResult?: unknown
+}
+
 const DEVICE_UUID_KEY = 'deviceUuid'
 
-function createDeviceUuid(): string {
+/** Client UUID with randomUUID fallback (device id, sale uuid, etc.). */
+export function createClientUuid(): string {
   const c = globalThis.crypto
   if (c && typeof c.randomUUID === 'function') {
     return c.randomUUID()
   }
-  // Fallback for older runtimes — still unique enough for local device id.
+  // Fallback for older runtimes — still unique enough for local ids.
   const bytes = new Uint8Array(16)
   if (c?.getRandomValues) {
     c.getRandomValues(bytes)
@@ -84,7 +108,7 @@ export class PosDatabase extends Dexie {
   customers!: EntityTable<IdRow, 'id'>
   inventory_snapshot!: Table<CachedInventorySnapshot, [number, number]>
   pos_config!: EntityTable<CachedPosConfig, 'storeId'>
-  pending_sales!: EntityTable<IdRow, 'id'>
+  pending_sales!: EntityTable<PendingSaleEnvelope, 'uuid'>
   sync_meta!: EntityTable<SyncMetaRow, 'key'>
 
   constructor() {
@@ -118,6 +142,13 @@ export class PosDatabase extends Dexie {
       pending_sales: '++id',
       sync_meta: 'key',
     })
+    // Story 5.3: pending_sales uuid PK (drop then redefine — Dexie cannot alter PK).
+    this.version(4).stores({
+      pending_sales: null,
+    })
+    this.version(5).stores({
+      pending_sales: 'uuid, localSequence, syncStatus, storeId, [syncStatus+localSequence]',
+    })
   }
 }
 
@@ -131,7 +162,7 @@ export async function ensureDeviceUuid(db: PosDatabase = posDb): Promise<string>
       return existing.value
     }
 
-    const deviceUuid = createDeviceUuid()
+    const deviceUuid = createClientUuid()
     await db.sync_meta.put({ key: DEVICE_UUID_KEY, value: deviceUuid })
     return deviceUuid
   })

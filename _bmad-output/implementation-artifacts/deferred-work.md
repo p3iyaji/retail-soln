@@ -179,3 +179,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-2-local-cache-sync.md`
   summary: Add Dexie v1→v3 upgrade fixture test and API query-contract unit tests for warm helpers.
   evidence: Current tests greenfield-open DB and mock catalog APIs entirely.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-3-offline-sale-queue.md`
+  summary: Offline sale payloads embed live sessionId; Story 5.4 push must handle sessions that no longer exist when reconnecting.
+  evidence: Envelope payload matches CompleteSaleInput including sessionId; no offline session-close path in 5.3.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-3-offline-sale-queue.md`
+  summary: Fall back to queue when navigator.onLine is true but API is unreachable (lie-fi).
+  evidence: 5.3 gates offline enqueue solely on navigator.onLine === false; failed online POSTs surface as errors without queueing.
