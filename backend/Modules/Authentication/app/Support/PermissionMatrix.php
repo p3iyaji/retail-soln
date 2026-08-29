@@ -104,6 +104,7 @@ final class PermissionMatrix
             'accounting.post' => ['SA', 'OA', 'AC'],
             'devices.manage' => ['SA', 'OA', 'SM'],
             'reports.view' => ['SA', 'OA', 'SM', 'IM', 'PO', 'AC'],
+            'notifications.view' => ['SA', 'OA', 'SM', 'IM'],
             'warehouses.view' => ['SA', 'OA', 'SM', 'IM', 'PO'],
             'warehouses.manage' => ['SA', 'OA'],
             'fulfilment.pick' => ['SA', 'OA', 'SM', 'IM', 'DS'],

@@ -375,3 +375,35 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-2-store-performance-reports.md`
   summary: Dedicated SKU/cashier pickers for report filters beyond top-products click and in-range cashiers.
   evidence: Review polish; report-only roles lack products.view for category dropdown in some cases.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-notification-service.md`
+  summary: Move Sales `SendSaleReceipt` and proforma document jobs onto the Notifications service.
+  evidence: Ask First default was to leave the Sales stubs in place; they still log instead of producing notification rows.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-notification-service.md`
+  summary: Live SMS provider adapter (and push) behind the existing channel contract.
+  evidence: `LogSmsChannel` only logs; Never-list forbids inventing provider credentials in the repo.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-notification-service.md`
+  summary: Per-user / per-customer notification preferences and opt-out, plus org settings keys per trigger.
+  evidence: Ask First defaults deferred preference UI and kept the three wired triggers always-on.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-notification-service.md`
+  summary: Customer-facing in-app notification inbox in the portal SPA.
+  evidence: Customer `in_app` rows are persisted but only staff have a read API; portal shoppers get email only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-notification-service.md`
+  summary: Replace direct `NotificationService::notify` trigger calls with a domain event bus, and add remaining triggers (PO approved, stock received, refund processed, invoice generated).
+  evidence: Ask First default was direct service calls; 8.3 wires the three high-value triggers only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-notification-service.md`
+  summary: Retry / requeue path and an ops view for `failed` notification rows.
+  evidence: `DeliverNotification` records the failure and returns so the business path is never blocked; nothing retries the row afterwards.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-notification-service.md`
+  summary: Rename the `notifications` table or reconcile it with Laravel's `Notifiable` database channel.
+  evidence: `User` and `CustomerAccount` use the `Notifiable` trait; `$user->notifications` would now hit this table, which has no `notifiable_type`/`notifiable_id`. Nothing calls it today.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-notification-service.md`
+  summary: Automated Admin NotificationsView tests (filter, mark-read, permission empty state).
+  evidence: Repo has no Admin frontend test runner; verification is API tests + npm build + manual check only.

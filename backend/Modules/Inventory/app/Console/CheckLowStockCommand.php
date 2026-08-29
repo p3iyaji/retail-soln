@@ -4,6 +4,7 @@ namespace Modules\Inventory\Console;
 
 use Illuminate\Console\Command;
 use Modules\Inventory\Services\LowStockAlertService;
+use Modules\Inventory\Services\LowStockNotifier;
 use Modules\Organization\Services\OrganizationService;
 
 class CheckLowStockCommand extends Command
@@ -16,8 +17,11 @@ class CheckLowStockCommand extends Command
 
     protected $description = 'Scan inventory balances for low-stock alerts (available ≤ reorder level)';
 
-    public function handle(LowStockAlertService $alerts, OrganizationService $organizations): int
-    {
+    public function handle(
+        LowStockAlertService $alerts,
+        OrganizationService $organizations,
+        LowStockNotifier $notifier,
+    ): int {
         $storeId = $this->parsePositiveIntOption('storeId');
         if ($storeId === false) {
             return self::FAILURE;
@@ -64,6 +68,16 @@ class CheckLowStockCommand extends Command
 
         if ($total > self::SAMPLE_LIMIT) {
             $this->line(sprintf('  … and %d more', $total - self::SAMPLE_LIMIT));
+        }
+
+        if ($total > 0) {
+            $dispatched = $notifier->notify($organizationId, $storeId, $warehouseId);
+            $this->line(sprintf(
+                'Notifications: %d queued across %d location(s), %d skipped.',
+                $dispatched['notifications'],
+                $dispatched['locations'],
+                $dispatched['skipped'],
+            ));
         }
 
         return self::SUCCESS;

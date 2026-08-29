@@ -49,6 +49,7 @@ Admin and POS talk to the same backend API (`/api/v1`) with staff Sanctum tokens
 - **Walk-in customer** — Default anonymous buyer. **Registered customers** are required for installment plans and proforma invoices.
 - **Proforma invoice** — A **quote** (non-fiscal). It does **not** move stock or create debt until **converted** to a sale or tax invoice.
 - **Installment plan** — Accounts-receivable schedule linked to a sale; deposits and later collections update customer balance.
+- **Notification** — A queued outbound message (email, in-app, or SMS stub) recorded per recipient and channel. Always delivered **after** the triggering transaction commits, so it never blocks a sale, payment, or fulfilment step.
 
 ---
 
@@ -226,6 +227,26 @@ Store performance over a date range, for the store picked in the filter bar. Req
 4. **Export CSV** downloads exactly the filtered set (`sale_id`, `uuid`, `sold_at`, `cashier`, `total`, `payment_methods`).
 
 Only **completed** POS sales count; held, voided, and other-store sales are excluded. Totals are **gross** sale amounts — POS returns/refunds are not netted off. Date range is inclusive calendar days in the **organization timezone** (set under Organization); the browser’s local calendar may differ if you are not in that timezone. Exports are synchronous and capped at 10,000 sales — narrow the range or filters if you hit the limit. Like the dashboard, this is an operational read, not the books of record.
+
+### Notifications
+
+Your personal in-app inbox for operational alerts. Requires `notifications.view` (Super Admin, Org Admin, Store Manager, Inventory Manager) — the nav item is hidden without it and a deep link shows a permission notice. Re-run `php artisan db:seed` after upgrading so roles pick up the new permission.
+
+- **All / Unread** filters the list; the header shows your unread count. **Mark read** clears an item.
+- You only ever see notifications addressed to you within your organization — there is no shared or cross-user inbox.
+- Alerts currently produced: **low stock** per stocking location (from the hourly `inventory:check-low-stock` run).
+
+Customer-facing messages (portal order paid, ready for pickup, shipped) are emailed to the shopper and recorded against their portal account; they do not appear in the staff inbox.
+
+Delivery is queued and always runs **after** the originating transaction commits, so payment, pack/ship/ready, and the low-stock scan never wait on email. That means a **queue worker must be running** (Docker `queue` service, or `php artisan queue:work` on the host) — without one, notification rows stay `pending` and no email goes out. A delivery that fails is recorded as `failed` on the row; the business action stands regardless.
+
+Channels are configured in `backend/Modules/Notifications/config/config.php`:
+
+- **email** — Laravel Mail, so the transport follows `MAIL_MAILER` (use `log` in development to see messages in `storage/logs/laravel.log`).
+- **in_app** — the stored row itself, read back in this screen.
+- **sms** — a stub that logs only. No SMS provider is wired in this release; swap the `sms` adapter when credentials exist.
+
+A location that is still low on stock is not re-notified until `NOTIFICATIONS_LOW_STOCK_COOLDOWN` minutes have passed (default 720), so the hourly scan does not fill inboxes.
 
 ### Fulfilment (online orders)
 
@@ -801,12 +822,14 @@ php artisan db:seed
 
 ## 11. Current limitations
 
-Features **not yet available** or intentionally thin in Epics 1–7:
+Features **not yet available** or intentionally thin in Epics 1–8:
 
 | Feature | Status |
 |---------|--------|
-| Executive dashboards / store performance reports | Epic 8 |
-| Email/SMS/in-app notifications for status changes | Epic 8 |
+| SMS notifications | Adapter is a logging stub; no provider wired |
+| Push / real-time notifications | Not built; the inbox refreshes on load |
+| Notification preferences / opt-out | Always-on for the wired triggers; no per-user settings |
+| Customer-facing notification inbox | Portal shoppers receive email only |
 | Stripe / Paystack live card capture | Adapters stub redirects without live keys; manual portal pay works |
 | F8 line discount UI | Stub; use promotions or price override |
 | Void completed sale from POS UI | Use returns; API void exists for managers |
@@ -825,6 +848,7 @@ Features **not yet available** or intentionally thin in Epics 1–7:
 |------|----------------|
 | Dashboard | Store KPI snapshot, low stock, needs-attention queues |
 | Reports | Store sales performance by date range, cashier/product breakdowns, CSV export |
+| Notifications | Personal in-app alert inbox (low stock), mark read |
 | Organization | Business profile |
 | Stores | Locations, tax config |
 | Products | Catalog, variants, selling price & cost, import — see [Products & variants](#products--variants) |
