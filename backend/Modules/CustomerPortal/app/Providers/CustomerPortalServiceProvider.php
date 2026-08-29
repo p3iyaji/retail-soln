@@ -6,6 +6,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Modules\CustomerPortal\Console\ExpireUnpaidPortalReservationsCommand;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class CustomerPortalServiceProvider extends ModuleServiceProvider
@@ -32,6 +33,10 @@ class CustomerPortalServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        $this->commands([
+            ExpireUnpaidPortalReservationsCommand::class,
+        ]);
 
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
 

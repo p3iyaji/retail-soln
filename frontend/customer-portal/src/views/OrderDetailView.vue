@@ -14,6 +14,8 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const invoiceBusy = ref(false)
 const invoiceError = ref<string | null>(null)
+const cancelBusy = ref(false)
+const cancelError = ref<string | null>(null)
 
 const orderId = computed(() => {
   const raw = route.params.id
@@ -30,6 +32,7 @@ async function load() {
   loading.value = true
   error.value = null
   invoiceError.value = null
+  cancelError.value = null
   try {
     const res = await ordersApi.get(orderId.value)
     order.value = res.data
@@ -63,6 +66,20 @@ async function downloadInvoice() {
     invoiceError.value = err instanceof ApiError ? err.message : 'Could not download invoice.'
   } finally {
     invoiceBusy.value = false
+  }
+}
+
+async function cancelOrder() {
+  if (!order.value?.cancellable) return
+  cancelBusy.value = true
+  cancelError.value = null
+  try {
+    const res = await ordersApi.cancel(order.value.id)
+    order.value = res.data
+  } catch (err) {
+    cancelError.value = err instanceof ApiError ? err.message : 'Could not cancel order.'
+  } finally {
+    cancelBusy.value = false
   }
 }
 
@@ -212,8 +229,18 @@ const ineligibleTitle = computed(() => {
         </div>
 
         <p v-if="invoiceError" class="mt-4 text-sm text-[var(--danger)]">{{ invoiceError }}</p>
+        <p v-if="cancelError" class="mt-4 text-sm text-[var(--danger)]">{{ cancelError }}</p>
 
         <div class="mt-6 flex flex-wrap gap-2.5">
+          <button
+            v-if="order.cancellable"
+            type="button"
+            class="inline-flex h-10 items-center rounded-[var(--radius)] border border-[var(--danger)] bg-[var(--surface)] px-3.5 text-[13px] font-semibold text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="cancelBusy"
+            @click="cancelOrder"
+          >
+            {{ cancelBusy ? 'Cancelling…' : 'Cancel order' }}
+          </button>
           <button
             type="button"
             class="inline-flex h-10 items-center rounded-[var(--radius)] bg-[var(--brand)] px-3.5 text-[13px] font-semibold text-[var(--brand-fg)] disabled:cursor-not-allowed disabled:opacity-50"

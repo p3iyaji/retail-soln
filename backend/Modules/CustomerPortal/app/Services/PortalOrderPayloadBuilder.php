@@ -47,6 +47,7 @@ class PortalOrderPayloadBuilder
             'paidAt' => $order->paid_at?->toIso8601String(),
             'createdAt' => $order->created_at?->toIso8601String(),
             'invoiceAvailable' => $this->invoiceAvailable($order),
+            'cancellable' => $this->cancellable($order),
             'items' => $order->items->map(fn ($item) => [
                 'id' => $item->id,
                 'variantId' => $item->product_variant_id,
@@ -134,6 +135,12 @@ class PortalOrderPayloadBuilder
             PortalOrderStatuses::OUT_FOR_DELIVERY,
             PortalOrderStatuses::DELIVERED,
         ], true);
+    }
+
+    public function cancellable(PortalOrder $order): bool
+    {
+        return in_array((string) $order->payment_status, ['awaiting_payment', 'failed'], true)
+            && (string) $order->status === PortalOrderStatuses::PENDING;
     }
 
     /**

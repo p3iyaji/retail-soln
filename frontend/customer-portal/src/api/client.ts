@@ -375,6 +375,7 @@ export type PortalOrder = {
   paidAt?: string | null
   createdAt?: string | null
   invoiceAvailable?: boolean
+  cancellable?: boolean
   returnEligible?: boolean
   activeReturnRequest?: PortalReturnRequestSummary | null
   returnRequest?: PortalReturnRequestSummary | null
@@ -555,6 +556,8 @@ export const ordersApi = {
   },
   get: (orderId: number, init?: RequestInit) =>
     api.get<{ data: PortalOrder }>(`/portal/orders/${orderId}`, init),
+  cancel: (orderId: number) =>
+    api.post<{ data: PortalOrder }>(`/portal/orders/${orderId}/cancel`),
   downloadInvoice: (orderId: number, orderNumber?: string) =>
     downloadBlob(
       `/portal/orders/${orderId}/invoice`,

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Modules\CustomerPortal\Models\CustomerAccount;
 use Modules\CustomerPortal\Models\PortalOrder;
+use Modules\CustomerPortal\Services\PortalCheckoutService;
 use Modules\CustomerPortal\Services\PortalOrderPayloadBuilder;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -49,6 +50,22 @@ class PortalOrderController
 
         return response()->json([
             'data' => $payloads->build($model, enriched: true),
+        ]);
+    }
+
+    public function cancel(
+        Request $request,
+        int $order,
+        PortalCheckoutService $checkout,
+        PortalOrderPayloadBuilder $payloads,
+    ): JsonResponse {
+        /** @var CustomerAccount $account */
+        $account = $request->user();
+
+        $updated = $checkout->cancelAwaitingPayment($account, $order);
+
+        return response()->json([
+            'data' => $payloads->build($updated, enriched: true),
         ]);
     }
 
