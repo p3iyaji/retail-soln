@@ -31,10 +31,13 @@ return new class extends Migration
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
 
-            $table->index(['organization_id', 'recipient_type', 'recipient_id', 'id']);
-            $table->index(['organization_id', 'status']);
-            $table->index(['related_type', 'related_id']);
-            $table->index(['store_id', 'id']);
+            $table->index(
+                ['organization_id', 'recipient_type', 'recipient_id', 'id'],
+                'notifications_org_recipient_id_idx',
+            );
+            $table->index(['organization_id', 'status'], 'notifications_org_status_idx');
+            $table->index(['related_type', 'related_id'], 'notifications_related_idx');
+            $table->index(['store_id', 'id'], 'notifications_store_id_idx');
         });
     }
 
