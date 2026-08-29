@@ -161,6 +161,94 @@ class StockReservationServiceTest extends TestCase
             ->count());
     }
 
+    public function test_consume_decrements_reserved_only_and_is_idempotent(): void
+    {
+        $payload = [
+            'organizationId' => $this->orgId,
+            'locationId' => $this->store->id,
+            'lines' => [
+                ['productVariantId' => $this->variant->id, 'quantity' => '5.0000'],
+            ],
+            'referenceType' => 'portal_order',
+            'referenceId' => 47,
+        ];
+
+        $this->reservations->reserve($payload);
+        $this->reservations->consume($payload);
+        $this->reservations->consume($payload);
+
+        $balance = $this->balance();
+        $this->assertSame('15.0000', $balance->available);
+        $this->assertSame('0.0000', $balance->reserved);
+        $this->assertSame(1, InventoryMovement::query()
+            ->where('type', MovementType::Sale->value)
+            ->where('bucket', BalanceBucket::Reserved->value)
+            ->where('reference_id', 47)
+            ->where('quantity', '-5.0000')
+            ->count());
+    }
+
+    public function test_consume_rejects_insufficient_reserved(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Insufficient reserved stock to consume');
+
+        $this->reservations->consume([
+            'organizationId' => $this->orgId,
+            'locationId' => $this->store->id,
+            'lines' => [
+                ['productVariantId' => $this->variant->id, 'quantity' => '1.0000'],
+            ],
+            'referenceType' => 'portal_order',
+            'referenceId' => 48,
+        ]);
+    }
+
+    public function test_consume_rejects_empty_lines_and_invalid_variant_or_qty(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Reservation requires at least one line');
+        $this->reservations->consume([
+            'organizationId' => $this->orgId,
+            'locationId' => $this->store->id,
+            'lines' => [],
+            'referenceType' => 'portal_order',
+            'referenceId' => 49,
+        ]);
+    }
+
+    public function test_consume_rejects_null_variant_id(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Reservation product variant is required');
+
+        $this->reservations->consume([
+            'organizationId' => $this->orgId,
+            'locationId' => $this->store->id,
+            'lines' => [
+                ['productVariantId' => null, 'quantity' => '1.0000'],
+            ],
+            'referenceType' => 'portal_order',
+            'referenceId' => 50,
+        ]);
+    }
+
+    public function test_consume_rejects_non_positive_qty(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Reservation quantity must be a positive decimal');
+
+        $this->reservations->consume([
+            'organizationId' => $this->orgId,
+            'locationId' => $this->store->id,
+            'lines' => [
+                ['productVariantId' => $this->variant->id, 'quantity' => '0'],
+            ],
+            'referenceType' => 'portal_order',
+            'referenceId' => 51,
+        ]);
+    }
+
     public function test_reserve_completes_missing_pair_leg(): void
     {
         $refId = 46;

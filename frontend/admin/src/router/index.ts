@@ -78,6 +78,11 @@ const router = createRouter({
           component: () => import('@/views/OversellExceptionsView.vue'),
         },
         {
+          path: 'fulfilment',
+          name: 'fulfilment',
+          component: () => import('@/views/FulfilmentView.vue'),
+        },
+        {
           path: 'devices',
           name: 'devices',
           component: () => import('@/views/DevicesView.vue'),

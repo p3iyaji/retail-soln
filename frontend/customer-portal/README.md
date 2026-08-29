@@ -19,9 +19,11 @@ API: `VITE_PROXY_TARGET` (default `http://127.0.0.1:8000`).
 - `CUSTOMER_PORTAL_DELIVERY_FEE` — flat home-delivery fee (`DECIMAL` string; default `0.0000`; negative rejected)
 - `CUSTOMER_PORTAL_RESERVATION_TTL` — unpaid order hold TTL in minutes (default `60`); scheduler runs `portal:expire-unpaid-reservations` every minute
 
-**Stock reservation (Story 7.1):**
+**Stock reservation (Story 7.1) + pick/pack (Story 7.2):**
 - Place-order dual-posts **available→reserved** via `InventoryLedgerService` (hard reject if insufficient available; no portal oversell)
-- Pay success **keeps** the reserved hold — **reserved→sale consume is Story 7.2** (pick/fulfil)
+- Pay success **keeps** the reserved hold
+- Staff pack (`POST /api/v1/fulfilment/orders/{id}/pack` + `X-Store-Id` + `Idempotency-Key`, permission `fulfilment.pick`) **consumes** reserved (−reserved, `MovementType::Sale`) via `StockReservationService::consume` — does **not** touch available and does **not** call POS `SaleCompletionService`; status → `processing` (timeline “Picked & packed”)
+- Ship / ready-for-pickup handoffs remain Stories 7.3 / 7.4
 - Cancel unpaid/failed (`POST /api/v1/portal/orders/{id}/cancel`) or TTL expiry releases **reserved→available**
 - Cancel sets order `status=cancelled` as the primary terminal signal; `payment_status` stays `awaiting_payment` / `failed` (no new payment enum without migration)
 - Order detail shows **Cancel order** (confirm dialog) while `cancellable` (pending + awaiting_payment|failed) and displays `reservationExpiresAt`

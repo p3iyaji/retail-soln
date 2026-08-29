@@ -16,6 +16,7 @@ const nav = [
   { name: 'payments', label: 'Payments', to: '/payments' },
   { name: 'inventory', label: 'Inventory', to: '/inventory' },
   { name: 'oversell-exceptions', label: 'Oversells', to: '/oversell-exceptions' },
+  { name: 'fulfilment', label: 'Fulfilment', to: '/fulfilment', permission: 'fulfilment.pick' },
   { name: 'devices', label: 'Devices', to: '/devices' },
   { name: 'pricing', label: 'Pricing', to: '/pricing' },
   { name: 'customers', label: 'Customers', to: '/customers' },
@@ -24,6 +25,13 @@ const nav = [
   { name: 'audit-logs', label: 'Audit logs', to: '/audit-logs' },
   { name: 'settings', label: 'Settings', to: '/settings' },
 ]
+
+const visibleNav = computed(() =>
+  nav.filter((item) => {
+    if (!('permission' in item) || !item.permission) return true
+    return auth.user?.permissions?.includes(item.permission) === true
+  }),
+)
 
 const title = computed(() => {
   const match = nav.find((item) => item.name === route.name)
@@ -63,7 +71,7 @@ async function onLogout() {
           Dashboard
         </RouterLink>
         <RouterLink
-          v-for="item in nav"
+          v-for="item in visibleNav"
           :key="item.name"
           :to="item.to"
           class="rounded-md px-3 py-2 text-sm whitespace-nowrap transition"

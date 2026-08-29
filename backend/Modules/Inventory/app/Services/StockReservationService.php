@@ -2,6 +2,7 @@
 
 namespace Modules\Inventory\Services;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Modules\Inventory\Data\PostMovementData;
 use Modules\Inventory\Enums\BalanceBucket;
@@ -12,10 +13,11 @@ use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 /**
- * Dual-post available↔reserved holds via InventoryLedgerService (AD-2).
+ * Dual-post available↔reserved holds and reserved consume via InventoryLedgerService (AD-2).
  *
- * Portal place-order reserves; cancel / unpaid TTL release. Payment success
- * must not call this service — consume reserved→sale is Story 7.2+.
+ * Portal place-order reserves; cancel / unpaid TTL release; pack-complete consumes
+ * reserved (−reserved, Sale). Payment success must not call this service.
+ * Do not use POS SaleCompletionService for portal fulfilment.
  */
 class StockReservationService
 {
@@ -218,6 +220,84 @@ class StockReservationService
     }
 
     /**
+     * Consume reserved stock (−reserved, MovementType::Sale). Does not touch available.
+     * Idempotent when the consume movement UUID already exists.
+     *
+     * @param  array{
+     *   organizationId: int,
+     *   locationId: int,
+     *   lines: list<array{productVariantId: int, quantity: string}>,
+     *   referenceType: string,
+     *   referenceId: int,
+     *   userId?: ?int,
+     *   notes?: ?string,
+     * }  $input
+     */
+    public function consume(array $input): void
+    {
+        DB::transaction(function () use ($input): void {
+            $needed = $this->aggregateLines($input['lines']);
+            $notes = $input['notes'] ?? null;
+            $userId = $input['userId'] ?? null;
+
+            foreach ($needed as $variantId => $qty) {
+                $uuid = $this->movementUuid(
+                    $input['referenceType'],
+                    $input['referenceId'],
+                    $variantId,
+                    'consume',
+                    BalanceBucket::Reserved->value,
+                );
+
+                if ($this->movementExists($uuid)) {
+                    continue;
+                }
+
+                $balance = $this->ledger->getLockedBalance(
+                    $input['organizationId'],
+                    LocationType::Store,
+                    $input['locationId'],
+                    $variantId,
+                );
+
+                if (bccomp((string) $balance->reserved, $qty, 4) < 0) {
+                    throw new RuntimeException('Insufficient reserved stock to consume.');
+                }
+
+                $lineNote = $notes ?? sprintf(
+                    'Consume for %s #%d',
+                    $input['referenceType'],
+                    $input['referenceId'],
+                );
+                $negQty = bcmul($qty, '-1', 4);
+
+                try {
+                    $this->ledger->post(new PostMovementData(
+                        organizationId: $input['organizationId'],
+                        locationType: LocationType::Store,
+                        locationId: $input['locationId'],
+                        productVariantId: $variantId,
+                        type: MovementType::Sale,
+                        quantity: $negQty,
+                        bucket: BalanceBucket::Reserved,
+                        referenceType: $input['referenceType'],
+                        referenceId: $input['referenceId'],
+                        userId: $userId,
+                        notes: $lineNote,
+                        uuid: $uuid,
+                    ));
+                } catch (QueryException $e) {
+                    if ($this->isUniqueConstraintViolation($e) && $this->movementExists($uuid)) {
+                        continue;
+                    }
+
+                    throw $e;
+                }
+            }
+        });
+    }
+
+    /**
      * @param  list<array{productVariantId: int, quantity: string}>  $lines
      * @return array<int, string> variantId => qty
      */
@@ -229,12 +309,20 @@ class StockReservationService
 
         $needed = [];
         foreach ($lines as $line) {
+            if (! array_key_exists('productVariantId', $line) || $line['productVariantId'] === null || $line['productVariantId'] === '') {
+                throw new RuntimeException('Reservation product variant is required.');
+            }
+
+            $variantId = (int) $line['productVariantId'];
+            if ($variantId <= 0) {
+                throw new RuntimeException('Reservation product variant is required.');
+            }
+
             $qty = (string) $line['quantity'];
             if (! preg_match('/^\d+(\.\d{1,4})?$/', $qty) || bccomp($qty, '0', 4) <= 0) {
                 throw new RuntimeException('Reservation quantity must be a positive decimal.');
             }
 
-            $variantId = (int) $line['productVariantId'];
             $needed[$variantId] = bcadd($needed[$variantId] ?? '0.0000', $qty, 4);
         }
 
@@ -257,5 +345,17 @@ class StockReservationService
     private function movementExists(string $uuid): bool
     {
         return InventoryMovement::query()->where('uuid', $uuid)->exists();
+    }
+
+    private function isUniqueConstraintViolation(QueryException $e): bool
+    {
+        $sqlState = $e->errorInfo[0] ?? '';
+        $driverCode = (string) ($e->errorInfo[1] ?? '');
+        $message = $e->getMessage();
+
+        return $sqlState === '23000'
+            || $driverCode === '19'
+            || str_contains($message, 'UNIQUE constraint failed')
+            || str_contains($message, 'Duplicate entry');
     }
 }
