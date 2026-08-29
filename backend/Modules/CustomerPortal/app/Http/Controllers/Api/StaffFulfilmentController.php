@@ -195,10 +195,87 @@ class StaffFulfilmentController
         ]);
     }
 
+    public function ready(
+        Request $request,
+        int $order,
+        OrganizationService $organizations,
+        PortalFulfilmentService $fulfilment,
+    ): JsonResponse {
+        $user = $request->user();
+        if ($user?->hasPermission('fulfilment.pickup') !== true) {
+            abort(403, 'This action is unauthorized.');
+        }
+
+        $storeId = $this->resolveStoreId($request, $user);
+        $orgId = $organizations->current()->id;
+        $this->assertStoreInOrg($orgId, $storeId);
+
+        $idempotencyKey = $request->header('Idempotency-Key');
+        if ($idempotencyKey === null || $idempotencyKey === '') {
+            return response()->json(['message' => 'Idempotency-Key header is required.'], 422);
+        }
+
+        $model = $fulfilment->findForStoreAction($orgId, $storeId, $order);
+        if ($model === null) {
+            abort(404);
+        }
+
+        try {
+            $result = $fulfilment->markReadyForPickup($model, $storeId, $idempotencyKey);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'data' => $fulfilment->toDetail($result['order']->loadMissing(['store', 'items', 'customer', 'address', 'shipment'])),
+        ]);
+    }
+
+    public function collect(
+        Request $request,
+        int $order,
+        OrganizationService $organizations,
+        PortalFulfilmentService $fulfilment,
+    ): JsonResponse {
+        $user = $request->user();
+        if ($user?->hasPermission('fulfilment.pickup') !== true) {
+            abort(403, 'This action is unauthorized.');
+        }
+
+        $storeId = $this->resolveStoreId($request, $user);
+        $orgId = $organizations->current()->id;
+        $this->assertStoreInOrg($orgId, $storeId);
+
+        $idempotencyKey = $request->header('Idempotency-Key');
+        if ($idempotencyKey === null || $idempotencyKey === '') {
+            return response()->json(['message' => 'Idempotency-Key header is required.'], 422);
+        }
+
+        $model = $fulfilment->findForStoreAction($orgId, $storeId, $order);
+        if ($model === null) {
+            abort(404);
+        }
+
+        try {
+            $result = $fulfilment->markCollected($model, $storeId, $idempotencyKey);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'data' => $fulfilment->toDetail($result['order']->loadMissing(['store', 'items', 'customer', 'address', 'shipment'])),
+        ]);
+    }
+
     private function assertCanViewFulfilment(mixed $user): void
     {
         if ($user?->hasPermission('fulfilment.pick') !== true
-            && $user?->hasPermission('fulfilment.ship') !== true) {
+            && $user?->hasPermission('fulfilment.ship') !== true
+            && $user?->hasPermission('fulfilment.pickup') !== true) {
             abort(403, 'This action is unauthorized.');
         }
     }

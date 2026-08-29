@@ -108,6 +108,7 @@ final class PermissionMatrix
             'warehouses.manage' => ['SA', 'OA'],
             'fulfilment.pick' => ['SA', 'OA', 'SM', 'IM', 'DS'],
             'fulfilment.ship' => ['SA', 'OA', 'SM', 'IM', 'DS'],
+            'fulfilment.pickup' => ['SA', 'OA', 'SM', 'IM', 'DS'],
         ];
 
         $storeScoped = [
@@ -124,7 +125,7 @@ final class PermissionMatrix
             'invoices.proforma.honor-prices',
             'payments.manual', 'payments.stripe', 'payments.paystack',
             'registers.reconcile', 'devices.manage', 'reports.view',
-            'fulfilment.pick', 'fulfilment.ship',
+            'fulfilment.pick', 'fulfilment.ship', 'fulfilment.pickup',
         ];
 
         $permissions = [];

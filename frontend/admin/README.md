@@ -2,9 +2,9 @@
 
 Vue 3 + TypeScript + Vite + Tailwind CSS 4. Consumes `/api/v1` with Sanctum Bearer tokens. **No Inertia.**
 
-## Fulfilment (Stories 7.2–7.3)
+## Fulfilment (Stories 7.2–7.4)
 
-Nav **Fulfilment** → `/fulfilment`. Store-scoped portal orders (`GET /fulfilment/orders` + `X-Store-Id`). **Complete pack** (`fulfilment.pick`) consumes reserved stock. For **home_delivery**, **Ship** / **Mark delivered** (`fulfilment.ship` + `Idempotency-Key`) advance `processing` → `out_for_delivery` → `delivered` with optional carrier/tracking — no inventory ledger posts. Pickup / click & collect handoff is Story 7.4.
+Nav **Fulfilment** → `/fulfilment` (visible with `fulfilment.pick` | `fulfilment.ship` | `fulfilment.pickup`). Store-scoped portal orders (`GET /fulfilment/orders` + `X-Store-Id`). **Complete pack** (`fulfilment.pick`) consumes reserved stock. For **home_delivery**, **Ship** / **Mark delivered** (`fulfilment.ship` + `Idempotency-Key`) advance `processing` → `out_for_delivery` → `delivered` with optional carrier/tracking. For **store_pickup** / **click_collect**, **Ready for pickup** / **Mark collected** (`fulfilment.pickup` + `Idempotency-Key`) advance `processing` → `ready_for_pickup` → `delivered` — order number is prominent for counter handoff. Ship/deliver and ready/collect paths do not post inventory ledger movements.
 
 ## Oversell exceptions (Story 5.6)
 

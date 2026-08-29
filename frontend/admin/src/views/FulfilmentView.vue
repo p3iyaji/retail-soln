@@ -23,11 +23,14 @@ type FulfilmentOrderListItem = {
   totals: { grandTotal: string }
   itemCount: number
   packedAt?: string | null
+  collectedAt?: string | null
   createdAt?: string | null
   paidAt?: string | null
   packable: boolean
   shippable?: boolean
   deliverable?: boolean
+  readyForPickup?: boolean
+  collectable?: boolean
   shipment?: ShipmentInfo
 }
 
@@ -41,6 +44,7 @@ type FulfilmentOrderDetail = FulfilmentOrderListItem & {
     lineTotal: string
   }>
   customer?: { name?: string | null; email?: string | null }
+  contactPhone?: string | null
   address?: {
     line1: string | null
     line2: string | null
@@ -60,11 +64,14 @@ type FulfilmentOrderDetail = FulfilmentOrderListItem & {
 const PACK_KEY_PREFIX = 'fulfilment-pack-idem:'
 const SHIP_KEY_PREFIX = 'fulfilment-ship-idem:'
 const DELIVER_KEY_PREFIX = 'fulfilment-deliver-idem:'
+const READY_KEY_PREFIX = 'fulfilment-ready-idem:'
+const COLLECT_KEY_PREFIX = 'fulfilment-collect-idem:'
 
 const auth = useAuthStore()
 const canPick = computed(() => auth.user?.permissions?.includes('fulfilment.pick') === true)
 const canShip = computed(() => auth.user?.permissions?.includes('fulfilment.ship') === true)
-const canAccess = computed(() => canPick.value || canShip.value)
+const canPickup = computed(() => auth.user?.permissions?.includes('fulfilment.pickup') === true)
+const canAccess = computed(() => canPick.value || canShip.value || canPickup.value)
 
 const stores = ref<Store[]>([])
 const storeId = ref<number | ''>('')
@@ -75,10 +82,27 @@ const detailLoading = ref(false)
 const packing = ref(false)
 const shipping = ref(false)
 const delivering = ref(false)
+const markingReady = ref(false)
+const collecting = ref(false)
 const error = ref('')
 const message = ref('')
 const carrierName = ref('')
 const trackingNumber = ref('')
+
+function isPickupMode(mode: string): boolean {
+  return mode === 'store_pickup' || mode === 'click_collect'
+}
+
+function isHomeDelivery(mode: string): boolean {
+  return mode === 'home_delivery'
+}
+
+function displayStatusLabel(row: { status: string; statusLabel: string; fulfilmentMode: string }): string {
+  if (row.status === 'delivered' && isPickupMode(row.fulfilmentMode)) {
+    return 'Collected'
+  }
+  return row.statusLabel
+}
 
 function idemStorageId(prefix: string, orderId: number): string {
   return `${prefix}${orderId}`
@@ -251,7 +275,14 @@ async function resolveAfterConflict(
 }
 
 async function shipOrder() {
-  if (!selected.value || !storeId.value || shipping.value || !selected.value.shippable || !canShip.value) {
+  if (
+    !selected.value ||
+    !storeId.value ||
+    shipping.value ||
+    !selected.value.shippable ||
+    !canShip.value ||
+    !isHomeDelivery(selected.value.fulfilmentMode)
+  ) {
     return
   }
 
@@ -309,7 +340,8 @@ async function deliverOrder() {
     !storeId.value ||
     delivering.value ||
     !selected.value.deliverable ||
-    !canShip.value
+    !canShip.value ||
+    !isHomeDelivery(selected.value.fulfilmentMode)
   ) {
     return
   }
@@ -356,6 +388,114 @@ async function deliverOrder() {
   }
 }
 
+async function readyForPickup() {
+  if (
+    !selected.value ||
+    !storeId.value ||
+    markingReady.value ||
+    !selected.value.readyForPickup ||
+    !canPickup.value ||
+    !isPickupMode(selected.value.fulfilmentMode)
+  ) {
+    return
+  }
+
+  const confirmed = window.confirm(
+    `Mark ${selected.value.orderNumber} ready for pickup? Customer can collect at the counter.`,
+  )
+  if (!confirmed) return
+
+  markingReady.value = true
+  error.value = ''
+  message.value = ''
+  const orderId = selected.value.id
+  const key = ensureIdempotencyKey(READY_KEY_PREFIX, orderId)
+  try {
+    const res = await api.post<{ data: FulfilmentOrderDetail }>(
+      `/fulfilment/orders/${orderId}/ready`,
+      {},
+      {
+        'X-Store-Id': String(storeId.value),
+        'Idempotency-Key': key,
+      },
+    )
+    clearIdempotencyKey(READY_KEY_PREFIX, orderId)
+    selected.value = res.data
+    syncShipmentForm(res.data)
+    message.value = `Ready for pickup: ${res.data.orderNumber}`
+    await loadOrders()
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 422) {
+      const recovered = await resolveAfterConflict(orderId, ['ready_for_pickup'])
+      if (recovered) {
+        clearIdempotencyKey(READY_KEY_PREFIX, orderId)
+        selected.value = recovered
+        syncShipmentForm(recovered)
+        message.value = `Ready for pickup: ${recovered.orderNumber}`
+        await loadOrders()
+        return
+      }
+    }
+    error.value = e instanceof ApiError ? e.message : 'Ready for pickup failed'
+  } finally {
+    markingReady.value = false
+  }
+}
+
+async function collectOrder() {
+  if (
+    !selected.value ||
+    !storeId.value ||
+    collecting.value ||
+    !selected.value.collectable ||
+    !canPickup.value ||
+    !isPickupMode(selected.value.fulfilmentMode)
+  ) {
+    return
+  }
+
+  const confirmed = window.confirm(
+    `Mark ${selected.value.orderNumber} as collected? Confirm the customer has this order number.`,
+  )
+  if (!confirmed) return
+
+  collecting.value = true
+  error.value = ''
+  message.value = ''
+  const orderId = selected.value.id
+  const key = ensureIdempotencyKey(COLLECT_KEY_PREFIX, orderId)
+  try {
+    const res = await api.post<{ data: FulfilmentOrderDetail }>(
+      `/fulfilment/orders/${orderId}/collect`,
+      {},
+      {
+        'X-Store-Id': String(storeId.value),
+        'Idempotency-Key': key,
+      },
+    )
+    clearIdempotencyKey(COLLECT_KEY_PREFIX, orderId)
+    selected.value = res.data
+    syncShipmentForm(res.data)
+    message.value = `Collected order ${res.data.orderNumber}`
+    await loadOrders()
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 422) {
+      const recovered = await resolveAfterConflict(orderId, ['delivered'])
+      if (recovered) {
+        clearIdempotencyKey(COLLECT_KEY_PREFIX, orderId)
+        selected.value = recovered
+        syncShipmentForm(recovered)
+        message.value = `Collected order ${recovered.orderNumber}`
+        await loadOrders()
+        return
+      }
+    }
+    error.value = e instanceof ApiError ? e.message : 'Collect failed'
+  } finally {
+    collecting.value = false
+  }
+}
+
 watch(storeId, () => {
   selected.value = null
   if (canAccess.value) {
@@ -376,7 +516,8 @@ onMounted(() => {
       <div>
         <h2 class="text-base font-semibold">Fulfilment</h2>
         <p class="text-sm text-[var(--muted)]">
-          Pack consumes reserved stock. Home delivery: ship then mark delivered (no inventory change).
+          Pack consumes reserved stock. Home delivery: ship then mark delivered. Pickup / click &amp; collect:
+          ready for pickup then mark collected (no inventory change).
         </p>
       </div>
       <div class="flex flex-wrap items-end gap-2">
@@ -407,8 +548,9 @@ onMounted(() => {
 
     <div v-if="loading" class="text-sm text-[var(--muted)]">Loading…</div>
     <div v-else-if="!canAccess" class="text-sm text-[var(--muted)]">
-      Fulfilment requires <code class="text-xs">fulfilment.pick</code> or
-      <code class="text-xs">fulfilment.ship</code>.
+      Fulfilment requires <code class="text-xs">fulfilment.pick</code>,
+      <code class="text-xs">fulfilment.ship</code>, or
+      <code class="text-xs">fulfilment.pickup</code>.
     </div>
     <div v-else class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <div class="overflow-x-auto rounded-md border border-[var(--line)]">
@@ -433,7 +575,7 @@ onMounted(() => {
               @click="openOrder(row.id)"
             >
               <td class="px-3 py-2 font-medium">{{ row.orderNumber }}</td>
-              <td class="px-3 py-2">{{ row.statusLabel }}</td>
+              <td class="px-3 py-2">{{ displayStatusLabel(row) }}</td>
               <td class="px-3 py-2">{{ row.fulfilmentMode }}</td>
               <td class="px-3 py-2 tabular-nums">{{ row.totals.grandTotal }}</td>
             </tr>
@@ -447,10 +589,22 @@ onMounted(() => {
         <div v-else class="space-y-4">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 class="text-base font-semibold">{{ selected.orderNumber }}</h3>
+              <p
+                v-if="isPickupMode(selected.fulfilmentMode)"
+                class="text-xs font-medium tracking-wide text-[var(--muted)] uppercase"
+              >
+                Order number
+              </p>
+              <h3
+                class="font-semibold"
+                :class="isPickupMode(selected.fulfilmentMode) ? 'text-2xl tracking-tight' : 'text-base'"
+              >
+                {{ selected.orderNumber }}
+              </h3>
               <p class="text-sm text-[var(--muted)]">
-                {{ selected.statusLabel }} · {{ selected.fulfilmentMode }}
+                {{ displayStatusLabel(selected) }} · {{ selected.fulfilmentMode }}
                 <span v-if="selected.customer?.name"> · {{ selected.customer.name }}</span>
+                <span v-if="selected.contactPhone"> · {{ selected.contactPhone }}</span>
               </p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -464,7 +618,7 @@ onMounted(() => {
                 {{ packing ? 'Packing…' : 'Complete pack' }}
               </button>
               <button
-                v-if="selected.shippable && canShip"
+                v-if="selected.shippable && canShip && isHomeDelivery(selected.fulfilmentMode)"
                 type="button"
                 class="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
                 :disabled="shipping"
@@ -473,13 +627,31 @@ onMounted(() => {
                 {{ shipping ? 'Shipping…' : 'Ship' }}
               </button>
               <button
-                v-if="selected.deliverable && canShip"
+                v-if="selected.deliverable && canShip && isHomeDelivery(selected.fulfilmentMode)"
                 type="button"
                 class="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
                 :disabled="delivering"
                 @click="deliverOrder"
               >
                 {{ delivering ? 'Updating…' : 'Mark delivered' }}
+              </button>
+              <button
+                v-if="selected.readyForPickup && canPickup && isPickupMode(selected.fulfilmentMode)"
+                type="button"
+                class="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+                :disabled="markingReady"
+                @click="readyForPickup"
+              >
+                {{ markingReady ? 'Updating…' : 'Ready for pickup' }}
+              </button>
+              <button
+                v-if="selected.collectable && canPickup && isPickupMode(selected.fulfilmentMode)"
+                type="button"
+                class="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+                :disabled="collecting"
+                @click="collectOrder"
+              >
+                {{ collecting ? 'Updating…' : 'Mark collected' }}
               </button>
             </div>
           </div>

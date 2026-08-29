@@ -20,7 +20,7 @@ const nav = [
     name: 'fulfilment',
     label: 'Fulfilment',
     to: '/fulfilment',
-    permission: ['fulfilment.pick', 'fulfilment.ship'],
+    permission: ['fulfilment.pick', 'fulfilment.ship', 'fulfilment.pickup'],
   },
   { name: 'devices', label: 'Devices', to: '/devices' },
   { name: 'pricing', label: 'Pricing', to: '/pricing' },
