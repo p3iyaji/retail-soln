@@ -43,6 +43,7 @@ class PortalFulfilmentService
     public function __construct(
         private readonly StockReservationService $reservations,
         private readonly PortalOrderPayloadBuilder $payloads,
+        private readonly PortalOrderNotifier $orderNotifications,
     ) {}
 
     /**
@@ -265,7 +266,7 @@ class PortalFulfilmentService
         $carrierName = $this->nullableTrimmed($input['carrierName'] ?? null, 120, 'carrierName');
         $trackingNumber = $this->nullableTrimmed($input['trackingNumber'] ?? null, 120, 'trackingNumber');
 
-        return DB::transaction(function () use ($order, $idempotencyKey, $carrierName, $trackingNumber): array {
+        $result = DB::transaction(function () use ($order, $idempotencyKey, $carrierName, $trackingNumber): array {
             /** @var PortalOrder $locked */
             $locked = PortalOrder::query()
                 ->whereKey($order->id)
@@ -321,6 +322,12 @@ class PortalFulfilmentService
                 'created' => true,
             ];
         });
+
+        if ($result['created']) {
+            $this->orderNotifications->shipped($result['order']);
+        }
+
+        return $result;
     }
 
     /**
@@ -408,7 +415,7 @@ class PortalFulfilmentService
             throw new RuntimeException('Order does not belong to this store.');
         }
 
-        return DB::transaction(function () use ($order, $idempotencyKey): array {
+        $result = DB::transaction(function () use ($order, $idempotencyKey): array {
             /** @var PortalOrder $locked */
             $locked = PortalOrder::query()
                 ->whereKey($order->id)
@@ -449,6 +456,12 @@ class PortalFulfilmentService
                 'created' => true,
             ];
         });
+
+        if ($result['created']) {
+            $this->orderNotifications->readyForPickup($result['order']);
+        }
+
+        return $result;
     }
 
     /**

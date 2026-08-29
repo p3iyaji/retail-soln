@@ -37,6 +37,7 @@ class PortalCheckoutService
         private readonly PaymentService $payments,
         private readonly PaymentRedirectUrl $redirectUrls,
         private readonly StockReservationService $reservations,
+        private readonly PortalOrderNotifier $orderNotifications,
     ) {}
 
     /**
@@ -472,7 +473,9 @@ class PortalCheckoutService
             throw new HttpException(400, 'Unsupported payment status: '.$status);
         }
 
-        return DB::transaction(function () use ($order, $status) {
+        $transitioned = false;
+
+        $result = DB::transaction(function () use ($order, $status, &$transitioned) {
             /** @var PortalOrder $locked */
             $locked = PortalOrder::query()->where('id', $order->id)->lockForUpdate()->firstOrFail();
 
@@ -500,9 +503,16 @@ class PortalCheckoutService
                 }
             }
             $locked->save();
+            $transitioned = true;
 
             return $locked->fresh(['items', 'store']);
         });
+
+        if ($transitioned && $status === 'paid') {
+            $this->orderNotifications->paid($result);
+        }
+
+        return $result;
     }
 
     private function paymentResultForOrder(PortalOrder $order, bool $replay = false): PaymentIntentResult
