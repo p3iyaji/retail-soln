@@ -9,6 +9,7 @@ import {
   checkoutApi,
   formatPortalMoney,
   ordersApi,
+  returnsApi,
 } from '@/api/client'
 
 describe('portal client', () => {
@@ -123,6 +124,34 @@ describe('portal client', () => {
     expect(fetchMock.mock.calls[0][0]).toContain('/portal/orders?page=2')
     expect(fetchMock.mock.calls[1][0]).toMatch(/\/portal\/orders$/)
     expect(fetchMock.mock.calls[2][0]).toContain('/portal/orders/42')
+  })
+
+  it('returnsApi hits list, detail, and create with Idempotency-Key', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: { id: 1 }, meta: { currentPage: 1, lastPage: 1, total: 0 } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await returnsApi.list(2)
+    await returnsApi.get(9)
+    await returnsApi.create(
+      {
+        orderId: 3,
+        reason: 'defective',
+        notes: null,
+        items: [{ orderItemId: 5, qty: 1 }],
+      },
+      'ret-key-1',
+    )
+
+    expect(fetchMock.mock.calls[0][0]).toContain('/portal/return-requests?page=2')
+    expect(fetchMock.mock.calls[1][0]).toContain('/portal/return-requests/9')
+    const createInit = fetchMock.mock.calls[2][1] as RequestInit
+    expect(fetchMock.mock.calls[2][0]).toContain('/portal/return-requests')
+    expect(new Headers(createInit.headers).get('Idempotency-Key')).toBe('ret-key-1')
   })
 
   it('downloadInvoice hits invoice path with Bearer and saves HTML', async () => {

@@ -55,6 +55,11 @@ class PortalOrder extends Model
         return $this->hasMany(PortalOrderItem::class);
     }
 
+    public function returnRequests(): HasMany
+    {
+        return $this->hasMany(PortalReturnRequest::class);
+    }
+
     public function account(): BelongsTo
     {
         return $this->belongsTo(CustomerAccount::class, 'customer_account_id');

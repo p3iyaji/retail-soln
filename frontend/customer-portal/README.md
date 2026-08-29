@@ -1,6 +1,6 @@
 # Customer Portal SPA
 
-Vue 3 + Vite + TypeScript + Tailwind + Pinia customer-facing shop + account app (Stories 6.1–6.4).
+Vue 3 + Vite + TypeScript + Tailwind + Pinia customer-facing shop + account app (Stories 6.1–6.5).
 
 **Dev URL:** http://localhost:5175
 
@@ -29,7 +29,12 @@ API: `VITE_PROXY_TARGET` (default `http://127.0.0.1:8000`).
 **Orders (Story 6.4):**
 - Chrome **Orders** → `/shop/orders` (own orders only) → `/shop/orders/:id` with fulfilment-aware status timeline
 - Paid (or post-confirmed) orders: **Download invoice** → HTML `invoice-{order_number}.html` from portal order (not POS `Sale`/`Invoice`)
-- Confirmation deep-links to order detail; **Request return** remains stubbed for 6.5
+- Confirmation deep-links to order detail
 - Staff fulfilment status transitions stay Epic 7 (tests may set advanced statuses)
 
-**Flows:** guest browse/search → register → verify → login → **add to cart** → `/shop/cart` → `/shop/checkout` → `/shop/confirmation?orderId=…` → **Orders** list / detail / invoice. Returns remain stubs (6.5).
+**Returns (Story 6.5):**
+- Paid **delivered** orders: **Request return** → `/shop/orders/:id/return` (lines / qty / reason / notes)
+- Creates portal return request only (`POST /api/v1/portal/return-requests` + `Idempotency-Key`) — does **not** call `SaleReturnService` or change inventory/payments
+- Chrome **Returns** → `/shop/returns` list → `/shop/returns/:id` detail; order detail shows request status + “No refunds yet”
+
+**Flows:** guest browse/search → register → verify → login → **add to cart** → `/shop/cart` → `/shop/checkout` → `/shop/confirmation?orderId=…` → **Orders** / invoice → (after delivery) **Request return**.

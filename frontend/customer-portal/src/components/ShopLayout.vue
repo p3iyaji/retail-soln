@@ -72,6 +72,12 @@ function onSearchSubmit() {
             Orders
           </RouterLink>
           <RouterLink
+            :to="hasToken() ? { name: 'returns' } : { name: 'login', query: { redirect: '/shop/returns' } }"
+            class="hover:text-[var(--ink)] no-underline"
+          >
+            Returns
+          </RouterLink>
+          <RouterLink
             :to="hasToken() ? { name: 'cart' } : { name: 'login', query: { redirect: '/shop/cart' } }"
             class="font-semibold text-[var(--brand)] no-underline hover:underline"
           >

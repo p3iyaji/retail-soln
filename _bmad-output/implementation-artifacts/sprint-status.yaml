@@ -83,7 +83,7 @@ development_status:
   6-2-product-catalogue: done
   6-3-cart-checkout: done
   6-4-order-tracking-invoices: done
-  6-5-returns-request: backlog
+  6-5-returns-request: review
   epic-6-retrospective: optional
 
   epic-7: backlog

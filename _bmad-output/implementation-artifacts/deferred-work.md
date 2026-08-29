@@ -295,3 +295,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-6-4-order-tracking-invoices.md`
   summary: Replace HTML portal invoice download with fiscal PDF engine if required by locale.
   evidence: 6.4 ships proforma-style HTML from portal_orders only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-5-returns-request.md`
+  summary: Staff Admin approve/reject/complete portal return requests and convert to inventory/payment refunds.
+  evidence: 6.5 creates requests only; no staff mutators or SaleReturn posting by design.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-5-returns-request.md`
+  summary: Add FK on portal_return_requests.organization_id and return status history timestamps for shoppers.
+  evidence: org_id is unconstrained unsignedBigInteger; customers only see createdAt today.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-5-returns-request.md`
+  summary: Vue component tests for OrderDetailView returnEligible CTA gating.
+  evidence: Returns API client is covered; order-detail eligibility UI remains manual/backend-asserted.

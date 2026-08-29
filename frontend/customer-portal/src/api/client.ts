@@ -308,6 +308,48 @@ export type PortalOrderListItem = {
   paidAt: string | null
 }
 
+export type PortalReturnRequestSummary = {
+  id: number
+  status: string
+  statusLabel: string
+  reason: string
+  createdAt: string | null
+}
+
+export type PortalReturnRequestListItem = {
+  id: number
+  orderId: number
+  orderNumber: string | null
+  status: string
+  statusLabel: string
+  reason: string
+  reasonLabel: string
+  createdAt: string | null
+}
+
+export type PortalReturnRequest = {
+  id: number
+  orderId: number
+  orderNumber: string | null
+  status: string
+  statusLabel: string
+  reason: string
+  reasonLabel: string
+  notes: string | null
+  createdAt: string | null
+  items: Array<{
+    id: number
+    orderItemId: number
+    qty: string
+    productName: string | null
+    variantName: string | null
+    sku: string | null
+  }>
+  refunds: unknown[]
+}
+
+export type PortalReturnReason = 'defective' | 'wrong_item' | 'changed_mind' | 'other'
+
 export type PortalOrder = {
   id: number
   uuid: string
@@ -333,6 +375,10 @@ export type PortalOrder = {
   paidAt?: string | null
   createdAt?: string | null
   invoiceAvailable?: boolean
+  returnEligible?: boolean
+  activeReturnRequest?: PortalReturnRequestSummary | null
+  returnRequest?: PortalReturnRequestSummary | null
+  refunds?: unknown[]
   timeline?: OrderTimelineStep[]
   customer?: { name: string | null; email: string | null }
   items: Array<{
@@ -342,6 +388,7 @@ export type PortalOrder = {
     variantName: string
     sku: string
     qty: string
+    returnableQty?: string
     unitGrossPrice: string
     lineTax: string
     lineTotal: string
@@ -513,4 +560,37 @@ export const ordersApi = {
       `/portal/orders/${orderId}/invoice`,
       `invoice-${orderNumber ?? orderId}.html`,
     ),
+}
+
+export type ReturnRequestsListResponse = {
+  data: PortalReturnRequestListItem[]
+  meta: {
+    currentPage: number
+    lastPage: number
+    total: number
+  }
+}
+
+export const returnsApi = {
+  list: (page = 1, init?: RequestInit) => {
+    const safePage = Math.max(1, Math.floor(Number(page)) || 1)
+    return api.get<ReturnRequestsListResponse>(
+      `/portal/return-requests${safePage > 1 ? `?page=${safePage}` : ''}`,
+      init,
+    )
+  },
+  get: (id: number, init?: RequestInit) =>
+    api.get<{ data: PortalReturnRequest }>(`/portal/return-requests/${id}`, init),
+  create: (
+    payload: {
+      orderId: number
+      reason: PortalReturnReason
+      notes?: string | null
+      items: Array<{ orderItemId: number; qty: number }>
+    },
+    idempotencyKey: string,
+  ) =>
+    api.post<{ data: PortalReturnRequest }>('/portal/return-requests', payload, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    }),
 }

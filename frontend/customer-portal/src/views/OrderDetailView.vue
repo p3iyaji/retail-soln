@@ -65,6 +65,30 @@ async function downloadInvoice() {
     invoiceBusy.value = false
   }
 }
+
+const activeReturn = computed(() => order.value?.activeReturnRequest ?? null)
+const returnSummary = computed(() => activeReturn.value ?? order.value?.returnRequest ?? null)
+const showRefunds = computed(() => {
+  if (!order.value) return false
+  if (returnSummary.value) return true
+  return Array.isArray(order.value.refunds) && order.value.refunds.length > 0
+})
+
+const ineligibleTitle = computed(() => {
+  if (activeReturn.value) {
+    return `Open return request (${activeReturn.value.statusLabel}) — view it instead of starting another`
+  }
+  if (order.value?.returnRequest) {
+    return `Latest return: ${order.value.returnRequest.statusLabel}. New requests need remaining returnable qty on a paid delivered order`
+  }
+  if (order.value?.paymentStatus !== 'paid') {
+    return 'Returns available after the order is paid and delivered'
+  }
+  if (order.value?.status !== 'delivered') {
+    return 'Returns available after delivery'
+  }
+  return 'No remaining returnable quantity on this order'
+})
 </script>
 
 <template>
@@ -130,6 +154,7 @@ async function downloadInvoice() {
             >
               <span>
                 {{ item.productName }}
+                <span v-if="item.variantName" class="text-[var(--muted)]"> · {{ item.variantName }}</span>
                 <span class="text-[var(--muted)]">× {{ item.qty }}</span>
               </span>
               <span class="font-mono font-semibold">{{ formatPortalMoney(item.lineTotal) }}</span>
@@ -151,6 +176,41 @@ async function downloadInvoice() {
           </div>
         </div>
 
+        <div
+          v-if="returnSummary"
+          class="mt-6 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm"
+        >
+          <div class="font-semibold text-[var(--ink)]">
+            {{ activeReturn ? 'Open return request' : 'Return request' }}
+          </div>
+          <p class="mt-1 text-[var(--muted)]">
+            Status:
+            <span class="font-semibold text-[var(--ink)]">{{ returnSummary.statusLabel }}</span>
+            <template v-if="returnSummary.createdAt">
+              ·
+              {{ new Date(returnSummary.createdAt).toLocaleDateString() }}
+            </template>
+          </p>
+          <RouterLink
+            :to="{ name: 'return-detail', params: { id: returnSummary.id } }"
+            class="mt-2 inline-block text-[13px] font-semibold text-[var(--brand)] no-underline hover:underline"
+          >
+            View request
+          </RouterLink>
+        </div>
+
+        <div
+          v-if="showRefunds"
+          class="mt-4 rounded-lg border border-dashed border-[var(--line)] px-4 py-3 text-sm text-[var(--muted)]"
+        >
+          <div class="font-semibold text-[var(--ink)]">Refunds</div>
+          <p class="mt-1">
+            {{
+              order.refunds && order.refunds.length > 0 ? `${order.refunds.length} refund(s)` : 'No refunds yet'
+            }}
+          </p>
+        </div>
+
         <p v-if="invoiceError" class="mt-4 text-sm text-[var(--danger)]">{{ invoiceError }}</p>
 
         <div class="mt-6 flex flex-wrap gap-2.5">
@@ -162,10 +222,26 @@ async function downloadInvoice() {
           >
             {{ invoiceBusy ? 'Downloading…' : 'Download invoice' }}
           </button>
+          <RouterLink
+            v-if="order.returnEligible"
+            :to="{ name: 'order-return', params: { id: order.id } }"
+            class="inline-flex h-10 items-center rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] px-3.5 text-[13px] font-semibold text-[var(--ink)] no-underline"
+          >
+            Request return
+          </RouterLink>
+          <RouterLink
+            v-else-if="activeReturn"
+            :to="{ name: 'return-detail', params: { id: activeReturn.id } }"
+            class="inline-flex h-10 items-center rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] px-3.5 text-[13px] font-semibold text-[var(--ink)] no-underline"
+            :title="ineligibleTitle"
+          >
+            View return request
+          </RouterLink>
           <button
+            v-else
             type="button"
             disabled
-            title="Coming in Story 6.5"
+            :title="ineligibleTitle"
             class="inline-flex h-10 cursor-not-allowed items-center rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] px-3.5 text-[13px] font-semibold text-[var(--muted)] opacity-70"
           >
             Request return
