@@ -1,5 +1,5 @@
 # generated: 08-24-2026 04:00
-# last_updated: 08-28-2026 01:05
+# last_updated: 08-29-2026
 # project: retail-soln
 # project_key: RETAIL
 # tracking_system: file-system
@@ -11,7 +11,7 @@
 # Retrospective: optional | done
 
 generated: 08-24-2026 04:00
-last_updated: 08-28-2026 01:05
+last_updated: 08-29-2026
 project: retail-soln
 project_key: RETAIL
 tracking_system: file-system
@@ -68,8 +68,8 @@ development_status:
   4-12-proforma-convert: done
   epic-4-retrospective: optional
 
-  epic-5: backlog
-  5-1-pwa-offline-shell: backlog
+  epic-5: in-progress
+  5-1-pwa-offline-shell: review
   5-2-local-cache-sync: backlog
   5-3-offline-sale-queue: backlog
   5-4-push-sync-api: backlog

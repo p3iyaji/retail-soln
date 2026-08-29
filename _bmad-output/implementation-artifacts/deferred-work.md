@@ -155,3 +155,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-cart-product-search.md`
   summary: Block add-to-cart when stock unavailable.
   evidence: Spec deferred inventory checks to Story 4.5 sale completion.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-1-pwa-offline-shell.md`
+  summary: Migrate Dexie `pending_sales` (and related) primary keys from `++id` to client `uuid` when Story 5.3 implements the offline sale queue.
+  evidence: Offline-sync design keys offline writes by uuid; 5.1 uses placeholder auto-increment tables only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-1-pwa-offline-shell.md`
+  summary: Show sync badge on Login and Store picker routes, not only POS floor chrome.
+  evidence: Spec Code Map targeted PosFloorView; UX spine wants always-visible sync state across POS chrome.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-1-pwa-offline-shell.md`
+  summary: Add automated post-build assertion that generated SW precaches shell and denylists `/api`.
+  evidence: Spec Verification relies on manual DevTools + successful `npm run build`; vitest does not inspect workbox output.
