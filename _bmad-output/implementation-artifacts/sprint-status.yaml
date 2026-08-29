@@ -93,8 +93,8 @@ development_status:
   7-4-store-pickup: done
   epic-7-retrospective: optional
 
-  epic-8: backlog
-  8-1-sales-inventory-dashboards: backlog
+  epic-8: in-progress
+  8-1-sales-inventory-dashboards: review
   8-2-store-performance-reports: backlog
   8-3-notification-service: backlog
   epic-8-retrospective: optional

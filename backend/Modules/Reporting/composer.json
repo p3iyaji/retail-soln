@@ -1,0 +1,28 @@
+{
+    "name": "retail-soln/reporting",
+    "description": "Store-scoped dashboard and reporting reads for retail-soln",
+    "authors": [
+        {
+            "name": "retail-soln",
+            "email": "dev@retail.local"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Reporting\\": "app/",
+            "Modules\\Reporting\\Database\\Factories\\": "database/factories/",
+            "Modules\\Reporting\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Reporting\\Tests\\": "tests/"
+        }
+    }
+}

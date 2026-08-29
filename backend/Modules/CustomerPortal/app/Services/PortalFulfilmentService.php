@@ -3,6 +3,7 @@
 namespace Modules\CustomerPortal\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\CustomerPortal\Models\PortalOrder;
@@ -52,15 +53,38 @@ class PortalFulfilmentService
      */
     public function listForStore(int $organizationId, int $storeId, int $perPage = 50): LengthAwarePaginator
     {
-        return PortalOrder::query()
+        return $this->queueQuery($organizationId, $storeId)
             ->with(['store', 'items', 'shipment'])
+            ->orderByDesc('id')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Count of the same queue the staff list shows, optionally narrowed to a subset of its statuses.
+     *
+     * @param  list<string>|null  $statuses
+     */
+    public function queueCountForStore(int $organizationId, int $storeId, ?array $statuses = null): int
+    {
+        return $this->queueQuery($organizationId, $storeId, $statuses)->count();
+    }
+
+    /**
+     * @param  list<string>|null  $statuses
+     * @return Builder<PortalOrder>
+     */
+    private function queueQuery(int $organizationId, int $storeId, ?array $statuses = null): Builder
+    {
+        $allowed = $statuses === null
+            ? self::STAFF_LIST
+            : array_values(array_intersect(self::STAFF_LIST, $statuses));
+
+        return PortalOrder::query()
             ->where('organization_id', $organizationId)
             ->where('store_id', $storeId)
             ->where('payment_status', 'paid')
             ->whereNotIn('status', PortalOrderStatuses::TERMINAL)
-            ->whereIn('status', self::STAFF_LIST)
-            ->orderByDesc('id')
-            ->paginate($perPage);
+            ->whereIn('status', $allowed);
     }
 
     public function findForStore(int $organizationId, int $storeId, int $orderId): ?PortalOrder

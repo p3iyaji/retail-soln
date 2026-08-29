@@ -208,7 +208,13 @@ Navigation is in the left sidebar. All pages require sign-in.
 
 ### Dashboard
 
-Landing page after login. Shortcuts to Products, Inventory, Fulfilment, Customers, Stores, and Settings. Use the sidebar for the full module list.
+Landing page after login: a store-scoped operations snapshot for the store picked in the switcher.
+
+- **KPI strip** — today's sales, orders pending fulfilment, low-stock items, and open registers. Requires `reports.view` (Super Admin, Org Admin, Store Manager, Inventory Manager, Procurement Officer, Accountant); anyone else sees a permission notice instead of the figures.
+- **Low stock** — items at or below their reorder level, ember for low and red for zero/negative. Requires `inventory.view`.
+- **Needs attention** — actionable open items for the store (oversell approvals, orders ready for pickup), each linking to the screen that clears it. Full fulfilment queue size appears in the Orders pending KPI.
+
+"Today" is the organization's calendar day (**Organization → timezone**), not the server's, and the figures are an operational read of sales/inventory/fulfilment facts — not an accounting ledger.
 
 ### Fulfilment (online orders)
 
@@ -806,6 +812,7 @@ Features **not yet available** or intentionally thin in Epics 1–7:
 
 | Menu | Primary tasks |
 |------|----------------|
+| Dashboard | Store KPI snapshot, low stock, needs-attention queues |
 | Organization | Business profile |
 | Stores | Locations, tax config |
 | Products | Catalog, variants, selling price & cost, import — see [Products & variants](#products--variants) |
