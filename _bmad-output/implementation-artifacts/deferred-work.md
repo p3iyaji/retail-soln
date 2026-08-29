@@ -239,3 +239,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-7-device-registration.md`
   summary: lockForUpdate device enabled check during push/pull to close disable TOCTOU.
   evidence: Enabled is checked at resolve; mid-request disable can still complete the batch.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-6-1-customer-registration-auth.md`
+  summary: Outbound verification email (or signed link delivery) for production portal register/verify.
+  evidence: Story 6.1 exposes verificationToken only in local/testing; production needs mail/notification without leaking tokens in API responses.

@@ -1,11 +1,12 @@
 # Frontends
 
-This repo has **two separate Vue 3 SPAs** — there is no shared app bundle at this level.
+This repo has **three separate Vue 3 SPAs** — there is no shared app bundle at this level.
 
 | App | Path | Dev URL | Command |
 | --- | --- | --- | --- |
 | **Admin** | `admin/` | http://localhost:5173 | `npm run dev` or `npm run dev:admin` |
 | **POS** | `pos/` | http://localhost:5174 | `npm run dev:pos` |
+| **Customer portal** | `customer-portal/` | http://localhost:5175 | `npm run dev:portal` |
 
 ## From `frontend/` (this folder)
 
@@ -13,6 +14,7 @@ This repo has **two separate Vue 3 SPAs** — there is no shared app bundle at t
 npm run dev        # Admin SPA (default)
 npm run dev:admin  # Admin SPA
 npm run dev:pos    # POS SPA
+npm run dev:portal # Customer portal SPA
 ```
 
 First time per app:
@@ -20,16 +22,26 @@ First time per app:
 ```bash
 cd admin && npm install && cp -n .env.example .env
 cd ../pos && npm install && cp -n .env.example .env
+cd ../customer-portal && npm install && cp -n .env.example .env
 ```
 
 ## From each app directory
 
 ```bash
-cd admin && npm run dev   # :5173
-cd pos && npm run dev     # :5174
+cd admin && npm run dev              # :5173
+cd pos && npm run dev                # :5174
+cd customer-portal && npm run dev    # :5175
 ```
 
 API must be running (`cd backend && php artisan serve --port=8001` or Docker nginx on `:8080`).
+
+## Customer portal access
+
+1. Start API (port `8000`/`8001` or Docker `:8080`).
+2. Optional: set `CUSTOMER_PORTAL_ORGANIZATION_ID` in `backend/.env` (empty = first organization).
+3. Start portal: `npm run dev:portal` from `frontend/` (or `cd customer-portal && npm run dev`).
+4. Open **http://localhost:5175** — register, verify email (local/testing returns `verificationToken`), then manage profile/addresses.
+5. Catalogue, cart, and orders are not implemented yet (Stories 6.2–6.5).
 
 ## POS access
 
@@ -43,15 +55,13 @@ API must be running (`cd backend && php artisan serve --port=8001` or Docker ngi
 
 ### `Request failed (502)` on login
 
-Usually a **stale Vite dev server** on port 5174 is proxying to the wrong API port.
+Usually a **stale Vite dev server** is proxying to the wrong API port.
 
 1. API must be up: `cd backend && php artisan serve` → **http://127.0.0.1:8000**
-2. Check proxy: `curl http://localhost:5174/api/v1/health` should return `200` (not `502`).
-3. If `502`, stop all POS dev servers and restart one:
+2. Check proxy: `curl http://localhost:5174/api/v1/health` (or `:5175` for portal) should return `200` (not `502`).
+3. If `502`, stop the stale dev server and restart:
    ```bash
-   lsof -ti :5174 | xargs kill
-   cd frontend && npm run dev:pos
+   lsof -ti :5174 | xargs kill   # or :5175 for portal
+   cd frontend && npm run dev:pos   # or npm run dev:portal
    ```
-4. Confirm `frontend/pos/.env` has `VITE_PROXY_TARGET=http://127.0.0.1:8000` (same port as `artisan serve`).
-5. If Vite moved to **5175** because 5174 was busy, use that URL or free 5174 first.
-
+4. Confirm the app `.env` has `VITE_PROXY_TARGET=http://127.0.0.1:8000` (same port as `artisan serve`).

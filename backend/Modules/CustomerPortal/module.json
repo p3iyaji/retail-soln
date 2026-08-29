@@ -1,0 +1,11 @@
+{
+    "name": "CustomerPortal",
+    "alias": "customerportal",
+    "description": "Customer portal registration, auth, profile, and addresses",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\CustomerPortal\\Providers\\CustomerPortalServiceProvider"
+    ],
+    "files": []
+}

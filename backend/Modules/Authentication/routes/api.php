@@ -24,7 +24,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/two-factor-challenge', [TwoFactorController::class, 'challenge'])
             ->middleware('throttle:two-factor');
 
-        Route::middleware('auth:sanctum')->group(function (): void {
+        Route::middleware(['auth:sanctum', 'staff'])->group(function (): void {
             Route::post('/logout', LogoutController::class);
             Route::get('/me', MeController::class);
 
@@ -34,7 +34,7 @@ Route::prefix('v1')->group(function (): void {
         });
     });
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'staff'])->group(function (): void {
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::get('/users/{user}', [UserController::class, 'show']);

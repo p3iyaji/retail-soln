@@ -8,7 +8,7 @@ use Modules\Sync\Http\Controllers\Api\SyncPushController;
 use Modules\Sync\Http\Controllers\Api\SyncStatusController;
 
 Route::prefix('v1')->group(function (): void {
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'staff'])->group(function (): void {
         Route::get('/devices', [DeviceController::class, 'index']);
         Route::post('/devices', [DeviceController::class, 'store']);
         Route::patch('/devices/{device}', [DeviceController::class, 'update']);

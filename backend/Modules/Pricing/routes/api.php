@@ -7,7 +7,7 @@ use Modules\Pricing\Http\Controllers\Api\PricingResolveController;
 use Modules\Pricing\Http\Controllers\Api\PromotionController;
 
 Route::prefix('v1')->group(function (): void {
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'staff'])->group(function (): void {
         Route::post('/pricing/resolve', PricingResolveController::class);
 
         Route::get('/price-lists', [PriceListController::class, 'index']);

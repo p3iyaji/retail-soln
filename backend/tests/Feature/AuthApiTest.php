@@ -98,7 +98,7 @@ class AuthApiTest extends TestCase
     public function test_me_returns_authenticated_user_payload(): void
     {
         $user = User::factory()->orgAdmin()->create();
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         $this->getJson('/api/v1/auth/me')
             ->assertOk()
@@ -110,7 +110,7 @@ class AuthApiTest extends TestCase
     public function test_org_admin_can_enable_and_confirm_two_factor_authentication(): void
     {
         $user = User::factory()->orgAdmin()->create();
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         $enableResponse = $this->postJson('/api/v1/auth/two-factor/enable');
 
@@ -130,7 +130,7 @@ class AuthApiTest extends TestCase
     public function test_cashier_cannot_enable_two_factor_authentication(): void
     {
         $user = User::factory()->create(['role' => 'cashier']);
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         $this->postJson('/api/v1/auth/two-factor/enable')
             ->assertForbidden();
@@ -143,7 +143,7 @@ class AuthApiTest extends TestCase
             'password' => Hash::make('secret'),
         ]);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
         $this->postJson('/api/v1/auth/two-factor/enable')->assertOk();
 
         $secret = Fortify::currentEncrypter()->decrypt($user->fresh()->two_factor_secret);

@@ -11,7 +11,7 @@ class AuthTokenService
     {
         $tokenName = (string) config('authentication.sanctum_token_name', 'api');
 
-        return $user->createToken($tokenName)->plainTextToken;
+        return $user->createToken($tokenName, ['staff'])->plainTextToken;
     }
 
     public function revokeCurrentToken(User $user, ?string $bearerToken = null): void

@@ -6,7 +6,7 @@ use Modules\Inventory\Http\Controllers\Api\StockMutationController;
 use Modules\Inventory\Http\Controllers\Api\StockTransferController;
 
 Route::prefix('v1')->group(function (): void {
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'staff'])->group(function (): void {
         Route::get('/inventory/balances', [InventoryController::class, 'balances']);
         Route::get('/inventory/movements', [InventoryController::class, 'movements']);
         Route::get('/inventory/alerts/low-stock', [InventoryController::class, 'lowStockAlerts']);
