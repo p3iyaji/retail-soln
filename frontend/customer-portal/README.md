@@ -19,11 +19,12 @@ API: `VITE_PROXY_TARGET` (default `http://127.0.0.1:8000`).
 - `CUSTOMER_PORTAL_DELIVERY_FEE` — flat home-delivery fee (`DECIMAL` string; default `0.0000`; negative rejected)
 - `CUSTOMER_PORTAL_RESERVATION_TTL` — unpaid order hold TTL in minutes (default `60`); scheduler runs `portal:expire-unpaid-reservations` every minute
 
-**Stock reservation (Story 7.1) + pick/pack (Story 7.2):**
+**Stock reservation (Story 7.1) + pick/pack (Story 7.2) + ship/deliver (Story 7.3):**
 - Place-order dual-posts **available→reserved** via `InventoryLedgerService` (hard reject if insufficient available; no portal oversell)
 - Pay success **keeps** the reserved hold
 - Staff pack (`POST /api/v1/fulfilment/orders/{id}/pack` + `X-Store-Id` + `Idempotency-Key`, permission `fulfilment.pick`) **consumes** reserved (−reserved, `MovementType::Sale`) via `StockReservationService::consume` — does **not** touch available and does **not** call POS `SaleCompletionService`; status → `processing` (timeline “Picked & packed”)
-- Ship / ready-for-pickup handoffs remain Stories 7.3 / 7.4
+- Staff ship home_delivery only (`POST /api/v1/fulfilment/orders/{id}/ship` + `Idempotency-Key`, permission `fulfilment.ship`): thin `portal_shipments` row + status → `out_for_delivery` — **no** ledger posts
+- Staff deliver (`POST /api/v1/fulfilment/orders/{id}/deliver` + `Idempotency-Key`, `fulfilment.ship`): status → `delivered` — **no** ledger posts; pickup / click & collect ship rejected (Story 7.4)
 - Cancel unpaid/failed (`POST /api/v1/portal/orders/{id}/cancel`) or TTL expiry releases **reserved→available**
 - Cancel sets order `status=cancelled` as the primary terminal signal; `payment_status` stays `awaiting_payment` / `failed` (no new payment enum without migration)
 - Order detail shows **Cancel order** (confirm dialog) while `cancellable` (pending + awaiting_payment|failed) and displays `reservationExpiresAt`
@@ -41,7 +42,7 @@ API: `VITE_PROXY_TARGET` (default `http://127.0.0.1:8000`).
 - Chrome **Orders** → `/shop/orders` (own orders only) → `/shop/orders/:id` with fulfilment-aware status timeline
 - Paid (or post-confirmed) orders: **Download invoice** → HTML `invoice-{order_number}.html` from portal order (not POS `Sale`/`Invoice`)
 - Confirmation deep-links to order detail
-- Staff fulfilment status transitions stay Epic 7 (tests may set advanced statuses)
+- Staff fulfilment status transitions: pack (7.2), ship/deliver home_delivery (7.3); pickup remains 7.4
 
 **Returns (Story 6.5):**
 - Paid **delivered** orders: **Request return** → `/shop/orders/:id/return` (lines / qty / reason / notes)

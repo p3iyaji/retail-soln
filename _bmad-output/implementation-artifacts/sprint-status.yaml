@@ -89,7 +89,7 @@ development_status:
   epic-7: in-progress
   7-1-stock-reservation: done
   7-2-picking-packing: done
-  7-3-shipment-delivery: backlog
+  7-3-shipment-delivery: review
   7-4-store-pickup: backlog
   epic-7-retrospective: optional
 

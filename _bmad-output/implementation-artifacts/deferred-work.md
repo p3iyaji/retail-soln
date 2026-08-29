@@ -347,3 +347,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-2-picking-packing.md`
   summary: Frontend e2e coverage for Admin FulfilmentView (store filter, confirm, pack retry key).
   evidence: Repo has no frontend e2e runner for admin; verification is API tests + npm build.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-3-shipment-delivery.md`
+  summary: Concurrent race / load tests for ship and deliver under lock contention.
+  evidence: Review deferred concurrent race coverage; current tests cover sequential idempotency only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-3-shipment-delivery.md`
+  summary: Multi-parcel / multi-carrier shipments per order.
+  evidence: Spec Ask First default is single shipment per order; multi-parcel deferred.

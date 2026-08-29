@@ -16,6 +16,10 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'staff'])->group(function (): v
         ->whereNumber('order');
     Route::post('/fulfilment/orders/{order}/pack', [StaffFulfilmentController::class, 'pack'])
         ->whereNumber('order');
+    Route::post('/fulfilment/orders/{order}/ship', [StaffFulfilmentController::class, 'ship'])
+        ->whereNumber('order');
+    Route::post('/fulfilment/orders/{order}/deliver', [StaffFulfilmentController::class, 'deliver'])
+        ->whereNumber('order');
 });
 
 Route::prefix('v1/portal')->group(function (): void {
