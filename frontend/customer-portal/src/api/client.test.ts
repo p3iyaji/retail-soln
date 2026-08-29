@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { hasToken, setToken, api } from '@/api/client'
+import {
+  hasToken,
+  setToken,
+  api,
+  catalogueApi,
+  catalogueQuery,
+  formatPortalMoney,
+} from '@/api/client'
 
-describe('portal token storage', () => {
+describe('portal client', () => {
   afterEach(() => {
     setToken(null)
     vi.unstubAllGlobals()
@@ -34,5 +41,37 @@ describe('portal token storage', () => {
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     const headers = new Headers(init.headers)
     expect(headers.get('Authorization')).toBe('Bearer portal-bearer-xyz')
+  })
+
+  it('builds catalogue query strings for search and filters', () => {
+    expect(catalogueQuery({})).toBe('')
+    expect(catalogueQuery({ q: ' milk ', categoryId: 3, page: 2 })).toBe(
+      '?q=milk&categoryId=3&page=2',
+    )
+  })
+
+  it('formats money and empty amounts', () => {
+    expect(formatPortalMoney('1850.0000')).toMatch(/1,850/)
+    expect(formatPortalMoney(null)).toBe('—')
+    expect(formatPortalMoney('')).toBe('—')
+  })
+
+  it('catalogueApi hits portal catalogue paths', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: [], meta: { currentPage: 1, lastPage: 1, total: 0 } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await catalogueApi.categories()
+    await catalogueApi.products({ q: 'milk', categoryId: 2 })
+    await catalogueApi.product(42)
+
+    const paths = fetchMock.mock.calls.map((call) => call[0] as string)
+    expect(paths[0]).toContain('/portal/catalogue/categories')
+    expect(paths[1]).toContain('/portal/catalogue/products?q=milk&categoryId=2')
+    expect(paths[2]).toContain('/portal/catalogue/products/42')
   })
 })

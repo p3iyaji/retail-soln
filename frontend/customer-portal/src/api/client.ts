@@ -96,18 +96,21 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, data?: unknown) =>
+  get: <T>(path: string, init?: RequestInit) => request<T>(path, init),
+  post: <T>(path: string, data?: unknown, init?: RequestInit) =>
     request<T>(path, {
+      ...init,
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     }),
-  patch: <T>(path: string, data?: unknown) =>
+  patch: <T>(path: string, data?: unknown, init?: RequestInit) =>
     request<T>(path, {
+      ...init,
       method: 'PATCH',
       body: data ? JSON.stringify(data) : undefined,
     }),
-  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  delete: <T>(path: string, init?: RequestInit) =>
+    request<T>(path, { ...init, method: 'DELETE' }),
 }
 
 export type RegisterResponse = {
@@ -129,4 +132,106 @@ export type VerifyResponse = {
   token: string
   tokenType: string
   account: PortalAccount
+}
+
+export type CatalogueCategory = {
+  id: number
+  name: string
+  slug: string
+  parentId: number | null
+}
+
+export type CataloguePrice = {
+  amount: string
+  listPrice: string
+  grossPrice: string
+  netPrice: string
+  taxAmount: string
+  variantId: number
+}
+
+export type CatalogueStock = {
+  inStock: boolean | null
+  storeId: number | null
+  storeName: string | null
+  label: string
+}
+
+export type CatalogueProductCard = {
+  id: number
+  name: string
+  sku: string
+  category: { id: number; name: string; slug: string } | null
+  imageUrl: string | null
+  primaryVariantId: number | null
+  price: CataloguePrice | null
+  stock: CatalogueStock
+}
+
+export type CatalogueProductDetail = CatalogueProductCard & {
+  description: string | null
+  variants: Array<{
+    id: number
+    name: string
+    sku: string
+    isDefault: boolean
+    price: CataloguePrice | null
+    stock: CatalogueStock
+  }>
+  store: { id: number; name: string } | null
+}
+
+export type CatalogueListResponse = {
+  data: CatalogueProductCard[]
+  meta: {
+    currentPage: number
+    lastPage: number
+    total: number
+    storeId: number | null
+    storeName: string | null
+  }
+}
+
+export function formatPortalMoney(amount: string | null | undefined): string {
+  if (amount == null || amount === '') {
+    return '—'
+  }
+  const n = Number(amount)
+  if (Number.isNaN(n)) {
+    return amount
+  }
+  return new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
+    minimumFractionDigits: 2,
+  }).format(n)
+}
+
+export function catalogueQuery(params: {
+  q?: string
+  categoryId?: number | null
+  storeId?: number | null
+  page?: number
+}): string {
+  const search = new URLSearchParams()
+  if (params.q?.trim()) search.set('q', params.q.trim())
+  if (params.categoryId != null) search.set('categoryId', String(params.categoryId))
+  if (params.storeId != null) search.set('storeId', String(params.storeId))
+  if (params.page != null && params.page > 1) search.set('page', String(params.page))
+  const qs = search.toString()
+  return qs ? `?${qs}` : ''
+}
+
+export const catalogueApi = {
+  categories: (init?: RequestInit) =>
+    api.get<{ data: CatalogueCategory[] }>('/portal/catalogue/categories', init),
+  products: (
+    params: { q?: string; categoryId?: number | null; storeId?: number | null; page?: number } = {},
+    init?: RequestInit,
+  ) => api.get<CatalogueListResponse>(`/portal/catalogue/products${catalogueQuery(params)}`, init),
+  product: (id: number, storeId?: number | null, init?: RequestInit) =>
+    api.get<{ data: CatalogueProductDetail }>(
+      `/portal/catalogue/products/${id}${catalogueQuery({ storeId: storeId ?? undefined })}`,
+      init,
+    ),
 }

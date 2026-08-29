@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalAccountController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalAuthController;
+use Modules\CustomerPortal\Http\Controllers\Api\PortalCatalogueController;
 
 Route::prefix('v1/portal')->group(function (): void {
     Route::prefix('auth')->group(function (): void {
@@ -25,5 +26,12 @@ Route::prefix('v1/portal')->group(function (): void {
         Route::post('/addresses', [PortalAccountController::class, 'storeAddress']);
         Route::patch('/addresses/{address}', [PortalAccountController::class, 'updateAddress']);
         Route::delete('/addresses/{address}', [PortalAccountController::class, 'destroyAddress']);
+    });
+
+    Route::middleware('throttle:portal-catalogue')->prefix('catalogue')->group(function (): void {
+        Route::get('/categories', [PortalCatalogueController::class, 'categories']);
+        Route::get('/products', [PortalCatalogueController::class, 'index']);
+        Route::get('/products/{product}', [PortalCatalogueController::class, 'show'])
+            ->whereNumber('product');
     });
 });
