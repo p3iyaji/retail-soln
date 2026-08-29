@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { startConnectivity } from './useConnectivity'
+import { drainThenPull, startConnectivity } from './useConnectivity'
 import { useSyncStore } from '@/stores/sync'
 
 const pushPendingSales = vi.fn().mockResolvedValue(undefined)
@@ -33,6 +33,13 @@ describe('startConnectivity', () => {
   afterEach(() => {
     stop?.()
     stop = undefined
+  })
+
+  it('exports drainThenPull used by Retry and reconnect', async () => {
+    localStorage.setItem('retail_soln_pos_store_id', '9')
+    await drainThenPull()
+    expect(pushPendingSales).toHaveBeenCalled()
+    expect(pullCache).toHaveBeenCalledWith(9, expect.objectContaining({ priorError: null }))
   })
 
   it('updates badge on window offline and online events; push then pull', async () => {

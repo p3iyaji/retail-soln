@@ -3,6 +3,12 @@ import { computed, ref } from 'vue'
 
 export type SyncStatus = 'ONLINE' | 'OFFLINE' | 'SYNCING' | 'SYNC_ERROR'
 
+export type OversellNotice = {
+  uuid: string
+  exceptionId: number
+  saleId?: number
+}
+
 const LABELS: Record<SyncStatus, string> = {
   ONLINE: 'ONLINE',
   OFFLINE: 'OFFLINE',
@@ -17,6 +23,8 @@ function navigatorOnline(): boolean {
 export const useSyncStore = defineStore('sync', () => {
   const status = ref<SyncStatus>(navigatorOnline() ? 'ONLINE' : 'OFFLINE')
   const lastError = ref<string | null>(null)
+  /** Non-blocking notices after push returns exceptionId (sale ref). */
+  const oversellNotices = ref<OversellNotice[]>([])
 
   const label = computed(() => LABELS[status.value])
   const isError = computed(() => status.value === 'SYNC_ERROR')
@@ -62,9 +70,34 @@ export const useSyncStore = defineStore('sync', () => {
     status.value = online ? 'ONLINE' : 'OFFLINE'
   }
 
+  function addOversellNotices(notices: OversellNotice[]): void {
+    if (notices.length === 0) return
+    const seen = new Set(oversellNotices.value.map((n) => `${n.exceptionId}:${n.uuid}`))
+    for (const notice of notices) {
+      const key = `${notice.exceptionId}:${notice.uuid}`
+      if (!seen.has(key)) {
+        oversellNotices.value.push(notice)
+        seen.add(key)
+      }
+    }
+    // Cap to last 5 so the floor chrome does not accumulate indefinitely.
+    if (oversellNotices.value.length > 5) {
+      oversellNotices.value = oversellNotices.value.slice(-5)
+    }
+  }
+
+  function dismissOversellNotice(exceptionId: number): void {
+    oversellNotices.value = oversellNotices.value.filter((n) => n.exceptionId !== exceptionId)
+  }
+
+  function clearOversellNotices(): void {
+    oversellNotices.value = []
+  }
+
   return {
     status,
     lastError,
+    oversellNotices,
     label,
     isError,
     isSyncing,
@@ -74,5 +107,8 @@ export const useSyncStore = defineStore('sync', () => {
     setSyncError,
     clearError,
     applyConnectivity,
+    addOversellNotices,
+    dismissOversellNotice,
+    clearOversellNotices,
   }
 })

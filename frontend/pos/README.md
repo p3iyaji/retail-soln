@@ -2,7 +2,7 @@
 
 Vue 3 + TypeScript + Vite + Tailwind CSS 4. Consumes `/api/v1` with Sanctum Bearer tokens (`retail_soln_pos_token`). Sends `X-Store-Id` after store selection. **No Inertia.**
 
-## PWA / offline shell (Story 5.1) + local catalog cache (Story 5.2) + offline sale queue (Story 5.3) + push sync (Story 5.4) + pull cursors (Story 5.5)
+## PWA / offline shell (Story 5.1) + local catalog cache (Story 5.2) + offline sale queue (Story 5.3) + push sync (Story 5.4) + pull cursors (Story 5.5) + sync status UI (Story 5.6)
 
 - Install metadata: `public/manifest.webmanifest`
 - Production builds register a service worker via `vite-plugin-pwa` (app-shell precache). **Dev (`npm run dev`) does not register a SW** so Vite HMR stays intact.
@@ -11,7 +11,7 @@ Vue 3 + TypeScript + Vite + Tailwind CSS 4. Consumes `/api/v1` with Sanctum Bear
 - **Online:** search + cart pricing stay on live `GET /products/search` and `POST /pricing/resolve`. Checkout uses `POST /pos/sales` with `body.uuid === Idempotency-Key`.
 - **Offline:** search Dexie (`src/sync/localCatalog.ts`); cart lines from cached unit price + store tax (no promos). Inventory snapshot is advisory only. Completed cash/card checkouts enqueue into `pending_sales` (`src/sync/pendingSales.ts`) — local success “Queued — will sync when online”; no receipt/print API. Installment plan create and **held-sale completion** stay **online-only**.
 - **Push sync (5.4):** on reconnect, `pushPendingSales` then `pullCache` (push errors do not skip pull). Dexie `syncStatus` → `pushing` → `synced`/`error`; badge SYNCING / SYNC ERROR.
-- Sync badge (chrome): ONLINE / OFFLINE / SYNCING / SYNC ERROR — driven by `stores/sync.ts` + browser connectivity.
+- **Sync status UI (5.6):** clickable chrome badge opens panel (last error, Dexie pending/error counts, **Retry** = `clearError` + shared `drainThenPull`). Offline banner once per ONLINE→OFFLINE (“Offline — sales will sync when connected”). Push `exceptionId` → non-blocking oversell notice with sale uuid/ref. SYNC ERROR never auto-dismisses. Server: `GET /sync/status`; Admin **Oversells** list + approve.
 
 ## Run
 

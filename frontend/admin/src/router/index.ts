@@ -73,6 +73,11 @@ const router = createRouter({
           component: () => import('@/views/InventoryView.vue'),
         },
         {
+          path: 'oversell-exceptions',
+          name: 'oversell-exceptions',
+          component: () => import('@/views/OversellExceptionsView.vue'),
+        },
+        {
           path: 'pricing',
           name: 'pricing',
           component: () => import('@/views/PricingView.vue'),

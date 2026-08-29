@@ -93,4 +93,16 @@ describe('sync store', () => {
     expect(sync.status).toBe('ONLINE')
     expect(sync.lastError).toBeNull()
   })
+
+  it('caps oversell notices to the last five', () => {
+    const sync = useSyncStore()
+    for (let i = 1; i <= 7; i++) {
+      sync.addOversellNotices([
+        { uuid: `550e8400-e29b-41d4-a716-44665544000${i}`, exceptionId: i },
+      ])
+    }
+    expect(sync.oversellNotices).toHaveLength(5)
+    expect(sync.oversellNotices[0]?.exceptionId).toBe(3)
+    expect(sync.oversellNotices[4]?.exceptionId).toBe(7)
+  })
 })

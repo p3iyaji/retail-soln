@@ -15,6 +15,7 @@ const nav = [
   { name: 'purchase-orders', label: 'Purchase orders', to: '/purchase-orders' },
   { name: 'payments', label: 'Payments', to: '/payments' },
   { name: 'inventory', label: 'Inventory', to: '/inventory' },
+  { name: 'oversell-exceptions', label: 'Oversells', to: '/oversell-exceptions' },
   { name: 'pricing', label: 'Pricing', to: '/pricing' },
   { name: 'customers', label: 'Customers', to: '/customers' },
   { name: 'proforma-invoices', label: 'Proforma invoices', to: '/proforma-invoices' },

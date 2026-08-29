@@ -124,6 +124,8 @@ async function runDrain(
     let anyError = false
     const errorMessages: string[] = []
 
+    const oversellNotices: Array<{ uuid: string; exceptionId: number; saleId?: number }> = []
+
     for (const row of batch) {
       skipUuids.add(row.uuid)
       const item = byUuid.get(row.uuid)
@@ -136,12 +138,23 @@ async function runDrain(
 
       if (item.status === 'synced') {
         await markSaleSynced(row.uuid, item, db)
+        if (item.exceptionId != null) {
+          oversellNotices.push({
+            uuid: row.uuid,
+            exceptionId: item.exceptionId,
+            saleId: item.saleId,
+          })
+        }
       } else {
         anyError = true
         const msg = item.errors?.join('; ') ?? 'Sync item failed'
         errorMessages.push(msg)
         await markSaleError(row.uuid, item, db)
       }
+    }
+
+    if (oversellNotices.length > 0) {
+      sync.addOversellNotices(oversellNotices)
     }
 
     if (anyError) {
