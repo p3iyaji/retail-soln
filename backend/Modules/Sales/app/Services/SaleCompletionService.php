@@ -49,11 +49,17 @@ class SaleCompletionService
      *     mode: string,
      *     installments: list<array{sequence: int, amount: string, dueAt: string}>,
      *   },
+     *   allowOversell?: bool,
      * }  $input
-     * @return array{sale: Sale, created: bool}
+     * @return array{
+     *   sale: Sale,
+     *   created: bool,
+     *   oversells: list<array{variantId: int, qtyDeficit: string}>,
+     * }
      */
     public function complete(array $input): array
     {
+        $allowOversell = (bool) ($input['allowOversell'] ?? false);
         $idempotencyKey = $input['idempotencyKey'] ?? null;
         if ($idempotencyKey !== null && $idempotencyKey !== '' && strlen($idempotencyKey) > 64) {
             throw new RuntimeException('Idempotency-Key must be at most 64 characters.');
@@ -71,6 +77,7 @@ class SaleCompletionService
                 return [
                     'sale' => $this->loadSale($existing),
                     'created' => false,
+                    'oversells' => [],
                 ];
             }
         }
@@ -124,7 +131,7 @@ class SaleCompletionService
         }
 
         try {
-            $result = DB::transaction(function () use ($input, $idempotencyKey, $store, $customer, $computed, $session, $planData, $paymentTotal) {
+            $result = DB::transaction(function () use ($input, $idempotencyKey, $store, $customer, $computed, $session, $planData, $paymentTotal, $allowOversell) {
                 if ($idempotencyKey !== null && $idempotencyKey !== '') {
                     $existing = Sale::query()
                         ->where('organization_id', $input['organizationId'])
@@ -138,10 +145,12 @@ class SaleCompletionService
                         return [
                             'sale' => $this->loadSale($existing),
                             'created' => false,
+                            'oversells' => [],
                         ];
                     }
                 }
 
+                $oversells = [];
                 foreach ($computed['qtyByVariant'] as $variantId => $needed) {
                     $balance = $this->ledger->getLockedBalance(
                         $input['organizationId'],
@@ -150,8 +159,19 @@ class SaleCompletionService
                         (int) $variantId,
                     );
 
-                    if (bccomp((string) $balance->available, $needed, 4) < 0) {
-                        throw new RuntimeException('Insufficient available stock for sale.');
+                    $available = (string) $balance->available;
+                    if (bccomp($available, $needed, 4) < 0) {
+                        if (! $allowOversell) {
+                            throw new RuntimeException('Insufficient available stock for sale.');
+                        }
+
+                        $deficit = bcsub($needed, $available, 4);
+                        if (bccomp($deficit, '0', 4) > 0) {
+                            $oversells[] = [
+                                'variantId' => (int) $variantId,
+                                'qtyDeficit' => $deficit,
+                            ];
+                        }
                     }
                 }
 
@@ -184,6 +204,7 @@ class SaleCompletionService
                             return [
                                 'sale' => $this->loadSale($existing),
                                 'created' => false,
+                                'oversells' => [],
                             ];
                         }
                     }
@@ -314,6 +335,7 @@ class SaleCompletionService
                 return [
                     'sale' => $this->loadSale($sale->fresh()),
                     'created' => true,
+                    'oversells' => $oversells,
                 ];
             });
         } catch (QueryException $e) {
@@ -329,6 +351,7 @@ class SaleCompletionService
                     return [
                         'sale' => $this->loadSale($existing),
                         'created' => false,
+                        'oversells' => [],
                     ];
                 }
             }

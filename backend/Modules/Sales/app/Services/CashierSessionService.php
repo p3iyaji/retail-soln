@@ -305,6 +305,18 @@ class CashierSessionService
         return $session;
     }
 
+    /** Open session for user+store, if any (offline push session remap). */
+    public function findOpenForUserStore(int $organizationId, int $storeId, int $userId): ?CashierSession
+    {
+        return CashierSession::query()
+            ->where('organization_id', $organizationId)
+            ->where('store_id', $storeId)
+            ->where('user_id', $userId)
+            ->where('status', CashierSessionStatus::Open)
+            ->orderBy('id')
+            ->first();
+    }
+
     public function computeExpectedCash(CashierSession $session): string
     {
         $total = bcadd((string) $session->opening_float, '0', 4);

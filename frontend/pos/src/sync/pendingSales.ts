@@ -77,3 +77,31 @@ export async function enqueueSale(
 export async function listPendingSales(db: PosDatabase = posDb): Promise<PendingSaleEnvelope[]> {
   return db.pending_sales.where('syncStatus').equals('pending').sortBy('localSequence')
 }
+
+/** Pending + stuck pushing + retryable errors — candidates for push drain. */
+export async function listPushableSales(db: PosDatabase = posDb): Promise<PendingSaleEnvelope[]> {
+  const pending = await db.pending_sales.where('syncStatus').equals('pending').toArray()
+  const pushing = await db.pending_sales.where('syncStatus').equals('pushing').toArray()
+  const errored = await db.pending_sales.where('syncStatus').equals('error').toArray()
+  return [...pending, ...pushing, ...errored].sort((a, b) => a.localSequence - b.localSequence)
+}
+
+export async function markSalePushing(uuid: string, db: PosDatabase = posDb): Promise<void> {
+  await db.pending_sales.update(uuid, { syncStatus: 'pushing' })
+}
+
+export async function markSaleSynced(
+  uuid: string,
+  serverResult: unknown,
+  db: PosDatabase = posDb,
+): Promise<void> {
+  await db.pending_sales.update(uuid, { syncStatus: 'synced', serverResult })
+}
+
+export async function markSaleError(
+  uuid: string,
+  serverResult: unknown,
+  db: PosDatabase = posDb,
+): Promise<void> {
+  await db.pending_sales.update(uuid, { syncStatus: 'error', serverResult })
+}
