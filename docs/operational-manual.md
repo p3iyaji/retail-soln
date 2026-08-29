@@ -850,6 +850,18 @@ Footer reminder on POS floor: `F2 search · F4 customer · F8 discount · F9 pay
 - **Readiness**: `GET /api/v1/health/ready` checks database and Redis (503 when degraded). Liveness
   remains `GET /api/v1/health`.
 
+### Backup, disaster recovery, and load testing
+
+Full runbook: [`docs/disaster-recovery.md`](disaster-recovery.md).
+
+- **Backup:** from repo root with Compose running, `./scripts/ops/backup-mysql.sh` writes a gzip dump
+  under `backups/mysql/` (gitignored). Schedule daily in production; copy off-host.
+- **Restore:** `./scripts/ops/restore-mysql.sh <file.sql.gz> --force` after stopping queue/scheduler.
+  Run the post-restore checklist in the DR doc.
+- **Targets (v1):** RPO 24h (daily backups), RTO 4h (documented restore drill).
+- **Load tests:** install [k6](https://k6.io/) and run `k6 run load-tests/k6/smoke.js` against a seeded
+  stack. Thresholds match Story 9.2 (`SEARCH_P95_MS`, health latency). See `load-tests/README.md`.
+
 ### Migrations / empty database
 
 ```bash
