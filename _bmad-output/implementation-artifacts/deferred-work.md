@@ -341,10 +341,6 @@
   evidence: Spec Ask First default is single shipment per order; multi-parcel deferred.
 
 - source_spec: none
-  summary: Story 8.2 Store performance reports (filterable/exportable domain reports).
-  evidence: Split from Epic 8 start; user chose Story 8.1 first.
-
-- source_spec: none
   summary: Story 8.3 Notification service (email/SMS/in-app, AD-7 queued).
   evidence: Split from Epic 8 start; user chose Story 8.1 first.
 
@@ -355,3 +351,27 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-1-sales-inventory-dashboards.md`
   summary: Link low-stock dashboard rows through to Inventory (or variant) for clearance.
   evidence: Review polish; list remains informational with severity styling only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-store-performance-reports.md`
+  summary: Inventory, purchase, customer, and profitability (COGS/gross margin) domain reports.
+  evidence: Spec Ask First defaults defer them; 8.2 ships the sales/store-performance slice only (AD-12 keeps COGS out).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-store-performance-reports.md`
+  summary: Async/queued CSV export for large ranges (and org-wide multi-store rollup).
+  evidence: MVP is a synchronous streamDownload guarded at 10,000 sales for one store; bigger ranges 422.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-store-performance-reports.md`
+  summary: Add automated Admin ReportsView tests (filter wiring, pagination, export headers, permission empty state).
+  evidence: Repo has no Admin frontend test runner; verification is API tests + npm build + manual check only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-store-performance-reports.md`
+  summary: Product-variant picker for the report filter instead of selecting a row in Top products.
+  evidence: No permission-safe variant lookup for report-only roles; top-products rows double as the variant filter today.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-store-performance-reports.md`
+  summary: Add Admin ReportsView automated tests for filters, permission empty state, and CSV download wiring.
+  evidence: Repo has no Admin frontend test runner; verification is API tests + npm build + manual check.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-store-performance-reports.md`
+  summary: Dedicated SKU/cashier pickers for report filters beyond top-products click and in-range cashiers.
+  evidence: Review polish; report-only roles lack products.view for category dropdown in some cases.

@@ -91,9 +91,13 @@ export const api = {
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   upload: <T>(path: string, formData: FormData) =>
     request<T>(path, { method: 'POST', body: formData }, false),
-  download: async (path: string, filename: string): Promise<void> => {
+  download: async (
+    path: string,
+    filename: string,
+    extraHeaders?: Record<string, string>,
+  ): Promise<void> => {
     const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? '/api/v1'
-    const headers = new Headers({ Accept: '*/*' })
+    const headers = new Headers({ Accept: '*/*', ...extraHeaders })
     const token = getToken()
     if (token) headers.set('Authorization', `Bearer ${token}`)
     const response = await fetch(`${base}${path}`, { headers })
