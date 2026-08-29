@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { ApiError } from '@/api/client'
-import { completeSale, fetchReceipt, printReceipt, type ReceiptResource } from '@/api/posSales'
+import { fetchReceipt, printReceipt, type ReceiptResource } from '@/api/posSales'
 import {
   decimalAdd,
   decimalCmp,
@@ -20,6 +20,7 @@ import {
 } from '@/lib/installmentSchedule'
 import { useAuthStore } from '@/stores/auth'
 import { usePosStore } from '@/stores/pos'
+import { isBrowserOffline, runSaleCheckout } from '@/sync/saleCheckout'
 
 const pos = usePosStore()
 const auth = useAuthStore()
@@ -32,6 +33,7 @@ const installmentRows = ref<InstallmentDraft[]>([])
 const busy = ref(false)
 const error = ref<string | null>(null)
 const receipt = ref<ReceiptResource | null>(null)
+const queuedOffline = ref(false)
 
 const dueTotal = computed(() => pos.cartTotals.total)
 
@@ -98,6 +100,7 @@ function resetTenders(): void {
   cardAmount.value = ''
   error.value = null
   receipt.value = null
+  queuedOffline.value = false
 }
 
 function fillCashDeposit(): void {
@@ -190,16 +193,31 @@ async function submit(): Promise<void> {
     return
   }
 
+  const offline = isBrowserOffline()
+  if (offline && useInstallmentPlan.value) {
+    error.value =
+      'Installment plans require an online connection — complete them when back online'
+    return
+  }
+  if (offline && pos.activeHeldSaleId != null) {
+    error.value = 'Held sales must be completed online — resume when connected'
+    return
+  }
+
+  const storeId = pos.selectedStoreId
+  const userId = auth.user?.id
+  if (offline && (storeId == null || userId == null)) {
+    error.value = 'Store and signed-in user are required to queue an offline sale'
+    return
+  }
+
   busy.value = true
   error.value = null
   try {
-    const idempotencyKey = crypto.randomUUID()
-    const saleUuid = crypto.randomUUID()
     const body = {
-      uuid: saleUuid,
       customerId: resolveCustomerId(),
       sessionId: session.id,
-      terminalId: session.terminalId,
+      terminalId: session.terminalId ?? null,
       items: pos.cartLines.map((line) => ({
         variantId: line.variantId,
         qty: line.qty,
@@ -212,12 +230,31 @@ async function submit(): Promise<void> {
         : {}),
     }
 
-    const res = await completeSale(body, idempotencyKey)
+    const result = await runSaleCheckout({
+      offline,
+      useInstallmentPlan: useInstallmentPlan.value,
+      activeHeldSaleId: pos.activeHeldSaleId,
+      body,
+      enqueue:
+        storeId != null && userId != null
+          ? {
+              storeId,
+              userId,
+              terminalId: session.terminalId ?? null,
+            }
+          : undefined,
+    })
 
-    const receiptRes = await fetchReceipt(res.data.id)
+    if (result.kind === 'queued') {
+      queuedOffline.value = true
+      pos.clearCart()
+      return
+    }
+
+    const receiptRes = await fetchReceipt(result.sale.id)
     receipt.value = receiptRes.data
     try {
-      await printReceipt(res.data.id)
+      await printReceipt(result.sale.id)
     } catch {
       // Print queue failure should not block checkout success.
     }
@@ -228,7 +265,7 @@ async function submit(): Promise<void> {
       await pos.voidHeldAfterComplete(heldId)
     }
   } catch (err) {
-    error.value = err instanceof ApiError ? err.message : 'Payment failed'
+    error.value = err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Payment failed'
   } finally {
     busy.value = false
   }
@@ -236,13 +273,28 @@ async function submit(): Promise<void> {
 
 function close(): void {
   receipt.value = null
+  queuedOffline.value = false
   pos.closeStub()
 }
 </script>
 
 <template>
   <div class="px-4 py-4">
-    <template v-if="receipt">
+    <template v-if="queuedOffline">
+      <p class="font-display text-lg font-semibold text-[var(--ink)]">Queued — will sync when online</p>
+      <p class="mt-1 text-sm text-[var(--muted)]">
+        Sale saved on this device. It will upload when connectivity returns (no receipt yet).
+      </p>
+      <button
+        type="button"
+        class="mt-6 min-h-11 w-full rounded-[var(--radius)] bg-[var(--primary)] px-4 font-medium text-[var(--primary-fg)]"
+        @click="close"
+      >
+        Done
+      </button>
+    </template>
+
+    <template v-else-if="receipt">
       <p class="font-display text-lg font-semibold text-[var(--ink)]">Sale complete</p>
       <p class="mt-1 text-sm text-[var(--muted)]">
         Receipt #{{ receipt.invoiceNumber ?? receipt.saleId }} · {{ receipt.store?.name }}
