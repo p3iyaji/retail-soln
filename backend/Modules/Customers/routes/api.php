@@ -5,7 +5,7 @@ use Modules\Customers\Http\Controllers\Api\CustomerController;
 use Modules\Customers\Http\Controllers\Api\CustomerGroupController;
 
 Route::prefix('v1')->group(function (): void {
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'staff'])->group(function (): void {
         Route::get('/customer-groups', [CustomerGroupController::class, 'index']);
         Route::post('/customer-groups', [CustomerGroupController::class, 'store']);
         Route::patch('/customer-groups/{customerGroup}', [CustomerGroupController::class, 'update']);

@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+:root {
+  color-scheme: light;
+  --brand: #0b6e4f;
+  --brand-fg: #f5fff9;
+  --ember: #c45c26;
+  --chrome: #1a2330;
+  --surface: #f4f6f8;
+  --panel: #ffffff;
+  --line: #d5dce3;
+  --ink: #12181f;
+  --muted: #5c6b7a;
+  --danger: #b42318;
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    'IBM Plex Sans',
+    'Segoe UI',
+    sans-serif;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+h1,
+h2,
+.brand {
+  font-family: Outfit, 'IBM Plex Sans', sans-serif;
+}

@@ -100,7 +100,7 @@ class InstallmentPlanApiTest extends TestCase
         if (! $user->isOrgWide() && ! $user->stores()->whereKey($this->store->id)->exists()) {
             $user->stores()->attach($this->store->id, ['is_default' => true]);
         }
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         $response = $this->postJson('/api/v1/pos/sessions/open', [
             'terminalName' => 'POS-INST',

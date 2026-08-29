@@ -54,7 +54,7 @@ class ProductSearchImportApiTest extends TestCase
 
     public function test_search_finds_products_by_sku_barcode_name_and_category(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $this->getJson('/api/v1/products/search?q=CHIP-001')
             ->assertOk()
@@ -79,7 +79,7 @@ class ProductSearchImportApiTest extends TestCase
 
     public function test_import_preview_reports_validation_errors(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $csv = implode("\n", [
             'name,sku,sellingPrice,barcode',
@@ -99,7 +99,7 @@ class ProductSearchImportApiTest extends TestCase
 
     public function test_sync_import_creates_products_from_valid_csv(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $csv = implode("\n", [
             'name,sku,sellingPrice,barcode,category,brand,unit',
@@ -125,7 +125,7 @@ class ProductSearchImportApiTest extends TestCase
 
     public function test_sync_import_accepts_legacy_base_price_csv_column(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $csv = implode("\n", [
             'name,sku,basePrice,barcode',
@@ -148,7 +148,7 @@ class ProductSearchImportApiTest extends TestCase
     public function test_large_import_is_queued_asynchronously(): void
     {
         Queue::fake();
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $lines = ['name,sku,sellingPrice'];
         for ($i = 1; $i <= 100; $i++) {
@@ -167,7 +167,7 @@ class ProductSearchImportApiTest extends TestCase
 
     public function test_export_returns_csv(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $response = $this->get('/api/v1/products/export');
 
@@ -179,7 +179,7 @@ class ProductSearchImportApiTest extends TestCase
 
     public function test_cashier_cannot_import(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
         $file = UploadedFile::fake()->createWithContent('x.csv', "name,sku,sellingPrice\nA,A1,1.00");
 

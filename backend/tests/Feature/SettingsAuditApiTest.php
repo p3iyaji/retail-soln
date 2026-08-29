@@ -26,7 +26,7 @@ class SettingsAuditApiTest extends TestCase
 
     public function test_org_admin_can_upsert_and_list_settings(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->patchJson('/api/v1/settings', [
             'key' => 'pos.receipt_footer',
@@ -47,7 +47,7 @@ class SettingsAuditApiTest extends TestCase
 
     public function test_cashier_cannot_manage_settings(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
         $this->getJson('/api/v1/settings')->assertForbidden();
         $this->patchJson('/api/v1/settings', [
@@ -58,7 +58,7 @@ class SettingsAuditApiTest extends TestCase
 
     public function test_sensitive_entity_changes_create_audit_logs(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->postJson('/api/v1/stores', [
             'name' => 'Audited Store',
@@ -97,7 +97,7 @@ class SettingsAuditApiTest extends TestCase
 
     public function test_audit_logs_are_listable_but_not_mutable_via_api(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->patchJson('/api/v1/settings', [
             'key' => 'feature.flag',
@@ -137,7 +137,7 @@ class SettingsAuditApiTest extends TestCase
 
     public function test_cashier_cannot_view_audit_logs(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
         $this->getJson('/api/v1/audit-logs')->assertForbidden();
     }

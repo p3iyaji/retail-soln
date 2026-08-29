@@ -10,7 +10,7 @@ use Modules\Purchasing\Http\Controllers\Api\SupplierInvoiceController;
 use Modules\Purchasing\Http\Controllers\Api\SupplierPaymentController;
 
 Route::prefix('v1')->group(function (): void {
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'staff'])->group(function (): void {
         Route::get('/suppliers/export', [SupplierCsvController::class, 'export']);
         Route::post('/suppliers/import/preview', [SupplierCsvController::class, 'previewImport']);
         Route::post('/suppliers/import', [SupplierCsvController::class, 'import']);

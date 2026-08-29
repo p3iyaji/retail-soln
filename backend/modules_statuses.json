@@ -9,5 +9,6 @@
   "Pricing": true,
   "Customers": true,
   "Sales": true,
-  "Sync": true
+  "Sync": true,
+  "CustomerPortal": true
 }

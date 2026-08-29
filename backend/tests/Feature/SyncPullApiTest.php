@@ -87,7 +87,7 @@ class SyncPullApiTest extends TestCase
 
         $this->cashier = User::factory()->cashier()->create();
         $this->cashier->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
 
         Device::query()->create([
             'organization_id' => $this->orgId,
@@ -111,7 +111,7 @@ class SyncPullApiTest extends TestCase
 
     private function pull(?string $cursor = null, ?int $limit = null, ?string $deviceUuid = null): \Illuminate\Testing\TestResponse
     {
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
 
         $query = [];
         if ($cursor !== null) {
@@ -280,7 +280,7 @@ class SyncPullApiTest extends TestCase
 
     public function test_device_uuid_via_query_param(): void
     {
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
         $uuid = '550e8400-e29b-41d4-a716-446655440088';
         Device::query()->create([
             'organization_id' => $this->orgId,

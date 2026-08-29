@@ -31,7 +31,7 @@ class ApiV1ScaffoldTest extends TestCase
     public function test_protected_route_accepts_sanctum_user(): void
     {
         $user = User::factory()->create();
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         $response = $this->getJson('/api/v1/auth/me');
 

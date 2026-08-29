@@ -23,7 +23,7 @@ class ProductVariantApiTest extends TestCase
 
     public function test_inventory_manager_can_crud_variants_with_sku_barcode_and_price(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $orgId = app(OrganizationService::class)->current()->id;
 
         $product = Product::factory()->create([
@@ -80,7 +80,7 @@ class ProductVariantApiTest extends TestCase
 
     public function test_barcode_uniqueness_enforced_across_products_and_variants(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $orgId = app(OrganizationService::class)->current()->id;
 
         $product = Product::factory()->create([
@@ -140,7 +140,7 @@ class ProductVariantApiTest extends TestCase
 
     public function test_sku_uniqueness_enforced_across_products_and_variants(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $orgId = app(OrganizationService::class)->current()->id;
 
         Product::factory()->create([
@@ -168,7 +168,7 @@ class ProductVariantApiTest extends TestCase
 
     public function test_cashier_cannot_manage_variants(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
         $orgId = app(OrganizationService::class)->current()->id;
 
         $product = Product::factory()->create([

@@ -21,12 +21,14 @@ class AuditLogger
         ?int $storeId = null,
         ?int $organizationId = null,
     ): AuditLog {
+        $user = Auth::user();
+
         return AuditLog::query()->create([
             'organization_id' => $organizationId
                 ?? $model->getAttribute('organization_id'),
             'store_id' => $storeId
                 ?? $model->getAttribute('store_id'),
-            'user_id' => Auth::id(),
+            'user_id' => $user instanceof \App\Models\User ? $user->getAuthIdentifier() : null,
             'action' => $action,
             'auditable_type' => $model->getMorphClass(),
             'auditable_id' => $model->getKey(),

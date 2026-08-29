@@ -55,7 +55,7 @@ class StockAdjustmentsCountsApiTest extends TestCase
     public function test_inventory_manager_can_post_adjustment_with_reason_and_user(): void
     {
         $user = User::factory()->inventoryManager()->create();
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         $response = $this->postJson('/api/v1/inventory/adjustments', [
             'storeId' => $this->store->id,
@@ -94,7 +94,7 @@ class StockAdjustmentsCountsApiTest extends TestCase
     public function test_stock_count_variance_posts_count_variance_movement(): void
     {
         $user = User::factory()->inventoryManager()->create();
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         app(InventoryLedgerService::class)->post(new PostMovementData(
             organizationId: $this->orgId,
@@ -144,7 +144,7 @@ class StockAdjustmentsCountsApiTest extends TestCase
 
     public function test_stock_count_with_zero_variance_does_not_create_movement(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         app(InventoryLedgerService::class)->post(new PostMovementData(
             organizationId: $this->orgId,
@@ -173,7 +173,7 @@ class StockAdjustmentsCountsApiTest extends TestCase
 
     public function test_cashier_cannot_post_adjustments(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
         $this->postJson('/api/v1/inventory/adjustments', [
             'storeId' => $this->store->id,

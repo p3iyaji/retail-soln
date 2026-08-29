@@ -13,7 +13,7 @@ Route::prefix('v1')->group(function (): void {
         ]);
     });
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'staff'])->group(function (): void {
         Route::get('/organizations/current', [OrganizationController::class, 'show']);
         Route::post('/organizations/current', [OrganizationController::class, 'update']);
 

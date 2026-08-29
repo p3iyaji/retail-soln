@@ -85,7 +85,7 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_create_draft_purchase_order_with_items_and_totals(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $response = $this->postJson('/api/v1/purchase-orders', $this->validPayload());
 
@@ -103,7 +103,7 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_create_without_permission_returns_403(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
         $this->postJson('/api/v1/purchase-orders', $this->validPayload())
             ->assertForbidden();
@@ -111,7 +111,7 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_create_validation_errors_return_422(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $this->postJson('/api/v1/purchase-orders', [
             'storeId' => $this->store->id,
@@ -136,7 +136,7 @@ class PurchaseOrderApiTest extends TestCase
     public function test_update_draft_and_rejected_but_not_pending(): void
     {
         $creator = User::factory()->procurementOfficer()->create();
-        Sanctum::actingAs($creator);
+        Sanctum::actingAs($creator, ['staff']);
 
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())
             ->assertCreated()
@@ -162,7 +162,7 @@ class PurchaseOrderApiTest extends TestCase
             ->assertStatus(422);
 
         $rejector = User::factory()->storeManager()->create();
-        Sanctum::actingAs($rejector);
+        Sanctum::actingAs($rejector, ['staff']);
         $this->postJson("/api/v1/purchase-orders/{$id}/reject", ['reason' => 'Too costly'])
             ->assertOk()
             ->assertJsonPath('data.status', 'rejected')
@@ -170,7 +170,7 @@ class PurchaseOrderApiTest extends TestCase
             ->assertJsonPath('data.rejectedBy', $rejector->id)
             ->assertJsonPath('data.approvedBy', null);
 
-        Sanctum::actingAs($creator);
+        Sanctum::actingAs($creator, ['staff']);
         $this->patchJson("/api/v1/purchase-orders/{$id}", [
             'notes' => 'After reject',
             'items' => [
@@ -189,7 +189,7 @@ class PurchaseOrderApiTest extends TestCase
     public function test_submit_approve_happy_path_and_audit(): void
     {
         $creator = User::factory()->procurementOfficer()->create();
-        Sanctum::actingAs($creator);
+        Sanctum::actingAs($creator, ['staff']);
 
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())
             ->assertCreated()
@@ -200,7 +200,7 @@ class PurchaseOrderApiTest extends TestCase
             ->assertJsonPath('data.status', 'pending_approval');
 
         $approver = User::factory()->storeManager()->create();
-        Sanctum::actingAs($approver);
+        Sanctum::actingAs($approver, ['staff']);
 
         $this->postJson("/api/v1/purchase-orders/{$id}/approve")
             ->assertOk()
@@ -228,14 +228,14 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_reject_pending_purchase_order_and_audit(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())
             ->json('data.id');
         $this->postJson("/api/v1/purchase-orders/{$id}/submit")->assertOk();
 
         $rejector = User::factory()->storeManager()->create();
-        Sanctum::actingAs($rejector);
+        Sanctum::actingAs($rejector, ['staff']);
 
         $this->postJson("/api/v1/purchase-orders/{$id}/reject", ['reason' => 'Budget'])
             ->assertOk()
@@ -257,37 +257,37 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_wrong_status_transitions_return_422(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())
             ->json('data.id');
 
-        Sanctum::actingAs(User::factory()->storeManager()->create());
+        Sanctum::actingAs(User::factory()->storeManager()->create(), ['staff']);
         $this->postJson("/api/v1/purchase-orders/{$id}/approve")->assertStatus(422);
         $this->postJson("/api/v1/purchase-orders/{$id}/reject")->assertStatus(422);
 
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
         $this->postJson("/api/v1/purchase-orders/{$id}/submit")->assertOk();
         $this->postJson("/api/v1/purchase-orders/{$id}/submit")->assertStatus(422);
     }
 
     public function test_approve_without_permission_returns_403(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())->json('data.id');
         $this->postJson("/api/v1/purchase-orders/{$id}/submit")->assertOk();
 
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
         $this->postJson("/api/v1/purchase-orders/{$id}/approve")->assertForbidden();
         $this->postJson("/api/v1/purchase-orders/{$id}/reject")->assertForbidden();
     }
 
     public function test_update_submit_delete_without_create_permission_returns_403(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())->json('data.id');
 
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
         $this->patchJson("/api/v1/purchase-orders/{$id}", ['notes' => 'x'])->assertForbidden();
         $this->postJson("/api/v1/purchase-orders/{$id}/submit")->assertForbidden();
         $this->deleteJson("/api/v1/purchase-orders/{$id}")->assertForbidden();
@@ -303,7 +303,7 @@ class PurchaseOrderApiTest extends TestCase
         ]);
 
         $creator = User::factory()->orgAdmin()->create();
-        Sanctum::actingAs($creator);
+        Sanctum::actingAs($creator, ['staff']);
 
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())->json('data.id');
         $this->postJson("/api/v1/purchase-orders/{$id}/submit")->assertOk();
@@ -315,7 +315,7 @@ class PurchaseOrderApiTest extends TestCase
         $this->postJson("/api/v1/purchase-orders/{$id}/reject")
             ->assertForbidden();
 
-        Sanctum::actingAs(User::factory()->storeManager()->create());
+        Sanctum::actingAs(User::factory()->storeManager()->create(), ['staff']);
         $this->postJson("/api/v1/purchase-orders/{$id}/approve")
             ->assertOk()
             ->assertJsonPath('data.status', 'approved');
@@ -324,7 +324,7 @@ class PurchaseOrderApiTest extends TestCase
     public function test_dual_control_default_off_allows_creator_self_approve(): void
     {
         $creator = User::factory()->orgAdmin()->create();
-        Sanctum::actingAs($creator);
+        Sanctum::actingAs($creator, ['staff']);
 
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())->json('data.id');
         $this->postJson("/api/v1/purchase-orders/{$id}/submit")->assertOk();
@@ -337,7 +337,7 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_list_includes_items_for_spa_edit_and_requires_permission(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())->json('data.id');
 
         $this->getJson('/api/v1/purchase-orders')
@@ -350,10 +350,10 @@ class PurchaseOrderApiTest extends TestCase
 
         $this->getJson("/api/v1/purchase-orders/{$id}")->assertOk()->assertJsonPath('data.id', $id);
 
-        Sanctum::actingAs(User::factory()->storeManager()->create());
+        Sanctum::actingAs(User::factory()->storeManager()->create(), ['staff']);
         $this->getJson('/api/v1/purchase-orders')->assertOk();
 
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
         $this->getJson('/api/v1/purchase-orders')->assertForbidden();
     }
 
@@ -365,7 +365,7 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_cross_org_purchase_order_returns_404(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $otherOrg = Organization::factory()->create(['name' => 'Other Org']);
         $otherStore = Store::factory()->create(['organization_id' => $otherOrg->id]);
@@ -408,7 +408,7 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_filter_list_by_status(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $draftId = $this->postJson('/api/v1/purchase-orders', $this->validPayload())->json('data.id');
         $pendingId = $this->postJson('/api/v1/purchase-orders', $this->validPayload([
@@ -429,7 +429,7 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_delete_draft_only(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())->json('data.id');
         $this->deleteJson("/api/v1/purchase-orders/{$id}")->assertNoContent();
@@ -442,14 +442,14 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_resubmit_after_reject_clears_reject_fields(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())->json('data.id');
         $this->postJson("/api/v1/purchase-orders/{$id}/submit")->assertOk();
 
-        Sanctum::actingAs(User::factory()->storeManager()->create());
+        Sanctum::actingAs(User::factory()->storeManager()->create(), ['staff']);
         $this->postJson("/api/v1/purchase-orders/{$id}/reject", ['reason' => 'Fix qty'])->assertOk();
 
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
         $this->postJson("/api/v1/purchase-orders/{$id}/submit")
             ->assertOk()
             ->assertJsonPath('data.status', 'pending_approval')

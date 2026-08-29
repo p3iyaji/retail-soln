@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Modules\CustomerPortal\Models\CustomerAccount;
 
 return [
 
@@ -67,10 +68,10 @@ return [
             'model' => env('AUTH_MODEL', User::class),
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'customer_accounts' => [
+            'driver' => 'eloquent',
+            'model' => CustomerAccount::class,
+        ],
     ],
 
     /*

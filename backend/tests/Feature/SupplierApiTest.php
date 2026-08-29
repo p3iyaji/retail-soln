@@ -31,7 +31,7 @@ class SupplierApiTest extends TestCase
 
     public function test_procurement_officer_can_create_supplier_with_nested_data(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $product = Product::factory()->create([
             'organization_id' => $this->orgId,
@@ -98,7 +98,7 @@ class SupplierApiTest extends TestCase
 
     public function test_create_supplier_writes_audit_log(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $this->postJson('/api/v1/suppliers', [
             'name' => 'Audited Supplier',
@@ -116,7 +116,7 @@ class SupplierApiTest extends TestCase
 
     public function test_list_supports_per_page_lite_and_search(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         Supplier::query()->create([
             'organization_id' => $this->orgId,
@@ -150,7 +150,7 @@ class SupplierApiTest extends TestCase
 
     public function test_update_supplier_persists_nested_changes(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $supplier = Supplier::query()->create([
             'organization_id' => $this->orgId,
@@ -176,7 +176,7 @@ class SupplierApiTest extends TestCase
 
     public function test_delete_deactivates_when_product_references_exist(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $supplier = Supplier::query()->create([
             'organization_id' => $this->orgId,
@@ -203,7 +203,7 @@ class SupplierApiTest extends TestCase
 
     public function test_delete_deactivates_when_only_mappings_exist(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $supplier = Supplier::query()->create([
             'organization_id' => $this->orgId,
@@ -238,7 +238,7 @@ class SupplierApiTest extends TestCase
 
     public function test_delete_hard_removes_unreferenced_supplier(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $supplier = Supplier::query()->create([
             'organization_id' => $this->orgId,
@@ -255,7 +255,7 @@ class SupplierApiTest extends TestCase
 
     public function test_unknown_product_mapping_returns_422(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $this->postJson('/api/v1/suppliers', [
             'name' => 'Bad Map',
@@ -267,7 +267,7 @@ class SupplierApiTest extends TestCase
 
     public function test_duplicate_product_mapping_returns_422(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $product = Product::factory()->create([
             'organization_id' => $this->orgId,
@@ -285,7 +285,7 @@ class SupplierApiTest extends TestCase
 
     public function test_duplicate_code_per_org_returns_422(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         Supplier::query()->create([
             'organization_id' => $this->orgId,
@@ -302,7 +302,7 @@ class SupplierApiTest extends TestCase
 
     public function test_cashier_cannot_manage_or_import_suppliers(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
         $this->postJson('/api/v1/suppliers', ['name' => 'Nope'])
             ->assertForbidden();
@@ -327,7 +327,7 @@ class SupplierApiTest extends TestCase
 
     public function test_csv_preview_import_and_export(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $product = Product::factory()->create([
             'organization_id' => $this->orgId,
@@ -383,7 +383,7 @@ class SupplierApiTest extends TestCase
 
     public function test_large_supplier_import_job_runs_and_creates_suppliers(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $lines = ['name,code'];
         for ($i = 1; $i <= 100; $i++) {
@@ -403,7 +403,7 @@ class SupplierApiTest extends TestCase
 
     public function test_product_csv_supplier_resolve_still_works(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $csv = implode("\n", [
             'name,sku,sellingPrice,supplier',
@@ -426,7 +426,7 @@ class SupplierApiTest extends TestCase
 
     public function test_cross_org_supplier_returns_404(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
         $otherOrg = Organization::factory()->create([
             'name' => 'Other Org',

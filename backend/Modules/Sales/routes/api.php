@@ -10,7 +10,7 @@ use Modules\Sales\Http\Controllers\Api\PosSaleController;
 use Modules\Sales\Http\Controllers\Api\ProformaInvoiceController;
 
 Route::prefix('v1')->group(function (): void {
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'staff'])->group(function (): void {
         Route::post('/pos/sessions/open', [PosCashierSessionController::class, 'open']);
         Route::get('/pos/sessions/current', [PosCashierSessionController::class, 'current']);
         Route::get('/pos/sessions', [PosCashierSessionController::class, 'index']);

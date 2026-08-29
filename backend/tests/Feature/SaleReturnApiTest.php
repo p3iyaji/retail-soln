@@ -87,14 +87,14 @@ class SaleReturnApiTest extends TestCase
     {
         $user = User::factory()->storeManager()->create();
         $user->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         return $user;
     }
 
     private function openSession(User $user): int
     {
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         return (int) $this->postJson('/api/v1/pos/sessions/open', [
             'terminalName' => 'POS-RET',
@@ -260,7 +260,7 @@ class SaleReturnApiTest extends TestCase
 
         $cashier = User::factory()->cashier()->create();
         $cashier->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['staff']);
 
         $this->getJson("/api/v1/pos/sales/{$sale->id}/returnable", $this->headers())->assertForbidden();
 

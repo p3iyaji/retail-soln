@@ -7,7 +7,7 @@ use Modules\Products\Http\Controllers\Api\ProductController;
 use Modules\Products\Http\Controllers\Api\ProductVariantController;
 
 Route::prefix('v1')->group(function (): void {
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'staff'])->group(function (): void {
         Route::get('/categories', [CatalogController::class, 'categories']);
         Route::post('/categories', [CatalogController::class, 'storeCategory']);
         Route::get('/brands', [CatalogController::class, 'brands']);

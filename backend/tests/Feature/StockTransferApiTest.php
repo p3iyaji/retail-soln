@@ -70,7 +70,7 @@ class StockTransferApiTest extends TestCase
     public function test_initiate_and_receive_transfer_tracks_in_transit_and_movements(): void
     {
         $user = User::factory()->inventoryManager()->create();
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         $create = $this->postJson('/api/v1/inventory/transfers', [
             'fromStoreId' => $this->source->id,
@@ -137,7 +137,7 @@ class StockTransferApiTest extends TestCase
 
     public function test_cannot_transfer_more_than_available(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $this->postJson('/api/v1/inventory/transfers', [
             'fromStoreId' => $this->source->id,
@@ -155,7 +155,7 @@ class StockTransferApiTest extends TestCase
 
     public function test_cashier_cannot_transfer(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
         $this->postJson('/api/v1/inventory/transfers', [
             'fromStoreId' => $this->source->id,

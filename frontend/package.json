@@ -1,13 +1,15 @@
 {
   "name": "retail-soln-frontend",
   "private": true,
-  "description": "Convenience scripts for the Admin and POS Vue SPAs (see admin/ and pos/).",
+  "description": "Convenience scripts for the Admin, POS, and Customer Portal Vue SPAs.",
   "scripts": {
     "dev": "npm --prefix admin run dev",
     "dev:admin": "npm --prefix admin run dev",
     "dev:pos": "npm --prefix pos run dev",
-    "build": "npm --prefix admin run build && npm --prefix pos run build",
+    "dev:portal": "npm --prefix customer-portal run dev",
+    "build": "npm --prefix admin run build && npm --prefix pos run build && npm --prefix customer-portal run build",
     "build:admin": "npm --prefix admin run build",
-    "build:pos": "npm --prefix pos run build"
+    "build:pos": "npm --prefix pos run build",
+    "build:portal": "npm --prefix customer-portal run build"
   }
 }

@@ -27,7 +27,7 @@ class ProductCatalogApiTest extends TestCase
 
     public function test_inventory_manager_can_crud_product_with_catalog_fields(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $orgId = app(OrganizationService::class)->current()->id;
 
         $category = Category::query()->create([
@@ -123,7 +123,7 @@ class ProductCatalogApiTest extends TestCase
 
     public function test_cashier_cannot_manage_products_but_can_view_catalog(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
         $orgId = app(OrganizationService::class)->current()->id;
 
         Product::factory()->create([
@@ -144,7 +144,7 @@ class ProductCatalogApiTest extends TestCase
 
     public function test_inventory_manager_can_create_categories_brands_units_suppliers(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $this->postJson('/api/v1/categories', ['name' => 'Snacks'])
             ->assertCreated()
@@ -173,7 +173,7 @@ class ProductCatalogApiTest extends TestCase
 
     public function test_duplicate_sku_is_rejected_within_organization(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $orgId = app(OrganizationService::class)->current()->id;
 
         Product::factory()->create([
