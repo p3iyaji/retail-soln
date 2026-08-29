@@ -862,6 +862,15 @@ Full runbook: [`docs/disaster-recovery.md`](disaster-recovery.md).
 - **Load tests:** install [k6](https://k6.io/) and run `k6 run load-tests/k6/smoke.js` against a seeded
   stack. Thresholds match Story 9.2 (`SEARCH_P95_MS`, health latency). See `load-tests/README.md`.
 
+### E2E and offline-sync regression
+
+- **Server scenarios:** `cd backend && php artisan test --filter=OfflineSync` — concurrent oversell,
+  device disable mid-queue, clock skew, retry idempotency, store-scoped sync APIs.
+- **POS unit/integration:** `cd frontend/pos && npm test` — Dexie queue, push/pull, reconnect drain
+  (`offlineReconnect.test.ts`), sync badge UX.
+- **Browser E2E:** `cd e2e && npm test` — Playwright login smoke + sign-in → store → floor flow. See
+  `e2e/README.md`; run `php artisan db:seed --class=E2ePlaywrightSeeder` before the critical path.
+
 ### Migrations / empty database
 
 ```bash

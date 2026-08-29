@@ -99,12 +99,12 @@ development_status:
   8-3-notification-service: done
   epic-8-retrospective: optional
 
-  epic-9: in-progress
+  epic-9: done
   9-1-security-review: done
   9-2-performance-optimization: done
   9-3-observability: done
   9-4-backup-dr-load-testing: done
-  9-5-e2e-offline-test-suite: backlog
+  9-5-e2e-offline-test-suite: done
   epic-9-retrospective: optional
 
 action_items:

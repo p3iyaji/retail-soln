@@ -44,3 +44,75 @@ jobs:
 
       - name: Run PHPUnit
         run: php artisan test
+
+  pos-vitest:
+    name: POS Vitest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/pos/package-lock.json
+
+      - name: Install and test POS
+        working-directory: frontend/pos
+        run: |
+          npm ci
+          npm test
+
+  e2e-pos:
+    name: Playwright POS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: mbstring, pdo_sqlite, sqlite3, bcmath, intl
+          coverage: none
+
+      - name: Prepare API
+        working-directory: backend
+        run: |
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+          cp .env.example .env
+          php artisan key:generate
+          mkdir -p database
+          touch database/database.sqlite
+          php artisan migrate --force
+          php artisan db:seed
+          php artisan db:seed --class=E2ePlaywrightSeeder
+
+      - name: Start API server
+        working-directory: backend
+        run: php artisan serve --port=8001 &
+        env:
+          CI: true
+
+      - name: Install POS + E2E dependencies
+        run: |
+          npm ci --prefix frontend/pos
+          npm ci --prefix e2e
+          npx --prefix e2e playwright install --with-deps chromium
+
+      - name: Run Playwright
+        working-directory: e2e
+        env:
+          CI: true
+          E2E_API_URL: http://127.0.0.1:8001
+        run: npm test
