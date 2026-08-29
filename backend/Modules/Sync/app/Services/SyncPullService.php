@@ -195,12 +195,12 @@ class SyncPullService
     private function pullPrices(int $organizationId, int $storeId, ?array $mark, int $limit): array
     {
         $query = Price::query()
+            ->select('prices.*')
+            ->join('price_lists', 'price_lists.id', '=', 'prices.price_list_id')
             ->where('prices.organization_id', $organizationId)
-            ->whereHas('priceList', function (Builder $q) use ($organizationId, $storeId): void {
-                $q->where('organization_id', $organizationId)
-                    ->where('store_id', $storeId)
-                    ->where('is_active', true);
-            });
+            ->where('price_lists.organization_id', $organizationId)
+            ->where('price_lists.store_id', $storeId)
+            ->where('price_lists.is_active', true);
 
         $this->applyWatermark($query, $mark, 'prices');
         $prices = $query->orderBy('prices.updated_at')->orderBy('prices.id')->limit($limit + 1)->get();
