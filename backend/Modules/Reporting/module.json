@@ -1,0 +1,11 @@
+{
+    "name": "Reporting",
+    "alias": "reporting",
+    "description": "Read-only reporting aggregates over sales, inventory, fulfilment, and register facts",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Reporting\\Providers\\ReportingServiceProvider"
+    ],
+    "files": []
+}

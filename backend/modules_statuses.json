@@ -10,5 +10,6 @@
   "Customers": true,
   "Sales": true,
   "Sync": true,
-  "CustomerPortal": true
+  "CustomerPortal": true,
+  "Reporting": true
 }

@@ -23,6 +23,15 @@ class OversellExceptionService
             ->paginate($perPage);
     }
 
+    public function countPending(int $organizationId, int $storeId): int
+    {
+        return InventoryOversellException::query()
+            ->where('organization_id', $organizationId)
+            ->where('store_id', $storeId)
+            ->where('status', OversellExceptionStatus::Pending)
+            ->count();
+    }
+
     public function approve(InventoryOversellException $exception, int $approverUserId): InventoryOversellException
     {
         if ($exception->status !== OversellExceptionStatus::Pending) {

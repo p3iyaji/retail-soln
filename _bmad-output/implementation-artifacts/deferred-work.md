@@ -339,3 +339,19 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-3-shipment-delivery.md`
   summary: Multi-parcel / multi-carrier shipments per order.
   evidence: Spec Ask First default is single shipment per order; multi-parcel deferred.
+
+- source_spec: none
+  summary: Story 8.2 Store performance reports (filterable/exportable domain reports).
+  evidence: Split from Epic 8 start; user chose Story 8.1 first.
+
+- source_spec: none
+  summary: Story 8.3 Notification service (email/SMS/in-app, AD-7 queued).
+  evidence: Split from Epic 8 start; user chose Story 8.1 first.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-sales-inventory-dashboards.md`
+  summary: Add automated Admin DashboardView tests for KPI wiring, permission empty state, and low-stock severity classes.
+  evidence: Repo has no Admin frontend test runner; verification is API tests + npm build + manual check only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-sales-inventory-dashboards.md`
+  summary: Link low-stock dashboard rows through to Inventory (or variant) for clearance.
+  evidence: Review polish; list remains informational with severity styling only.
