@@ -1,6 +1,6 @@
 # Customer Portal SPA
 
-Vue 3 + Vite + TypeScript + Tailwind + Pinia customer-facing shop + account app (Stories 6.1–6.3).
+Vue 3 + Vite + TypeScript + Tailwind + Pinia customer-facing shop + account app (Stories 6.1–6.4).
 
 **Dev URL:** http://localhost:5175
 
@@ -26,4 +26,10 @@ API: `VITE_PROXY_TARGET` (default `http://127.0.0.1:8000`).
 - Without live keys, Stripe/Paystack return placeholder redirect URLs (include `orderId` + `payment_ref`); production fails closed with 503 if misconfigured
 - `PORTAL_FRONTEND_URL` / `PAYMENT_ALLOWED_REDIRECT_ORIGINS` — success/cancel URLs must match allowlisted origins (no open redirects)
 
-**Flows:** guest browse/search → register → verify → login → **add to cart** → `/shop/cart` → `/shop/checkout` (delivery / click & collect / pickup + pay) → `/shop/confirmation?orderId=…`. Orders list / invoice / returns remain stubs (6.4–6.5).
+**Orders (Story 6.4):**
+- Chrome **Orders** → `/shop/orders` (own orders only) → `/shop/orders/:id` with fulfilment-aware status timeline
+- Paid (or post-confirmed) orders: **Download invoice** → HTML `invoice-{order_number}.html` from portal order (not POS `Sale`/`Invoice`)
+- Confirmation deep-links to order detail; **Request return** remains stubbed for 6.5
+- Staff fulfilment status transitions stay Epic 7 (tests may set advanced statuses)
+
+**Flows:** guest browse/search → register → verify → login → **add to cart** → `/shop/cart` → `/shop/checkout` → `/shop/confirmation?orderId=…` → **Orders** list / detail / invoice. Returns remain stubs (6.5).

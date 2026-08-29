@@ -32,6 +32,7 @@ class PortalOrder extends Model
         'payment_provider',
         'payment_reference',
         'payment_redirect_url',
+        'paid_at',
         'idempotency_key',
         'request_fingerprint',
     ];
@@ -44,6 +45,7 @@ class PortalOrder extends Model
             'tax_total' => 'decimal:4',
             'delivery_fee' => 'decimal:4',
             'total' => 'decimal:4',
+            'paid_at' => 'datetime',
             'request_fingerprint' => 'array',
         ];
     }

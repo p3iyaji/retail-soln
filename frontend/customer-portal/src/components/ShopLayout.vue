@@ -65,9 +65,12 @@ function onSearchSubmit() {
         </form>
         <nav class="flex items-center gap-4 text-sm text-[var(--muted)]">
           <RouterLink class="hover:text-[var(--ink)]" :to="accountHref">Account</RouterLink>
-          <span class="cursor-not-allowed text-[var(--muted)] opacity-60" title="Coming in Story 6.4">
+          <RouterLink
+            :to="hasToken() ? { name: 'orders' } : { name: 'login', query: { redirect: '/shop/orders' } }"
+            class="hover:text-[var(--ink)] no-underline"
+          >
             Orders
-          </span>
+          </RouterLink>
           <RouterLink
             :to="hasToken() ? { name: 'cart' } : { name: 'login', query: { redirect: '/shop/cart' } }"
             class="font-semibold text-[var(--brand)] no-underline hover:underline"

@@ -6,6 +6,7 @@ use Modules\CustomerPortal\Http\Controllers\Api\PortalAuthController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalCartController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalCatalogueController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalCheckoutController;
+use Modules\CustomerPortal\Http\Controllers\Api\PortalOrderController;
 
 Route::prefix('v1/portal')->group(function (): void {
     Route::prefix('auth')->group(function (): void {
@@ -51,7 +52,11 @@ Route::prefix('v1/portal')->group(function (): void {
         Route::post('/checkout/place', [PortalCheckoutController::class, 'place']);
         Route::post('/orders/{order}/confirm-payment', [PortalCheckoutController::class, 'confirmManual'])
             ->whereNumber('order');
-        Route::get('/orders/{order}', [PortalCheckoutController::class, 'showOrder'])
+
+        Route::get('/orders', [PortalOrderController::class, 'index']);
+        Route::get('/orders/{order}', [PortalOrderController::class, 'show'])
+            ->whereNumber('order');
+        Route::get('/orders/{order}/invoice', [PortalOrderController::class, 'invoice'])
             ->whereNumber('order');
     });
 });
