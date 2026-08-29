@@ -5,6 +5,7 @@ import {
   findAutoAddVariant,
   firstActiveVariant,
   incrementQty,
+  priceFieldsFromCache,
   priceFieldsFromResolve,
   sumLineTotals,
   type CartLine,
@@ -133,6 +134,25 @@ describe('qty stepper + merge pricing fields', () => {
     expect(priced.priceOverride).toBe('8.0000')
     expect(priced.taxAmount).toBe('1.6000')
     expect(priced.lineTotal).toBe('17.6000')
+  })
+
+  it('priceFieldsFromCache builds DECIMAL line from unit + tax (no promo)', () => {
+    const priced = priceFieldsFromCache(
+      {
+        unitPrice: '10.0000',
+        listPrice: '10.0000',
+        taxName: 'VAT',
+        taxRate: '0.1000',
+        taxInclusive: false,
+      },
+      '1',
+      null,
+    )
+    expect(priced.unitPrice).toBe('10.0000')
+    expect(priced.discountAmount).toBe('0.0000')
+    expect(priced.taxAmount).toBe('1.0000')
+    expect(priced.lineTotal).toBe('11.0000')
+    expect(priced.taxName).toBe('VAT')
   })
 })
 

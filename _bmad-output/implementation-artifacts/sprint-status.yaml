@@ -69,8 +69,8 @@ development_status:
   epic-4-retrospective: optional
 
   epic-5: in-progress
-  5-1-pwa-offline-shell: review
-  5-2-local-cache-sync: backlog
+  5-1-pwa-offline-shell: done
+  5-2-local-cache-sync: review
   5-3-offline-sale-queue: backlog
   5-4-push-sync-api: backlog
   5-5-pull-sync-cursors: backlog

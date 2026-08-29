@@ -39,6 +39,9 @@ watch(overrideLineKey, async (key) => {
 onMounted(async () => {
   document.getElementById('pos-search')?.focus()
   window.addEventListener('keydown', onGlobalKeydown, true)
+  if (pos.hasSelectedStore) {
+    void pos.refreshCatalogCache()
+  }
   await pos.loadCategories()
   await pos.runSearch('', { immediate: true, allowAutoAdd: false })
   await pos.loadHeldSales()

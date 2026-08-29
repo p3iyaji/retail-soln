@@ -2,12 +2,14 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { ApiError, getStoredStoreId, parsePositiveIntId, setStoredStoreId, TERMINAL_KEY } from '@/api/client'
 import { listCategories, resolvePrice, searchProducts, type Category } from '@/api/posCatalog'
+import { posDb } from '@/db/posDb'
 import {
   canPriceOverride,
   decrementQty,
   findAutoAddVariant,
   firstActiveVariant,
   incrementQty,
+  priceFieldsFromCache,
   priceFieldsFromResolve,
   sumLineTotals,
   variantLabel,
@@ -23,6 +25,13 @@ import {
   type CashierSessionResource,
 } from '@/api/posSessions'
 import { useAuthStore } from '@/stores/auth'
+import { money } from '@/lib/decimal'
+import { warmCache } from '@/sync/cacheWarm'
+import { localCatalogProductCount, searchLocalCatalog } from '@/sync/localCatalog'
+
+function isBrowserOffline(): boolean {
+  return typeof navigator !== 'undefined' && navigator.onLine === false
+}
 
 export type StubPanel = 'customer' | 'discount' | 'payment' | 'held' | 'session' | 'return' | 'installment' | null
 
@@ -121,6 +130,22 @@ export const usePosStore = defineStore('pos', () => {
       clearSession()
       selectedCustomer.value = null
       void loadCategories()
+    }
+
+    // Warm catalog cache for offline search/pricing (Story 5.2). Online-only.
+    void warmCache(id).catch(() => {
+      // SYNC ERROR already set inside warmCache
+    })
+  }
+
+  /** Refresh local cache when floor mounts with a store already selected. */
+  async function refreshCatalogCache(): Promise<void> {
+    const id = selectedStoreId.value
+    if (id == null) return
+    try {
+      await warmCache(id)
+    } catch {
+      // SYNC ERROR already set inside warmCache
     }
   }
 
@@ -291,15 +316,30 @@ export const usePosStore = defineStore('pos', () => {
       searchLoading.value = true
       searchError.value = null
       try {
-        const res = await searchProducts({
-          q: q.trim() || undefined,
-          categoryId: categoryId.value,
-          limit: 25,
-        })
+        const offline = isBrowserOffline()
+        const res = offline
+          ? await searchLocalCatalog({
+              q: q.trim() || undefined,
+              categoryId: categoryId.value,
+              limit: 25,
+            })
+          : await searchProducts({
+              q: q.trim() || undefined,
+              categoryId: categoryId.value,
+              limit: 25,
+            })
         if (seq !== searchSeq) return
 
         searchResults.value = res.data
         searchElapsedMs.value = res.meta.elapsedMs
+
+        if (offline && res.data.length === 0) {
+          const cachedCount = await localCatalogProductCount()
+          if (seq !== searchSeq) return
+          if (cachedCount === 0) {
+            searchError.value = 'Catalog not synced — connect online to refresh cache'
+          }
+        }
 
         if (opts.allowAutoAdd !== false && q.trim() !== '') {
           const auto = findAutoAddVariant(res.data, q)
@@ -356,6 +396,39 @@ export const usePosStore = defineStore('pos', () => {
     await addVariantToCart(product, variant)
   }
 
+  async function priceFromCache(
+    variantId: number,
+    storeId: number,
+    qty: string,
+    priceOverride: string | null,
+  ): Promise<ReturnType<typeof priceFieldsFromCache>> {
+    const price = await posDb.prices.get([variantId, storeId])
+    if (
+      price == null ||
+      price.unitPrice == null ||
+      price.unitPrice === '' ||
+      money(price.unitPrice) === '0.0000'
+    ) {
+      throw new Error('Price not available offline for this item')
+    }
+
+    const tax = await posDb.taxes.get(storeId)
+    if (tax == null) {
+      throw new Error('Tax not available offline for this store')
+    }
+    return priceFieldsFromCache(
+      {
+        unitPrice: price.unitPrice,
+        listPrice: price.listPrice || price.unitPrice,
+        taxName: tax.name,
+        taxRate: tax.rate,
+        taxInclusive: tax.inclusive,
+      },
+      qty,
+      priceOverride,
+    )
+  }
+
   async function addVariantToCart(product: SearchProduct, variant: SearchVariant): Promise<void> {
     if (cartBusy.value) return
 
@@ -372,13 +445,20 @@ export const usePosStore = defineStore('pos', () => {
     cartBusy.value = true
     cartError.value = null
     try {
-      const res = await resolvePrice({
-        variantId: variant.id,
-        storeId,
-        qty: nextQty,
-        customerId: pricingCustomerId(),
-      })
-      const priced = priceFieldsFromResolve(res.data, nextQty, override)
+      const priced = isBrowserOffline()
+        ? await priceFromCache(variant.id, storeId, nextQty, override)
+        : priceFieldsFromResolve(
+            (
+              await resolvePrice({
+                variantId: variant.id,
+                storeId,
+                qty: nextQty,
+                customerId: pricingCustomerId(),
+              })
+            ).data,
+            nextQty,
+            override,
+          )
       const label = variantLabel(product, variant)
       const sku = variant.sku
       const barcode = variant.barcode
@@ -396,7 +476,7 @@ export const usePosStore = defineStore('pos', () => {
         })
       }
     } catch (err) {
-      cartError.value = err instanceof ApiError ? err.message : 'Could not price item'
+      cartError.value = err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Could not price item'
     } finally {
       cartBusy.value = false
     }
@@ -414,17 +494,24 @@ export const usePosStore = defineStore('pos', () => {
     cartBusy.value = true
     cartError.value = null
     try {
-      const res = await resolvePrice({
-        variantId: line.variantId,
-        storeId,
-        qty,
-        customerId: pricingCustomerId(),
-      })
-      const priced = priceFieldsFromResolve(res.data, qty, line.priceOverride)
+      const priced = isBrowserOffline()
+        ? await priceFromCache(line.variantId, storeId, qty, line.priceOverride)
+        : priceFieldsFromResolve(
+            (
+              await resolvePrice({
+                variantId: line.variantId,
+                storeId,
+                qty,
+                customerId: pricingCustomerId(),
+              })
+            ).data,
+            qty,
+            line.priceOverride,
+          )
       Object.assign(line, priced)
       return true
     } catch (err) {
-      cartError.value = err instanceof ApiError ? err.message : 'Could not update price'
+      cartError.value = err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Could not update price'
       return false
     } finally {
       cartBusy.value = false
@@ -632,6 +719,7 @@ export const usePosStore = defineStore('pos', () => {
     searchError,
     selectStore,
     clearStore,
+    refreshCatalogCache,
     setTerminalLabel,
     openStub,
     closeStub,

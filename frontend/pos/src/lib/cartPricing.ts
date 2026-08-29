@@ -132,6 +132,14 @@ export function variantLabel(product: SearchProduct, variant: SearchVariant): st
   return product.name
 }
 
+export type CachedPriceInputs = {
+  unitPrice: string
+  listPrice: string
+  taxName: string
+  taxRate: string
+  taxInclusive: boolean
+}
+
 /**
  * Build priced cart fields from resolve. When override is set: unitPrice=override,
  * clear promo discount, scale tax proportionally from resolve’s unit (or recompute via rate if unit is 0).
@@ -180,6 +188,38 @@ export function priceFieldsFromResolve(
     lineTotal: taxed.lineTotal,
     priceOverride: priceOverride == null || priceOverride === '' ? null : unitPrice,
   }
+}
+
+/**
+ * Offline line pricing from cached unit + tax (no promo engine in 5.2).
+ * Missing/empty unit price must be handled by the caller — never silent zero.
+ */
+export function priceFieldsFromCache(
+  cached: CachedPriceInputs,
+  qty: string,
+  priceOverride: string | null,
+): ReturnType<typeof priceFieldsFromResolve> {
+  return priceFieldsFromResolve(
+    {
+      unitPrice: money(cached.unitPrice),
+      listPrice: money(cached.listPrice),
+      discountAmount: '0.0000',
+      netPrice: money(cached.unitPrice),
+      tax: {
+        name: cached.taxName,
+        rate: money(cached.taxRate),
+        inclusive: Boolean(cached.taxInclusive),
+        amount: '0.0000',
+      },
+      grossPrice: money(cached.unitPrice),
+      lineTotal: money(cached.unitPrice),
+      qty: money(qty),
+      variantId: 0,
+      storeId: 0,
+    },
+    qty,
+    priceOverride,
+  )
 }
 
 function taxOnLineNet(
