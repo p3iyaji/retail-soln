@@ -227,3 +227,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-6-sync-status-ui.md`
   summary: Persist and return lastPullAt on GET /sync/status from server-known pull activity.
   evidence: lastPullAt remains null; pull cursors live client-side in Dexie.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-7-device-registration.md`
+  summary: Device delete or store-transfer path for org-unique uuid re-registration.
+  evidence: Ask First deferred cross-store move; unique (org, uuid) blocks re-register on another store.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-7-device-registration.md`
+  summary: Admin Devices pagination and Policy-based devices.manage authorization (AD-4).
+  evidence: List is single page of 50; authz is FormRequest hasPermission only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-7-device-registration.md`
+  summary: lockForUpdate device enabled check during push/pull to close disable TOCTOU.
+  evidence: Enabled is checked at resolve; mid-request disable can still complete the batch.

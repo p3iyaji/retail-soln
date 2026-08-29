@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Modules\Organization\Services\OrganizationService;
 use Modules\Sync\Http\Requests\SyncPushRequest;
 use Modules\Sync\Services\DeviceDisabledException;
+use Modules\Sync\Services\DeviceUnregisteredException;
 use Modules\Sync\Services\SyncPushService;
 
 class SyncPushController
@@ -23,6 +24,11 @@ class SyncPushController
                 $request->deviceUuid(),
                 $request->envelopes(),
             );
+        } catch (DeviceUnregisteredException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'device_unregistered',
+            ], 403);
         } catch (DeviceDisabledException $e) {
             return response()->json([
                 'message' => $e->getMessage(),

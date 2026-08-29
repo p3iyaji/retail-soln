@@ -17,12 +17,24 @@ const postMock = vi.fn()
 vi.mock('@/api/client', () => ({
   ApiError: class ApiError extends Error {
     status: number
-    body: unknown
-    constructor(status: number, body: { message?: string }) {
+    body: { message?: string; code?: string }
+    constructor(status: number, body: { message?: string; code?: string }) {
       super(body.message ?? `Request failed (${status})`)
       this.status = status
       this.body = body
     }
+    get code(): string | undefined {
+      return this.body.code
+    }
+  },
+  formatDeviceSyncError: (err: { code?: string; message: string }) => {
+    if (err.code === 'device_unregistered') {
+      return 'Device is not registered — register this UUID in Admin Devices'
+    }
+    if (err.code === 'device_disabled') {
+      return 'Device is disabled and cannot sync'
+    }
+    return err.message
   },
   api: {
     post: (...args: unknown[]) => postMock(...args),
@@ -121,12 +133,40 @@ describe('pushPendingSales', () => {
       db,
     )
 
-    postMock.mockRejectedValue(new ApiError(403, { message: 'Device is disabled and cannot sync.' }))
+    postMock.mockRejectedValue(
+      new ApiError(403, {
+        message: 'Device is disabled and cannot sync.',
+        code: 'device_disabled',
+      }),
+    )
 
     await pushPendingSales(db)
 
     expect((await db.pending_sales.get(uuid))?.syncStatus).toBe('error')
     expect(useSyncStore().status).toBe('SYNC_ERROR')
+    expect(useSyncStore().lastError).toContain('disabled')
+  })
+
+  it('sets SYNC ERROR with Admin register hint when device is unregistered', async () => {
+    const { ApiError } = await import('@/api/client')
+    const uuid = 'bbbbbbbb-cccc-4ddd-8eee-ffffffffff01'
+    await enqueueSale(
+      { storeId: 1, userId: 2, terminalId: null, payload: salePayload(uuid) },
+      db,
+    )
+
+    postMock.mockRejectedValue(
+      new ApiError(403, {
+        message: 'Device is not registered for this store.',
+        code: 'device_unregistered',
+      }),
+    )
+
+    await pushPendingSales(db)
+
+    expect((await db.pending_sales.get(uuid))?.syncStatus).toBe('error')
+    expect(useSyncStore().status).toBe('SYNC_ERROR')
+    expect(useSyncStore().lastError).toMatch(/register this UUID in Admin/i)
   })
 
   it('leaves rows pushing on transport failure so reconnect can retry', async () => {

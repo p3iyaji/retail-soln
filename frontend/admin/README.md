@@ -4,7 +4,11 @@ Vue 3 + TypeScript + Vite + Tailwind CSS 4. Consumes `/api/v1` with Sanctum Bear
 
 ## Oversell exceptions (Story 5.6)
 
-Nav **Oversells** → `/oversell-exceptions`. Lists pending `inventory_oversell_exceptions` for the selected store (`GET /sync/oversell-exceptions` + `X-Store-Id`) and **Approve** (`POST /sync/oversell-exceptions/{id}/approve`). Requires `inventory.approve-oversell`. Device Admin console remains Story 5.7.
+Nav **Oversells** → `/oversell-exceptions`. Lists pending `inventory_oversell_exceptions` for the selected store (`GET /sync/oversell-exceptions` + `X-Store-Id`) and **Approve** (`POST /sync/oversell-exceptions/{id}/approve`). Requires `inventory.approve-oversell`.
+
+## Devices (Story 5.7)
+
+Nav **Devices** → `/devices`. Register POS terminal UUIDs (`POST /devices`), list (`GET /devices`), rename / enable-disable (`PATCH /devices/{id}`). Requires `devices.manage` + `X-Store-Id`. Copy the UUID from the POS sync badge panel.
 
 ## Run
 

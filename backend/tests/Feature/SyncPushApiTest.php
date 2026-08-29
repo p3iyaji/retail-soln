@@ -82,6 +82,14 @@ class SyncPushApiTest extends TestCase
         $this->cashier->stores()->attach($this->store->id, ['is_default' => true]);
         Sanctum::actingAs($this->cashier);
         $this->sessionId = $this->openSession($this->cashier);
+
+        Device::query()->create([
+            'organization_id' => $this->orgId,
+            'store_id' => $this->store->id,
+            'uuid' => $this->deviceUuid,
+            'name' => 'POS Sync',
+            'enabled' => true,
+        ]);
     }
 
     private function seedStock(string $qty): void
@@ -261,12 +269,10 @@ class SyncPushApiTest extends TestCase
 
     public function test_disabled_device_rejects_batch(): void
     {
-        Device::query()->create([
-            'organization_id' => $this->orgId,
-            'store_id' => $this->store->id,
-            'uuid' => $this->deviceUuid,
-            'enabled' => false,
-        ]);
+        Device::query()
+            ->where('organization_id', $this->orgId)
+            ->where('uuid', $this->deviceUuid)
+            ->update(['enabled' => false]);
 
         $uuid = '550e8400-e29b-41d4-a716-446655440004';
         $this->push([[
@@ -278,6 +284,76 @@ class SyncPushApiTest extends TestCase
             ->assertJsonPath('code', 'device_disabled');
 
         $this->assertSame(0, Sale::query()->count());
+    }
+
+    public function test_unregistered_device_rejects_batch_without_creating_row(): void
+    {
+        $unknown = '550e8400-e29b-41d4-a716-4466554400ff';
+        $before = Device::query()->count();
+
+        $uuid = '550e8400-e29b-41d4-a716-446655440005';
+        $this->push([[
+            'uuid' => $uuid,
+            'localSequence' => 1,
+            'payloadType' => 'sale',
+            'payload' => $this->salePayload($uuid),
+        ]], $unknown)->assertForbidden()
+            ->assertJsonPath('code', 'device_unregistered');
+
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertSame($before, Device::query()->count());
+        $this->assertDatabaseMissing('devices', ['uuid' => $unknown]);
+    }
+
+    public function test_cross_store_device_is_unregistered_and_store_id_unchanged(): void
+    {
+        $otherStore = Store::factory()->create(['organization_id' => $this->orgId]);
+        $this->cashier->stores()->attach($otherStore->id, ['is_default' => false]);
+
+        $device = Device::query()
+            ->where('organization_id', $this->orgId)
+            ->where('uuid', $this->deviceUuid)
+            ->firstOrFail();
+        $originalStoreId = (int) $device->store_id;
+
+        Sanctum::actingAs($this->cashier);
+        $uuid = '550e8400-e29b-41d4-a716-446655440006';
+        $this->postJson('/api/v1/sync/push', [
+            'deviceUuid' => $this->deviceUuid,
+            'records' => [[
+                'uuid' => $uuid,
+                'localSequence' => 1,
+                'payloadType' => 'sale',
+                'payload' => $this->salePayload($uuid),
+            ]],
+        ], ['X-Store-Id' => (string) $otherStore->id])
+            ->assertForbidden()
+            ->assertJsonPath('code', 'device_unregistered');
+
+        $device->refresh();
+        $this->assertSame($originalStoreId, (int) $device->store_id);
+        $this->assertSame(0, Sale::query()->count());
+    }
+
+    public function test_successful_push_updates_last_seen_at(): void
+    {
+        $device = Device::query()
+            ->where('organization_id', $this->orgId)
+            ->where('uuid', $this->deviceUuid)
+            ->firstOrFail();
+        $device->forceFill(['last_seen_at' => null])->save();
+
+        $uuid = '550e8400-e29b-41d4-a716-446655440007';
+        $this->push([[
+            'uuid' => $uuid,
+            'localSequence' => 1,
+            'payloadType' => 'sale',
+            'createdAt' => now()->toIso8601String(),
+            'payload' => $this->salePayload($uuid),
+        ]])->assertOk();
+
+        $device->refresh();
+        $this->assertNotNull($device->last_seen_at);
     }
 
     public function test_closed_session_remaps_to_open_session(): void

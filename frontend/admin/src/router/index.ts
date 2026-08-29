@@ -78,6 +78,11 @@ const router = createRouter({
           component: () => import('@/views/OversellExceptionsView.vue'),
         },
         {
+          path: 'devices',
+          name: 'devices',
+          component: () => import('@/views/DevicesView.vue'),
+        },
+        {
           path: 'pricing',
           name: 'pricing',
           component: () => import('@/views/PricingView.vue'),

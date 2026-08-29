@@ -15,6 +15,9 @@ const retrying = ref(false)
 const retryHint = ref<string | null>(null)
 const serverPendingOversell = ref<number | null>(null)
 const serverDeviceEnabled = ref<boolean | null>(null)
+const deviceUuid = ref<string | null>(null)
+const deviceUuidError = ref<string | null>(null)
+const copyHint = ref<string | null>(null)
 const panelEl = ref<HTMLElement | null>(null)
 
 const toneClass = computed(() => {
@@ -32,6 +35,22 @@ const accessibleLabel = computed(() =>
   sync.lastError ? `${sync.label}: ${sync.lastError}` : sync.label,
 )
 
+const registerHint = computed(() => {
+  const err = sync.lastError ?? ''
+  return /not registered|register this UUID in Admin/i.test(err)
+    ? 'Register this device UUID in Admin → Devices, then Retry.'
+    : null
+})
+
+const deviceStatusLabel = computed(() => {
+  if (serverDeviceEnabled.value == null) return null
+  if (serverDeviceEnabled.value === true) return 'Enabled'
+  const err = sync.lastError ?? ''
+  if (/not registered|register this UUID in Admin/i.test(err)) return 'Unregistered'
+  if (/disabled/i.test(err)) return 'Disabled'
+  return 'Disabled / unregistered'
+})
+
 async function refreshCounts(): Promise<void> {
   try {
     const counts = await countPendingAndError()
@@ -47,14 +66,14 @@ async function refreshServerStatus(): Promise<void> {
   serverPendingOversell.value = null
   serverDeviceEnabled.value = null
   if (!navigator.onLine || getStoredStoreId() == null) return
+  if (!deviceUuid.value) return
   try {
-    const deviceUuid = await ensureDeviceUuid()
     const res = await api.get<{
       data: {
         pendingOversellCount: number
         deviceEnabled?: boolean
       }
-    }>(`/sync/status?deviceUuid=${encodeURIComponent(deviceUuid)}`)
+    }>(`/sync/status?deviceUuid=${encodeURIComponent(deviceUuid.value)}`)
     serverPendingOversell.value = res.data.pendingOversellCount
     serverDeviceEnabled.value =
       typeof res.data.deviceEnabled === 'boolean' ? res.data.deviceEnabled : null
@@ -63,11 +82,36 @@ async function refreshServerStatus(): Promise<void> {
   }
 }
 
+async function refreshDeviceUuid(): Promise<void> {
+  deviceUuidError.value = null
+  try {
+    deviceUuid.value = await ensureDeviceUuid()
+  } catch (err) {
+    deviceUuid.value = null
+    deviceUuidError.value =
+      err instanceof Error ? err.message : 'Could not load device UUID'
+  }
+}
+
+async function copyDeviceUuid(): Promise<void> {
+  if (!deviceUuid.value) return
+  copyHint.value = null
+  try {
+    await navigator.clipboard.writeText(deviceUuid.value)
+    copyHint.value = 'Copied'
+  } catch {
+    copyHint.value = 'Select and copy manually'
+  }
+}
+
 async function togglePanel(): Promise<void> {
   panelOpen.value = !panelOpen.value
   if (panelOpen.value) {
     retryHint.value = null
-    await Promise.all([refreshCounts(), refreshServerStatus()])
+    copyHint.value = null
+    await refreshCounts()
+    await refreshDeviceUuid()
+    await refreshServerStatus()
   }
 }
 
@@ -169,8 +213,16 @@ onUnmounted(() => {
       </p>
       <p v-else class="mt-2 text-sm text-[var(--muted)]">No sync error.</p>
 
+      <p v-if="registerHint" class="mt-2 text-sm text-[var(--muted)]" role="status">
+        {{ registerHint }}
+      </p>
+
       <p v-if="retryHint" class="mt-2 text-sm text-[var(--sync-error)]" role="status">
         {{ retryHint }}
+      </p>
+
+      <p v-if="deviceUuidError" class="mt-2 text-sm text-[var(--sync-error)]" role="status">
+        {{ deviceUuidError }}
       </p>
 
       <dl class="mt-3 grid grid-cols-2 gap-2 text-sm">
@@ -186,11 +238,31 @@ onUnmounted(() => {
           <dt class="text-[var(--muted)]">Store oversells</dt>
           <dd class="font-semibold">{{ serverPendingOversell }}</dd>
         </div>
-        <div v-if="serverDeviceEnabled != null">
+        <div v-if="deviceStatusLabel != null">
           <dt class="text-[var(--muted)]">Device</dt>
-          <dd class="font-semibold">{{ serverDeviceEnabled ? 'Enabled' : 'Disabled' }}</dd>
+          <dd class="font-semibold">{{ deviceStatusLabel }}</dd>
         </div>
       </dl>
+
+      <div v-if="deviceUuid" class="mt-3 rounded border border-[var(--line)] bg-stone-50 p-2">
+        <p class="text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">Device UUID</p>
+        <p
+          class="mt-1 break-all font-mono text-xs leading-snug select-all"
+          data-testid="device-uuid"
+        >
+          {{ deviceUuid }}
+        </p>
+        <div class="mt-2 flex items-center gap-2">
+          <button
+            type="button"
+            class="min-h-11 rounded border border-[var(--line)] bg-white px-3 text-xs font-medium hover:bg-stone-100"
+            @click="copyDeviceUuid"
+          >
+            Copy
+          </button>
+          <span v-if="copyHint" class="text-xs text-[var(--muted)]" role="status">{{ copyHint }}</span>
+        </div>
+      </div>
 
       <button
         type="button"

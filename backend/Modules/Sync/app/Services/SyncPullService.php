@@ -4,7 +4,6 @@ namespace Modules\Sync\Services;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\QueryException;
 use Modules\Customers\Models\Customer;
 use Modules\Inventory\Enums\LocationType;
 use Modules\Inventory\Models\InventoryBalance;
@@ -48,8 +47,6 @@ class SyncPullService
             throw new DeviceDisabledException('Device is disabled and cannot sync.');
         }
 
-        $device->forceFill(['last_seen_at' => now(), 'store_id' => $storeId])->save();
-
         $store = Store::query()
             ->where('organization_id', $organizationId)
             ->whereKey($storeId)
@@ -83,6 +80,8 @@ class SyncPullService
             ->withWatermark('customers', $customersPage['watermark'])
             ->withWatermark('inventory', $inventoryPage['watermark'])
             ->withWatermark('config', $configPage['watermark']);
+
+        $device->forceFill(['last_seen_at' => now()])->save();
 
         return [
             'data' => [
@@ -451,41 +450,17 @@ class SyncPullService
 
     private function resolveDevice(int $organizationId, int $storeId, string $deviceUuid): Device
     {
-        try {
-            return Device::query()->firstOrCreate(
-                [
-                    'organization_id' => $organizationId,
-                    'uuid' => $deviceUuid,
-                ],
-                [
-                    'store_id' => $storeId,
-                    'enabled' => true,
-                    'last_seen_at' => now(),
-                ],
-            );
-        } catch (QueryException $e) {
-            if (! $this->isUniqueDeviceViolation($e)) {
-                throw $e;
-            }
+        $deviceUuid = strtolower($deviceUuid);
 
-            $device = Device::query()
-                ->where('organization_id', $organizationId)
-                ->where('uuid', $deviceUuid)
-                ->first();
+        $device = Device::query()
+            ->where('organization_id', $organizationId)
+            ->where('uuid', $deviceUuid)
+            ->first();
 
-            if ($device === null) {
-                throw $e;
-            }
-
-            return $device;
+        if ($device === null || (int) $device->store_id !== $storeId) {
+            throw new DeviceUnregisteredException('Device is not registered for this store.');
         }
-    }
 
-    private function isUniqueDeviceViolation(QueryException $e): bool
-    {
-        $message = strtolower($e->getMessage());
-
-        return str_contains($message, 'devices_organization_id_uuid')
-            || (str_contains($message, 'unique') && str_contains($message, 'uuid'));
+        return $device;
     }
 }
