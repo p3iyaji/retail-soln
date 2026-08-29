@@ -63,7 +63,10 @@ class PosCashierSessionController
 
     public function index(Request $request, OrganizationService $organizations): JsonResponse
     {
-        if ($request->user()?->hasPermission('pos.session') !== true) {
+        if (
+            $request->user()?->hasPermission('registers.reconcile') !== true
+            && $request->user()?->hasPermission('pos.session') !== true
+        ) {
             abort(403);
         }
 
@@ -97,7 +100,10 @@ class PosCashierSessionController
         Request $request,
         OrganizationService $organizations,
     ): JsonResponse {
-        if ($request->user()?->hasPermission('pos.session') !== true) {
+        if (
+            $request->user()?->hasPermission('registers.reconcile') !== true
+            && $request->user()?->hasPermission('pos.session') !== true
+        ) {
             abort(403);
         }
 

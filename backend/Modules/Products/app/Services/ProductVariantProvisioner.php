@@ -20,7 +20,7 @@ class ProductVariantProvisioner
             'organization_id' => $product->organization_id,
             'name' => $name ?? 'Default',
             'sku' => $product->sku,
-            'price' => $product->base_price,
+            'price' => $product->selling_price,
             'cost_price' => $product->cost_price,
             'is_default' => true,
             'is_active' => (bool) $product->is_active,

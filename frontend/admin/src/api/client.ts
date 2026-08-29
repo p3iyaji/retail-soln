@@ -74,7 +74,8 @@ async function request<T>(path: string, init: RequestInit = {}, jsonBody = true)
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
+  get: <T>(path: string, headers?: Record<string, string>) =>
+    request<T>(path, { headers }),
   post: <T>(path: string, data?: unknown, headers?: Record<string, string>) =>
     request<T>(path, {
       method: 'POST',

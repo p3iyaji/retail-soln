@@ -26,7 +26,7 @@ class ProductCsvService
         'brand',
         'unit',
         'supplier',
-        'basePrice',
+        'sellingPrice',
         'costPrice',
         'reorderLevel',
         'minStock',
@@ -177,7 +177,7 @@ class ProductCsvService
                 $product->brand?->name,
                 $product->unit?->abbreviation ?? $product->unit?->name,
                 $product->supplier?->name,
-                $product->base_price,
+                $product->selling_price,
                 $product->cost_price,
                 $product->reorder_level,
                 $product->min_stock,
@@ -222,7 +222,8 @@ class ProductCsvService
         }
 
         $header = array_map(fn ($h) => Str::camel(trim((string) $h)), $header);
-        foreach (['name', 'sku', 'basePrice'] as $required) {
+        $header = array_map(fn ($h) => $h === 'basePrice' ? 'sellingPrice' : $h, $header);
+        foreach (['name', 'sku', 'sellingPrice'] as $required) {
             if (! in_array($required, $header, true)) {
                 fclose($handle);
                 throw new RuntimeException("CSV missing required column: {$required}");
@@ -277,8 +278,8 @@ class ProductCsvService
         if (empty($row['sku'])) {
             $errors[] = ['row' => $rowNumber, 'field' => 'sku', 'message' => 'SKU is required.'];
         }
-        if (empty($row['basePrice']) || ! preg_match('/^\d+(\.\d{1,4})?$/', (string) $row['basePrice'])) {
-            $errors[] = ['row' => $rowNumber, 'field' => 'basePrice', 'message' => 'basePrice must be a decimal.'];
+        if (empty($row['sellingPrice']) || ! preg_match('/^\d+(\.\d{1,4})?$/', (string) $row['sellingPrice'])) {
+            $errors[] = ['row' => $rowNumber, 'field' => 'sellingPrice', 'message' => 'sellingPrice must be a decimal.'];
         }
 
         foreach (['costPrice', 'reorderLevel', 'minStock', 'maxStock'] as $decimalField) {
@@ -334,7 +335,7 @@ class ProductCsvService
                     'brand_id' => $brandId,
                     'unit_id' => $unitId,
                     'supplier_id' => $supplierId,
-                    'base_price' => $row['basePrice'],
+                    'selling_price' => $row['sellingPrice'],
                     'cost_price' => $row['costPrice'] ?? null,
                     'reorder_level' => $row['reorderLevel'] ?? null,
                     'min_stock' => $row['minStock'] ?? null,

@@ -44,7 +44,7 @@ return new class extends Migration
                 $table->timestamps();
 
                 $table->index(['purchase_return_id']);
-                $table->index(['organization_id', 'goods_receipt_item_id']);
+                $table->index(['organization_id', 'goods_receipt_item_id'], 'pri_org_gr_item_idx');
             });
         }
     }

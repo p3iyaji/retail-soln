@@ -406,7 +406,7 @@ class SupplierApiTest extends TestCase
         Sanctum::actingAs(User::factory()->inventoryManager()->create());
 
         $csv = implode("\n", [
-            'name,sku,basePrice,supplier',
+            'name,sku,sellingPrice,supplier',
             'Tea,TEA-CSV,3.00,Resolved Supplier',
         ]);
         $file = UploadedFile::fake()->createWithContent('products.csv', $csv);

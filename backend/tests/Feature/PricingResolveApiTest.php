@@ -90,7 +90,9 @@ class PricingResolveApiTest extends TestCase
 
     public function test_resolve_falls_back_to_variant_price(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        $cashier = User::factory()->cashier()->create();
+        $cashier->stores()->attach($this->store->id, ['is_default' => true]);
+        Sanctum::actingAs($cashier);
 
         $this->postJson('/api/v1/pricing/resolve', [
             'variantId' => $this->variant->id,

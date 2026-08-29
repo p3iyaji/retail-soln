@@ -130,7 +130,7 @@ class ProductVariantApiTest extends TestCase
             'name' => 'New product',
             'sku' => 'NEW-PROD',
             'barcode' => '4444444444444',
-            'basePrice' => '5.0000',
+            'sellingPrice' => '5.0000',
         ])->assertStatus(422);
 
         $this->patchJson("/api/v1/products/{$other->id}/variants/{$variantId}", [

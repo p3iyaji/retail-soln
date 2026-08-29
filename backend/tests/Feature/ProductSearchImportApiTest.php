@@ -40,7 +40,7 @@ class ProductSearchImportApiTest extends TestCase
             'sku' => 'CHIP-001',
             'barcode' => '9990001112223',
             'category_id' => $category->id,
-            'base_price' => '2.5000',
+            'selling_price' => '2.5000',
         ]);
 
         Product::factory()->create([
@@ -48,7 +48,7 @@ class ProductSearchImportApiTest extends TestCase
             'name' => 'Cola Drink',
             'sku' => 'COLA-001',
             'barcode' => '9990001112224',
-            'base_price' => '1.5000',
+            'selling_price' => '1.5000',
         ]);
     }
 
@@ -82,7 +82,7 @@ class ProductSearchImportApiTest extends TestCase
         Sanctum::actingAs(User::factory()->inventoryManager()->create());
 
         $csv = implode("\n", [
-            'name,sku,basePrice,barcode',
+            'name,sku,sellingPrice,barcode',
             'Good Item,GOOD-1,3.00,111',
             ',BAD-1,3.00,222',
             'No Price,BAD-2,,333',
@@ -102,7 +102,7 @@ class ProductSearchImportApiTest extends TestCase
         Sanctum::actingAs(User::factory()->inventoryManager()->create());
 
         $csv = implode("\n", [
-            'name,sku,basePrice,barcode,category,brand,unit',
+            'name,sku,sellingPrice,barcode,category,brand,unit',
             'Imported Tea,TEA-100,4.2500,5556667778889,Beverages,LeafCo,ea',
         ]);
 
@@ -119,7 +119,29 @@ class ProductSearchImportApiTest extends TestCase
             'organization_id' => $this->orgId,
             'sku' => 'TEA-100',
             'name' => 'Imported Tea',
-            'base_price' => '4.2500',
+            'selling_price' => '4.2500',
+        ]);
+    }
+
+    public function test_sync_import_accepts_legacy_base_price_csv_column(): void
+    {
+        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+
+        $csv = implode("\n", [
+            'name,sku,basePrice,barcode',
+            'Legacy Tea,TEA-200,3.5000,5556667778890',
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('legacy.csv', $csv);
+
+        $this->post('/api/v1/products/import', ['file' => $file], ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJsonPath('data.successCount', 1);
+
+        $this->assertDatabaseHas('products', [
+            'organization_id' => $this->orgId,
+            'sku' => 'TEA-200',
+            'selling_price' => '3.5000',
         ]);
     }
 
@@ -128,7 +150,7 @@ class ProductSearchImportApiTest extends TestCase
         Queue::fake();
         Sanctum::actingAs(User::factory()->inventoryManager()->create());
 
-        $lines = ['name,sku,basePrice'];
+        $lines = ['name,sku,sellingPrice'];
         for ($i = 1; $i <= 100; $i++) {
             $lines[] = "Item {$i},SKU-{$i},1.00";
         }
@@ -159,7 +181,7 @@ class ProductSearchImportApiTest extends TestCase
     {
         Sanctum::actingAs(User::factory()->cashier()->create());
 
-        $file = UploadedFile::fake()->createWithContent('x.csv', "name,sku,basePrice\nA,A1,1.00");
+        $file = UploadedFile::fake()->createWithContent('x.csv', "name,sku,sellingPrice\nA,A1,1.00");
 
         $this->post('/api/v1/products/import', ['file' => $file], ['Accept' => 'application/json'])
             ->assertForbidden();

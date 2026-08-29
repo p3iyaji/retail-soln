@@ -38,13 +38,17 @@ type Customer = {
   group?: CustomerGroup | null
 }
 
+type HistorySale = { id: number; total: string; status: string }
+type HistoryPlan = { id: number; principal: string; status: string }
+type HistoryReturn = { id: number; total: string }
+
 type HistoryPayload = {
   customerId: number
-  sales: unknown[]
+  sales: HistorySale[]
   invoices: unknown[]
   payments: unknown[]
-  returns: unknown[]
-  installmentPlans: unknown[]
+  returns: HistoryReturn[]
+  installmentPlans: HistoryPlan[]
 }
 
 type ListMeta = {
@@ -658,14 +662,39 @@ onMounted(refresh)
 
       <h4 class="mt-4 text-sm font-semibold">History</h4>
       <p v-if="historyLoading" class="mt-2 text-sm text-[var(--muted)]">Loading history…</p>
-      <ul v-else-if="history" class="mt-2 grid gap-1 text-sm text-[var(--muted)] sm:grid-cols-2">
-        <li>Sales: {{ history.sales.length }}</li>
-        <li>Invoices: {{ history.invoices.length }}</li>
-        <li>Payments: {{ history.payments.length }}</li>
-        <li>Returns: {{ history.returns.length }}</li>
-        <li>Installment plans: {{ history.installmentPlans.length }}</li>
-      </ul>
-      <p v-else class="mt-2 text-sm text-[var(--muted)]">Select a customer to view history stubs.</p>
+      <div v-else-if="history" class="mt-2 space-y-3 text-sm">
+        <div v-if="history.sales.length">
+          <p class="font-medium">Recent sales</p>
+          <ul class="mt-1 space-y-1 text-[var(--muted)]">
+            <li v-for="sale in history.sales" :key="`sale-${sale.id}`">
+              Sale #{{ sale.id }} · {{ sale.total }} · {{ sale.status }}
+            </li>
+          </ul>
+        </div>
+        <div v-if="history.installmentPlans.length">
+          <p class="font-medium">Installment plans</p>
+          <ul class="mt-1 space-y-1 text-[var(--muted)]">
+            <li v-for="plan in history.installmentPlans" :key="`plan-${plan.id}`">
+              Plan #{{ plan.id }} · {{ plan.principal }} · {{ plan.status }}
+            </li>
+          </ul>
+        </div>
+        <div v-if="history.returns.length">
+          <p class="font-medium">Returns</p>
+          <ul class="mt-1 space-y-1 text-[var(--muted)]">
+            <li v-for="ret in history.returns" :key="`return-${ret.id}`">
+              Return #{{ ret.id }} · {{ ret.total }}
+            </li>
+          </ul>
+        </div>
+        <p
+          v-if="history.sales.length === 0 && history.installmentPlans.length === 0 && history.returns.length === 0"
+          class="text-[var(--muted)]"
+        >
+          No sales activity yet.
+        </p>
+      </div>
+      <p v-else class="mt-2 text-sm text-[var(--muted)]">Select a customer to view history.</p>
     </div>
   </section>
 </template>

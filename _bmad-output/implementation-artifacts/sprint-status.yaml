@@ -53,7 +53,7 @@ development_status:
   3-5-purchase-returns: done
   epic-3-retrospective: optional
 
-  epic-4: in-progress
+  epic-4: done
   4-1-pricing-promotion-services: done
   4-2-customer-records-pos: done
   4-3-pos-vue-shell: done
@@ -62,10 +62,10 @@ development_status:
   4-6-hold-suspend-void: done
   4-7-cashier-sessions: done
   4-8-returns-refunds-pos: done
-  4-9-installment-plan-create: backlog
-  4-10-installment-collect: backlog
-  4-11-proforma-create-issue: backlog
-  4-12-proforma-convert: backlog
+  4-9-installment-plan-create: done
+  4-10-installment-collect: done
+  4-11-proforma-create-issue: done
+  4-12-proforma-convert: done
   epic-4-retrospective: optional
 
   epic-5: backlog

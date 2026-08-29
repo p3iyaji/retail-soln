@@ -80,6 +80,11 @@ class PosHeldSaleController
 
         $this->assertOrg($sale, $organizations);
 
+        $storeId = $this->resolvePosStoreId($request);
+        if ($sale->store_id !== $storeId) {
+            abort(404);
+        }
+
         if ($sale->status !== SaleStatus::Held) {
             abort(404);
         }

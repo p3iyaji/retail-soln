@@ -25,7 +25,7 @@ type Product = {
   brandId: number | null
   unitId: number | null
   supplierId: number | null
-  basePrice: string
+  sellingPrice: string
   costPrice: string | null
   reorderLevel: string | null
   minStock: string | null
@@ -63,7 +63,7 @@ const form = reactive({
   brandId: '' as string | number,
   unitId: '' as string | number,
   supplierId: '' as string | number,
-  basePrice: '0.0000',
+  sellingPrice: '0.0000',
   costPrice: '',
   reorderLevel: '',
   minStock: '',
@@ -188,7 +188,7 @@ function resetForm() {
   form.brandId = ''
   form.unitId = ''
   form.supplierId = ''
-  form.basePrice = '0.0000'
+  form.sellingPrice = '0.0000'
   form.costPrice = ''
   form.reorderLevel = ''
   form.minStock = ''
@@ -231,7 +231,7 @@ function openEdit(product: Product) {
   form.brandId = product.brandId ?? ''
   form.unitId = product.unitId ?? ''
   form.supplierId = product.supplierId ?? ''
-  form.basePrice = product.basePrice
+  form.sellingPrice = product.sellingPrice
   form.costPrice = product.costPrice ?? ''
   form.reorderLevel = product.reorderLevel ?? ''
   form.minStock = product.minStock ?? ''
@@ -250,7 +250,7 @@ function openVariantCreate() {
   variantForm.name = 'Default'
   variantForm.sku = form.sku
   variantForm.barcode = form.barcode
-  variantForm.price = form.basePrice || '0.0000'
+  variantForm.price = form.sellingPrice || '0.0000'
   variantForm.costPrice = form.costPrice
   variantForm.isDefault = variants.value.length === 0
   showVariantForm.value = true
@@ -323,7 +323,7 @@ function payload() {
     brandId: form.brandId === '' ? null : Number(form.brandId),
     unitId: form.unitId === '' ? null : Number(form.unitId),
     supplierId: form.supplierId === '' ? null : Number(form.supplierId),
-    basePrice: form.basePrice,
+    sellingPrice: form.sellingPrice,
     costPrice: form.costPrice || null,
     reorderLevel: form.reorderLevel || null,
     minStock: form.minStock || null,
@@ -465,8 +465,8 @@ onMounted(refresh)
           <input v-model="form.barcode" class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
         </label>
         <label class="block text-sm">
-          <span class="text-[var(--muted)]">Base price</span>
-          <input v-model="form.basePrice" required class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
+          <span class="text-[var(--muted)]">Selling price</span>
+          <input v-model="form.sellingPrice" required class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
         </label>
         <label class="block text-sm">
           <span class="text-[var(--muted)]">Cost price</span>
@@ -569,7 +569,7 @@ onMounted(refresh)
           <input v-model="variantForm.name" required placeholder="Name" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
           <input v-model="variantForm.sku" required placeholder="SKU" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm font-mono" />
           <input v-model="variantForm.barcode" placeholder="Barcode" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm font-mono" />
-          <input v-model="variantForm.price" required placeholder="Price" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
+          <input v-model="variantForm.price" required placeholder="Selling price" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
           <input v-model="variantForm.costPrice" placeholder="Cost" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
           <label class="flex items-center gap-2 text-sm">
             <input v-model="variantForm.isDefault" type="checkbox" />
@@ -593,7 +593,7 @@ onMounted(refresh)
               <th class="py-1 pr-3 font-medium">Name</th>
               <th class="py-1 pr-3 font-medium">SKU</th>
               <th class="py-1 pr-3 font-medium">Barcode</th>
-              <th class="py-1 pr-3 font-medium">Price</th>
+              <th class="py-1 pr-3 font-medium">Selling price</th>
               <th class="py-1 pr-3 font-medium">Status</th>
               <th class="py-1 font-medium" />
             </tr>
@@ -623,7 +623,7 @@ onMounted(refresh)
             <th class="px-3 py-2 font-medium">Name</th>
             <th class="px-3 py-2 font-medium">SKU</th>
             <th class="px-3 py-2 font-medium">Category</th>
-            <th class="px-3 py-2 font-medium">Price</th>
+            <th class="px-3 py-2 font-medium">Selling price</th>
             <th class="px-3 py-2 font-medium">Variants</th>
             <th class="px-3 py-2 font-medium">Reorder</th>
             <th class="px-3 py-2 font-medium" />
@@ -637,7 +637,7 @@ onMounted(refresh)
             <td class="px-3 py-2">{{ p.name }}</td>
             <td class="px-3 py-2 font-mono text-xs">{{ p.sku }}</td>
             <td class="px-3 py-2">{{ p.category?.name ?? '—' }}</td>
-            <td class="px-3 py-2">{{ p.basePrice }}</td>
+            <td class="px-3 py-2">{{ p.sellingPrice }}</td>
             <td class="px-3 py-2">{{ p.variants?.length ?? 0 }}</td>
             <td class="px-3 py-2">{{ p.reorderLevel ?? '—' }}</td>
             <td class="px-3 py-2 text-right">

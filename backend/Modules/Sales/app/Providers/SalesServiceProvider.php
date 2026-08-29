@@ -12,6 +12,8 @@ use Modules\Sales\Models\Sale;
 use Modules\Sales\Models\SaleItem;
 use Modules\Sales\Models\SalePayment;
 use Modules\Sales\Models\SaleReturn;
+use Modules\Sales\Models\ProformaInvoice;
+use Modules\Sales\Models\ProformaInvoiceItem;
 use Modules\Sales\Models\SaleReturnItem;
 use Modules\Sales\Models\Terminal;
 use Nwidart\Modules\Support\ModuleServiceProvider;
@@ -44,5 +46,7 @@ class SalesServiceProvider extends ModuleServiceProvider
         SaleReturn::observe(AuditableObserver::class);
         SaleReturnItem::observe(AuditableObserver::class);
         Refund::observe(AuditableObserver::class);
+        ProformaInvoice::observe(AuditableObserver::class);
+        ProformaInvoiceItem::observe(AuditableObserver::class);
     }
 }

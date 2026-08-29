@@ -7,6 +7,11 @@ export type SalePaymentInput = {
   reference?: string | null
 }
 
+export type InstallmentPlanInput = {
+  mode: 'pay_over_time' | 'layaway'
+  installments: Array<{ sequence: number; amount: string; dueAt: string }>
+}
+
 export type CompleteSaleInput = {
   uuid: string
   customerId?: number | null
@@ -19,6 +24,7 @@ export type CompleteSaleInput = {
     discount: string
   }>
   payments: SalePaymentInput[]
+  installmentPlan?: InstallmentPlanInput
 }
 
 export type SaleResource = {
@@ -39,6 +45,13 @@ export type SaleResource = {
     variant?: { name: string; sku: string } | null
   }>
   payments: Array<{ method: string; amount: string }>
+  installmentPlan?: {
+    id: number
+    principal: string
+    mode: string
+    status: string
+    installments: Array<{ sequence: number; amount: string; dueAt: string; status: string }>
+  } | null
   invoice?: { invoiceNumber: string | null; status: string } | null
 }
 
@@ -84,4 +97,8 @@ export async function completeSale(
 
 export async function fetchReceipt(saleId: number): Promise<{ data: ReceiptResource }> {
   return api.get(`/pos/receipts/${saleId}`)
+}
+
+export async function printReceipt(saleId: number): Promise<{ data: ReceiptResource; meta?: { queued?: boolean; message?: string } }> {
+  return api.post(`/pos/receipts/${saleId}/print`)
 }

@@ -17,7 +17,9 @@ const nav = [
   { name: 'inventory', label: 'Inventory', to: '/inventory' },
   { name: 'pricing', label: 'Pricing', to: '/pricing' },
   { name: 'customers', label: 'Customers', to: '/customers' },
+  { name: 'proforma-invoices', label: 'Proforma invoices', to: '/proforma-invoices' },
   { name: 'users', label: 'Users', to: '/users' },
+  { name: 'audit-logs', label: 'Audit logs', to: '/audit-logs' },
   { name: 'settings', label: 'Settings', to: '/settings' },
 ]
 

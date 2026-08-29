@@ -16,6 +16,7 @@ import {
   type SearchVariant,
 } from '@/lib/cartPricing'
 import { holdSale, listHeldSales, voidSale, type SaleResource } from '@/api/posSales'
+import { type CustomerResource } from '@/api/posCustomers'
 import {
   fetchCurrentSession,
   openCashierSession,
@@ -23,7 +24,7 @@ import {
 } from '@/api/posSessions'
 import { useAuthStore } from '@/stores/auth'
 
-export type StubPanel = 'customer' | 'discount' | 'payment' | 'held' | 'session' | 'return' | null
+export type StubPanel = 'customer' | 'discount' | 'payment' | 'held' | 'session' | 'return' | 'installment' | null
 
 function readTerminal(): string {
   return localStorage.getItem(TERMINAL_KEY) ?? 'POS-001'
@@ -57,6 +58,8 @@ export const usePosStore = defineStore('pos', () => {
   const searchLoading = ref(false)
   const searchError = ref<string | null>(null)
 
+  const selectedCustomer = ref<CustomerResource | null>(null)
+
   let searchTimer: ReturnType<typeof setTimeout> | null = null
   let searchSeq = 0
   let pendingDebounceResolve: (() => void) | null = null
@@ -83,6 +86,10 @@ export const usePosStore = defineStore('pos', () => {
 
   const canProcessRefund = computed(() =>
     Boolean(useAuthStore().user?.permissions?.includes('sales.refund')),
+  )
+
+  const canCollectInstallments = computed(() =>
+    Boolean(useAuthStore().user?.permissions?.includes('sales.installments.collect')),
   )
 
   function invalidateSearchInFlight(): void {
@@ -112,6 +119,7 @@ export const usePosStore = defineStore('pos', () => {
       clearCart()
       clearSearch()
       clearSession()
+      selectedCustomer.value = null
       void loadCategories()
     }
   }
@@ -202,6 +210,29 @@ export const usePosStore = defineStore('pos', () => {
     if (!stillValid) {
       clearStore()
     }
+  }
+
+  function pricingCustomerId(): number | undefined {
+    const customer = selectedCustomer.value
+    if (!customer || customer.isWalkIn) return undefined
+    return customer.id
+  }
+
+  async function repriceAllCartLines(): Promise<void> {
+    for (const line of [...cartLines.value]) {
+      await repriceLine(line, line.qty)
+    }
+  }
+
+  async function setSelectedCustomer(customer: CustomerResource): Promise<void> {
+    selectedCustomer.value = customer
+    if (cartLines.value.length > 0) {
+      await repriceAllCartLines()
+    }
+  }
+
+  function clearSelectedCustomer(): void {
+    selectedCustomer.value = null
   }
 
   function clearCart(): void {
@@ -345,6 +376,7 @@ export const usePosStore = defineStore('pos', () => {
         variantId: variant.id,
         storeId,
         qty: nextQty,
+        customerId: pricingCustomerId(),
       })
       const priced = priceFieldsFromResolve(res.data, nextQty, override)
       const label = variantLabel(product, variant)
@@ -386,6 +418,7 @@ export const usePosStore = defineStore('pos', () => {
         variantId: line.variantId,
         storeId,
         qty,
+        customerId: pricingCustomerId(),
       })
       const priced = priceFieldsFromResolve(res.data, qty, line.priceOverride)
       Object.assign(line, priced)
@@ -457,7 +490,10 @@ export const usePosStore = defineStore('pos', () => {
     try {
       await holdSale({
         uuid: crypto.randomUUID(),
-        customerId: null,
+        customerId:
+          selectedCustomer.value && !selectedCustomer.value.isWalkIn
+            ? selectedCustomer.value.id
+            : null,
         items: cartLines.value.map((line) => ({
           variantId: line.variantId,
           qty: line.qty,
@@ -478,6 +514,23 @@ export const usePosStore = defineStore('pos', () => {
 
   function resumeHeldSale(sale: SaleResource): void {
     activeHeldSaleId.value = sale.id
+    if (sale.customer) {
+      if (sale.customer.isWalkIn) {
+        selectedCustomer.value = null
+      } else {
+        selectedCustomer.value = {
+          id: sale.customer.id,
+          name: sale.customer.name,
+          phone: null,
+          email: null,
+          accountNumber: '',
+          isWalkIn: false,
+          creditLimit: '0.0000',
+          balance: '0.0000',
+          isActive: true,
+        }
+      }
+    }
     cartLines.value = sale.items.map((item) => ({
       lineKey: newLineKey(),
       variantId: item.variantId,
@@ -566,8 +619,10 @@ export const usePosStore = defineStore('pos', () => {
     cartError,
     cartTotals,
     lineCount,
+    selectedCustomer,
     allowPriceOverride,
     canProcessRefund,
+    canCollectInstallments,
     searchQuery,
     categoryId,
     categories,
@@ -582,6 +637,8 @@ export const usePosStore = defineStore('pos', () => {
     closeStub,
     syncSelectedStoreWithAccess,
     clearCart,
+    setSelectedCustomer,
+    clearSelectedCustomer,
     clearSearch,
     loadCategories,
     setCategoryFilter,

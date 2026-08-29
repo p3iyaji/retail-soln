@@ -41,7 +41,7 @@ class ProductResource extends JsonResource
                 'id' => $this->supplier->id,
                 'name' => $this->supplier->name,
             ] : null),
-            'basePrice' => $this->base_price,
+            'sellingPrice' => $this->selling_price,
             'costPrice' => $this->cost_price,
             'reorderLevel' => $this->reorder_level,
             'minStock' => $this->min_stock,

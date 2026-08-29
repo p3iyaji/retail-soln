@@ -8,6 +8,7 @@ use Modules\Customers\Http\Requests\StoreCustomerRequest;
 use Modules\Customers\Http\Requests\UpdateCustomerRequest;
 use Modules\Customers\Http\Resources\CustomerResource;
 use Modules\Customers\Models\Customer;
+use Modules\Customers\Services\CustomerHistoryService;
 use Modules\Customers\Services\CustomerService;
 use Modules\Organization\Services\OrganizationService;
 use RuntimeException;
@@ -151,19 +152,13 @@ class CustomerController
         Request $request,
         Customer $customer,
         OrganizationService $organizations,
+        CustomerHistoryService $history,
     ): JsonResponse {
         $this->assertView($request);
         $this->assertOrg($customer, $organizations);
 
         return response()->json([
-            'data' => [
-                'customerId' => $customer->id,
-                'sales' => [],
-                'invoices' => [],
-                'payments' => [],
-                'returns' => [],
-                'installmentPlans' => [],
-            ],
+            'data' => $history->forCustomer($customer),
         ]);
     }
 

@@ -317,7 +317,7 @@ class CashierSessionService
             $amount = bcadd((string) $movement->amount, '0', 4);
 
             $total = match ($movement->type) {
-                CashMovementType::CashIn, CashMovementType::SaleCash => bcadd($total, $amount, 4),
+                CashMovementType::CashIn, CashMovementType::SaleCash, CashMovementType::InstallmentCash => bcadd($total, $amount, 4),
                 CashMovementType::CashOut, CashMovementType::RefundCash => bcsub($total, $amount, 4),
             };
         }
@@ -326,7 +326,7 @@ class CashierSessionService
     }
 
     /**
-     * @return array{cashIn: string, cashOut: string, saleCash: string, refundCash: string}
+     * @return array{cashIn: string, cashOut: string, saleCash: string, refundCash: string, installmentCash: string}
      */
     public function summarizeMovements(CashierSession $session): array
     {
@@ -334,6 +334,7 @@ class CashierSessionService
         $cashOut = '0.0000';
         $saleCash = '0.0000';
         $refundCash = '0.0000';
+        $installmentCash = '0.0000';
 
         foreach ($session->cashMovements as $movement) {
             $amount = bcadd((string) $movement->amount, '0', 4);
@@ -343,6 +344,7 @@ class CashierSessionService
                 CashMovementType::CashOut => $cashOut = bcadd($cashOut, $amount, 4),
                 CashMovementType::SaleCash => $saleCash = bcadd($saleCash, $amount, 4),
                 CashMovementType::RefundCash => $refundCash = bcadd($refundCash, $amount, 4),
+                CashMovementType::InstallmentCash => $installmentCash = bcadd($installmentCash, $amount, 4),
             };
         }
 
@@ -351,6 +353,7 @@ class CashierSessionService
             'cashOut' => $cashOut,
             'saleCash' => $saleCash,
             'refundCash' => $refundCash,
+            'installmentCash' => $installmentCash,
         ];
     }
 }

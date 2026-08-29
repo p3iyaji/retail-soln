@@ -3,6 +3,11 @@
 const SCALE = 4
 const FACTOR = 10n ** BigInt(SCALE)
 
+/** Business currency uses 2 decimal places (half-up). */
+export const CURRENCY_SCALE = 2
+const CURRENCY_FACTOR = 10n ** BigInt(CURRENCY_SCALE)
+const CURRENCY_ROUND_HALF = CURRENCY_FACTOR / 2n
+
 export function isDecimalString(value: string): boolean {
   return /^-?\d+(\.\d{1,4})?$/.test(value)
 }
@@ -22,6 +27,37 @@ export function fromScaled(total: bigint): string {
   const whole = raw.slice(0, -SCALE) || '0'
   const frac = raw.slice(-SCALE)
   return `${negative ? '-' : ''}${whole}.${frac}`
+}
+
+/** Round half-up to 2dp; returns a scale-4 string for API compatibility. */
+export function roundCurrency(value: string): string {
+  const scaled = toScaled(value || '0')
+  const adjusted = scaled >= 0n ? scaled + CURRENCY_ROUND_HALF : scaled - CURRENCY_ROUND_HALF
+  const rounded = (adjusted / CURRENCY_FACTOR) * CURRENCY_FACTOR
+  return fromScaled(rounded)
+}
+
+export function formatCurrency(value: string): string {
+  const rounded = roundCurrency(value)
+  const n = Number(rounded)
+  return Number.isFinite(n) ? n.toFixed(CURRENCY_SCALE) : rounded
+}
+
+/** Normalize user tender input to 2dp currency (scale-4 string). */
+export function parseCurrencyInput(value: string): string {
+  const trimmed = value.trim()
+  if (trimmed === '' || trimmed === '-') {
+    return roundCurrency('0')
+  }
+  if (!/^-?\d+(\.\d{0,4})?$/.test(trimmed)) {
+    return roundCurrency('0')
+  }
+  return roundCurrency(trimmed)
+}
+
+/** Scale-4 API money string from a currency amount. */
+export function moneyToApi(value: string): string {
+  return roundCurrency(value)
 }
 
 export function decimalCmp(a: string, b: string): number {

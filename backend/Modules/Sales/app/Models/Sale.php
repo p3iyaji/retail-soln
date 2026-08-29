@@ -93,4 +93,9 @@ class Sale extends Model
     {
         return $this->hasMany(SaleReturn::class);
     }
+
+    public function installmentPlan(): HasOne
+    {
+        return $this->hasOne(InstallmentPlan::class);
+    }
 }

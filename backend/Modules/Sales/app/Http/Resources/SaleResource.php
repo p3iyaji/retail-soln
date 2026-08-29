@@ -48,6 +48,9 @@ class SaleResource extends JsonResource
                 'status' => $this->invoice->status,
                 'total' => $this->invoice->total,
             ]),
+            'installmentPlan' => $this->whenLoaded('installmentPlan', fn () => $this->installmentPlan === null
+                ? null
+                : new InstallmentPlanResource($this->installmentPlan)),
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
         ];

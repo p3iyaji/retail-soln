@@ -8,6 +8,7 @@ enum CashMovementType: string
     case CashOut = 'cash_out';
     case SaleCash = 'sale_cash';
     case RefundCash = 'refund_cash';
+    case InstallmentCash = 'installment_cash';
 
     /**
      * @return list<string>
