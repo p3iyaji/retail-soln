@@ -18,9 +18,7 @@ class StaffFulfilmentController
         PortalFulfilmentService $fulfilment,
     ): JsonResponse {
         $user = $request->user();
-        if ($user?->hasPermission('fulfilment.pick') !== true) {
-            abort(403, 'This action is unauthorized.');
-        }
+        $this->assertCanViewFulfilment($user);
 
         $storeId = $this->resolveStoreId($request, $user);
         $orgId = $organizations->current()->id;
@@ -49,9 +47,7 @@ class StaffFulfilmentController
         PortalFulfilmentService $fulfilment,
     ): JsonResponse {
         $user = $request->user();
-        if ($user?->hasPermission('fulfilment.pick') !== true) {
-            abort(403, 'This action is unauthorized.');
-        }
+        $this->assertCanViewFulfilment($user);
 
         $storeId = $this->resolveStoreId($request, $user);
         $orgId = $organizations->current()->id;
@@ -106,8 +102,105 @@ class StaffFulfilmentController
         }
 
         return response()->json([
-            'data' => $fulfilment->toDetail($result['order']->loadMissing(['store', 'items', 'customer', 'address'])),
+            'data' => $fulfilment->toDetail($result['order']->loadMissing(['store', 'items', 'customer', 'address', 'shipment'])),
         ]);
+    }
+
+    public function ship(
+        Request $request,
+        int $order,
+        OrganizationService $organizations,
+        PortalFulfilmentService $fulfilment,
+    ): JsonResponse {
+        $user = $request->user();
+        if ($user?->hasPermission('fulfilment.ship') !== true) {
+            abort(403, 'This action is unauthorized.');
+        }
+
+        $storeId = $this->resolveStoreId($request, $user);
+        $orgId = $organizations->current()->id;
+        $this->assertStoreInOrg($orgId, $storeId);
+
+        $idempotencyKey = $request->header('Idempotency-Key');
+        if ($idempotencyKey === null || $idempotencyKey === '') {
+            return response()->json(['message' => 'Idempotency-Key header is required.'], 422);
+        }
+
+        $validated = $request->validate([
+            'carrierName' => ['nullable', 'string', 'max:120'],
+            'trackingNumber' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $model = $fulfilment->findForStore($orgId, $storeId, $order);
+        if ($model === null) {
+            abort(404);
+        }
+
+        try {
+            $result = $fulfilment->ship(
+                $model,
+                $storeId,
+                $idempotencyKey,
+                [
+                    'carrierName' => $validated['carrierName'] ?? null,
+                    'trackingNumber' => $validated['trackingNumber'] ?? null,
+                ],
+            );
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'data' => $fulfilment->toDetail($result['order']->loadMissing(['store', 'items', 'customer', 'address', 'shipment'])),
+        ]);
+    }
+
+    public function deliver(
+        Request $request,
+        int $order,
+        OrganizationService $organizations,
+        PortalFulfilmentService $fulfilment,
+    ): JsonResponse {
+        $user = $request->user();
+        if ($user?->hasPermission('fulfilment.ship') !== true) {
+            abort(403, 'This action is unauthorized.');
+        }
+
+        $storeId = $this->resolveStoreId($request, $user);
+        $orgId = $organizations->current()->id;
+        $this->assertStoreInOrg($orgId, $storeId);
+
+        $idempotencyKey = $request->header('Idempotency-Key');
+        if ($idempotencyKey === null || $idempotencyKey === '') {
+            return response()->json(['message' => 'Idempotency-Key header is required.'], 422);
+        }
+
+        $model = $fulfilment->findForStore($orgId, $storeId, $order);
+        if ($model === null) {
+            abort(404);
+        }
+
+        try {
+            $result = $fulfilment->deliver($model, $storeId, $idempotencyKey);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'data' => $fulfilment->toDetail($result['order']->loadMissing(['store', 'items', 'customer', 'address', 'shipment'])),
+        ]);
+    }
+
+    private function assertCanViewFulfilment(mixed $user): void
+    {
+        if ($user?->hasPermission('fulfilment.pick') !== true
+            && $user?->hasPermission('fulfilment.ship') !== true) {
+            abort(403, 'This action is unauthorized.');
+        }
     }
 
     private function resolveStoreId(Request $request, mixed $user): int

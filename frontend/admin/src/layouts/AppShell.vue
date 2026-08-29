@@ -16,7 +16,12 @@ const nav = [
   { name: 'payments', label: 'Payments', to: '/payments' },
   { name: 'inventory', label: 'Inventory', to: '/inventory' },
   { name: 'oversell-exceptions', label: 'Oversells', to: '/oversell-exceptions' },
-  { name: 'fulfilment', label: 'Fulfilment', to: '/fulfilment', permission: 'fulfilment.pick' },
+  {
+    name: 'fulfilment',
+    label: 'Fulfilment',
+    to: '/fulfilment',
+    permission: ['fulfilment.pick', 'fulfilment.ship'],
+  },
   { name: 'devices', label: 'Devices', to: '/devices' },
   { name: 'pricing', label: 'Pricing', to: '/pricing' },
   { name: 'customers', label: 'Customers', to: '/customers' },
@@ -29,7 +34,8 @@ const nav = [
 const visibleNav = computed(() =>
   nav.filter((item) => {
     if (!('permission' in item) || !item.permission) return true
-    return auth.user?.permissions?.includes(item.permission) === true
+    const perms = Array.isArray(item.permission) ? item.permission : [item.permission]
+    return perms.some((p) => auth.user?.permissions?.includes(p) === true)
   }),
 )
 

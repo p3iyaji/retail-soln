@@ -5,6 +5,7 @@ namespace Modules\CustomerPortal\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Customers\Models\Customer;
 use Modules\Customers\Models\CustomerAddress;
 use Modules\Organization\Models\Organization;
@@ -61,6 +62,11 @@ class PortalOrder extends Model
     public function returnRequests(): HasMany
     {
         return $this->hasMany(PortalReturnRequest::class);
+    }
+
+    public function shipment(): HasOne
+    {
+        return $this->hasOne(PortalShipment::class);
     }
 
     public function account(): BelongsTo
