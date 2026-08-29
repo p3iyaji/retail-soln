@@ -574,9 +574,9 @@ onMounted(() => {
               :class="selected?.id === row.id ? 'bg-teal-50/60' : ''"
               @click="openOrder(row.id)"
             >
-              <td class="px-3 py-2 font-medium">{{ row.orderNumber }}</td>
+              <td class="px-3 py-2 font-mono text-sm font-semibold tracking-tight">{{ row.orderNumber }}</td>
               <td class="px-3 py-2">{{ displayStatusLabel(row) }}</td>
-              <td class="px-3 py-2">{{ row.fulfilmentMode }}</td>
+              <td class="px-3 py-2 capitalize">{{ row.fulfilmentMode.replace(/_/g, ' ') }}</td>
               <td class="px-3 py-2 tabular-nums">{{ row.totals.grandTotal }}</td>
             </tr>
           </tbody>
@@ -664,7 +664,11 @@ onMounted(() => {
           </p>
 
           <div
-            v-if="selected.fulfilmentMode === 'home_delivery' && (selected.shippable || selected.shipment)"
+            v-if="
+              canShip &&
+              selected.fulfilmentMode === 'home_delivery' &&
+              (selected.shippable || selected.shipment)
+            "
             class="grid gap-2 sm:grid-cols-2"
           >
             <label class="text-sm">
@@ -674,7 +678,7 @@ onMounted(() => {
                 type="text"
                 maxlength="120"
                 class="mt-1 block w-full rounded-md border border-[var(--line)] bg-white px-3 py-1.5"
-                :disabled="!selected.shippable || !canShip"
+                :disabled="!selected.shippable"
                 placeholder="Optional"
               />
             </label>
@@ -685,14 +689,14 @@ onMounted(() => {
                 type="text"
                 maxlength="120"
                 class="mt-1 block w-full rounded-md border border-[var(--line)] bg-white px-3 py-1.5"
-                :disabled="!selected.shippable || !canShip"
+                :disabled="!selected.shippable"
                 placeholder="Optional"
               />
             </label>
           </div>
 
           <p
-            v-if="selected.shipment?.shippedAt"
+            v-if="canShip && selected.shipment?.shippedAt"
             class="text-sm text-[var(--muted)]"
           >
             Shipped

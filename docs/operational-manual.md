@@ -1,12 +1,12 @@
 # retail-soln — Operational Manual
 
-**Version:** Epics 1–4 (MVP online POS)  
+**Version:** Epics 1–7 (MVP POS + offline sync + customer portal + fulfilment)  
 **Last updated:** August 2026  
-**Audience:** Store managers, cashiers, inventory staff, procurement, and organization administrators
+**Audience:** Store managers, cashiers, inventory staff, procurement, organization administrators, and counter fulfilment staff
 
-This manual explains how to run and operate **retail-soln** end to end using the **Admin** web app and the **POS** point-of-sale app. It covers everything built through Epic 4: platform setup, catalog & inventory, purchasing, pricing, customers, online sales, cash sessions, returns, installments, and proforma invoices.
+This manual explains how to run and operate **retail-soln** end to end using the **Admin** web app, the **POS** point-of-sale app, and the **Customer portal** shop. It covers platform setup through Epic 7: catalog & inventory, purchasing, pricing, customers, online and offline sales, cash sessions, returns, installments, proforma invoices, online orders, and staff fulfilment (pick/pack, ship, store pickup).
 
-**Not covered here (future releases):** offline sync (Epic 5), customer portal (Epic 6), advanced reporting, Stripe/Paystack card capture in production, loyalty rules engine, and ESC/POS hardware drivers.
+**Not covered here (future releases):** executive reporting dashboards and rich notifications (Epic 8), Stripe/Paystack live card capture in production, loyalty rules engine, and ESC/POS hardware drivers.
 
 ---
 
@@ -28,15 +28,16 @@ This manual explains how to run and operate **retail-soln** end to end using the
 
 ## 1. System overview
 
-retail-soln is a multi-store retail platform with two browser applications:
+retail-soln is a multi-store retail platform with three browser applications:
 
 | Application | URL (local dev) | Who uses it |
 |-------------|-----------------|-------------|
-| **Admin** | http://localhost:5173 | Managers, inventory, procurement, accountants |
+| **Admin** | http://localhost:5173 | Managers, inventory, procurement, fulfilment, accountants |
 | **POS** | http://localhost:5174 | Cashiers and floor staff |
+| **Customer portal** | http://localhost:5175 | Shoppers (browse, cart, checkout, track orders) |
 | **API** | http://localhost:8001 or http://localhost:8080 | Used automatically by the apps (not opened directly) |
 
-Both apps talk to the same backend API (`/api/v1`). Users sign in once per app; the POS also requires **selecting a store** after login.
+Admin and POS talk to the same backend API (`/api/v1`) with staff Sanctum tokens. The customer portal uses separate `/api/v1/portal/*` routes. POS also requires **selecting a store** after login.
 
 ### Core concepts
 
@@ -207,7 +208,21 @@ Navigation is in the left sidebar. All pages require sign-in.
 
 ### Dashboard
 
-Landing page after login. Use sidebar links for day-to-day work.
+Landing page after login. Shortcuts to Products, Inventory, Fulfilment, Customers, Stores, and Settings. Use the sidebar for the full module list.
+
+### Fulfilment (online orders)
+
+Staff workflow for **Customer portal** orders at a selected store (`X-Store-Id`). Requires `fulfilment.pick`, `fulfilment.ship`, and/or `fulfilment.pickup` (re-run `php artisan db:seed` after upgrading so roles pick up these permissions).
+
+1. Ensure the order is **paid** (portal confirm-payment or webhook). Stock is already **reserved** at place-order.
+2. Open **Admin → Fulfilment**, pick the store, select the order (order number is prominent for counter matching).
+3. **Complete pack** — consumes reserved stock; status → Processing. Works for home delivery, store pickup, and click & collect.
+4. Branch by mode:
+   - **Home delivery:** **Ship** (optional carrier/tracking) → Out for Delivery → **Mark delivered**.
+   - **Store pickup / click & collect:** **Ready for pickup** → customer collects at counter → **Mark collected** (status → Delivered).
+5. Customers track the same statuses on portal **Orders**. Paid delivered orders can request a return (request only — staff refund/inventory completion is not in this release).
+
+Unpaid abandoned holds expire via `portal:expire-unpaid-reservations` (Docker `scheduler` service, or `php artisan schedule:work` on the host). Customers can also **Cancel** unpaid/failed pending orders to release stock immediately.
 
 ### Organization
 
@@ -658,6 +673,14 @@ flowchart LR
 2. Select items/qty → confirm refund  
 3. Stock returns to store inventory  
 
+### Online order (customer portal → Admin fulfilment)
+
+1. Customer browses **http://localhost:5175**, registers/verifies, adds to cart, checks out (home delivery, store pickup, or click & collect).  
+2. Place-order **reserves** stock. Customer pays (manual confirm or webhook).  
+3. Staff: **Admin → Fulfilment** → pack → then ship/deliver **or** ready/collect (see [Fulfilment](#fulfilment-online-orders)).  
+4. Customer tracks status under portal **Orders**; after delivered/collected they may submit a **return request** (staff completion later).  
+
+Unpaid holds expire on the scheduler; customers can cancel unpaid pending orders to release stock sooner.
 ### Procurement: receive stock and pay suppliers
 
 ```mermaid
@@ -761,18 +784,19 @@ php artisan db:seed
 
 ## 11. Current limitations
 
-Features **not yet available** in Epics 1–4 (planned or deferred):
+Features **not yet available** or intentionally thin in Epics 1–7:
 
 | Feature | Status |
 |---------|--------|
-| Offline POS / sync | Epic 5 |
-| Stripe / Paystack live card capture | Manual tender only at POS |
+| Executive dashboards / store performance reports | Epic 8 |
+| Email/SMS/in-app notifications for status changes | Epic 8 |
+| Stripe / Paystack live card capture | Adapters stub redirects without live keys; manual portal pay works |
 | F8 line discount UI | Stub; use promotions or price override |
 | Void completed sale from POS UI | Use returns; API void exists for managers |
 | Warehouse admin UI | API only |
 | Cashier session reconciliation screen | API only (`registers.reconcile`) |
 | Loyalty points/rules | AD-11 deferred |
-| Customer portal / online orders | Epic 6 |
+| Staff approve/complete portal return requests | Shopper request only today |
 | ESC/POS receipt printer driver | Receipt print job queued; hardware adapter pending |
 | Gift cards | Deferred |
 
@@ -789,9 +813,11 @@ Features **not yet available** in Epics 1–4 (planned or deferred):
 | Purchase orders | Buy stock, receive, return |
 | Payments | Pay suppliers |
 | Inventory | Stock, adjustments, transfers |
+| Fulfilment | Pack, ship/deliver, or ready/collect online orders |
 | Pricing | Lists, promotions, price resolve preview (see [§6](#6-pricing-cost-and-discounts)) |
 | Customers | Accounts, credit, history |
 | Proforma invoices | Quotes, issue, convert |
+| Devices | POS device registration / sync |
 | Users | Staff accounts, store access |
 | Audit logs | Compliance trail |
 | Settings | Org configuration |

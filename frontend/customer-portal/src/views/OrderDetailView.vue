@@ -100,10 +100,10 @@ const ineligibleTitle = computed(() => {
     return `Latest return: ${order.value.returnRequest.statusLabel}. New requests need remaining returnable qty on a paid delivered order`
   }
   if (order.value?.paymentStatus !== 'paid') {
-    return 'Returns available after the order is paid and delivered'
+    return 'Returns available after the order is paid and delivered (or collected)'
   }
   if (order.value?.status !== 'delivered') {
-    return 'Returns available after delivery'
+    return 'Returns available after delivery or counter collection'
   }
   return 'No remaining returnable quantity on this order'
 })
