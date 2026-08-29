@@ -337,7 +337,7 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_list_includes_items_for_spa_edit_and_requires_permission(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
+        $this->actAsProcurementOfficer();
         $id = $this->postJson('/api/v1/purchase-orders', $this->validPayload())->json('data.id');
 
         $this->getJson('/api/v1/purchase-orders')
@@ -408,7 +408,7 @@ class PurchaseOrderApiTest extends TestCase
 
     public function test_filter_list_by_status(): void
     {
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
+        $this->actAsProcurementOfficer();
 
         $draftId = $this->postJson('/api/v1/purchase-orders', $this->validPayload())->json('data.id');
         $pendingId = $this->postJson('/api/v1/purchase-orders', $this->validPayload([
@@ -456,5 +456,32 @@ class PurchaseOrderApiTest extends TestCase
             ->assertJsonPath('data.rejectedBy', null)
             ->assertJsonPath('data.rejectedAt', null)
             ->assertJsonPath('data.rejectionReason', null);
+    }
+
+    public function test_list_excludes_orders_for_unassigned_stores(): void
+    {
+        $this->actAsProcurementOfficer();
+        $this->postJson('/api/v1/purchase-orders', $this->validPayload())->assertCreated();
+
+        $otherStore = Store::factory()->create(['organization_id' => $this->orgId, 'name' => 'Annex']);
+        $outsider = User::factory()->procurementOfficer()->create();
+        $outsider->stores()->attach($otherStore->id, ['is_default' => true]);
+        Sanctum::actingAs($outsider, ['staff']);
+
+        $this->getJson('/api/v1/purchase-orders')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 0);
+
+        $this->getJson('/api/v1/purchase-orders?storeId='.$this->store->id)
+            ->assertForbidden();
+    }
+
+    private function actAsProcurementOfficer(): User
+    {
+        $user = User::factory()->procurementOfficer()->create();
+        $user->stores()->attach($this->store->id, ['is_default' => true]);
+        Sanctum::actingAs($user, ['staff']);
+
+        return $user;
     }
 }

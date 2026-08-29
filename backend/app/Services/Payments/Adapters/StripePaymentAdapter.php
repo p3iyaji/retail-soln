@@ -92,6 +92,11 @@ class StripePaymentAdapter implements PaymentGateway
         );
     }
 
+    /**
+     * Stripe `Stripe-Signature` scheme: `t=<unix>,v1=<hmac-sha256 of "t.payload">`.
+     * A malformed header is never accepted, and stale timestamps are rejected so a
+     * captured-but-valid webhook cannot be replayed indefinitely.
+     */
     private function validStripeSignature(string $payload, string $header, string $secret): bool
     {
         if ($header === '') {
@@ -110,12 +115,16 @@ class StripePaymentAdapter implements PaymentGateway
             }
         }
 
-        if ($timestamp === null || $signatures === []) {
-            return hash_equals($secret, $header);
+        if ($timestamp === null || ! ctype_digit($timestamp) || $signatures === []) {
+            return false;
         }
 
-        $signed = $timestamp.'.'.$payload;
-        $expected = hash_hmac('sha256', $signed, $secret);
+        $tolerance = max(0, (int) config('payments.stripe.webhook_tolerance', 300));
+        if (abs(time() - (int) $timestamp) > $tolerance) {
+            return false;
+        }
+
+        $expected = hash_hmac('sha256', $timestamp.'.'.$payload, $secret);
 
         foreach ($signatures as $sig) {
             if (hash_equals($expected, $sig)) {

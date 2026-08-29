@@ -39,6 +39,8 @@ return [
     'stripe' => [
         'secret_key' => env('STRIPE_SECRET_KEY'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        // Max age (seconds) of the signed `t=` timestamp before a webhook is treated as a replay.
+        'webhook_tolerance' => (int) env('STRIPE_WEBHOOK_TOLERANCE', 300),
         'currency' => env('STRIPE_CURRENCY', 'ngn'),
         'success_url' => env('STRIPE_SUCCESS_URL'),
         'cancel_url' => env('STRIPE_CANCEL_URL'),

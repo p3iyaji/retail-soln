@@ -55,7 +55,11 @@ class SupplierPaymentController
         SupplierOutstandingService $outstanding,
     ): JsonResponse {
         $idempotencyKey = $request->header('Idempotency-Key');
-        if ($idempotencyKey !== null && $idempotencyKey !== '' && strlen($idempotencyKey) > 64) {
+        if ($idempotencyKey === null || $idempotencyKey === '') {
+            return response()->json(['message' => 'Idempotency-Key header is required.'], 422);
+        }
+
+        if (strlen($idempotencyKey) > 64) {
             return response()->json(['message' => 'Idempotency-Key must be at most 64 characters.'], 422);
         }
 
@@ -71,7 +75,7 @@ class SupplierPaymentController
                 'reference' => $attrs['reference'],
                 'paidAt' => $attrs['paidAt'],
                 'notes' => $attrs['notes'],
-                'idempotencyKey' => $idempotencyKey !== null && $idempotencyKey !== '' ? $idempotencyKey : null,
+                'idempotencyKey' => $idempotencyKey,
             ]);
         } catch (IdempotencyConflictException $e) {
             return response()->json(['message' => $e->getMessage()], 409);

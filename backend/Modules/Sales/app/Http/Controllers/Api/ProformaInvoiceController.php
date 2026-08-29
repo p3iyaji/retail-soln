@@ -2,6 +2,7 @@
 
 namespace Modules\Sales\Http\Controllers\Api;
 
+use App\Http\Concerns\ResolvesStoreScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -20,6 +21,8 @@ use RuntimeException;
 
 class ProformaInvoiceController
 {
+    use ResolvesStoreScope;
+
     public function index(Request $request, OrganizationService $organizations): JsonResponse
     {
         if ($request->user()?->hasPermission('invoices.proforma.view') !== true) {
@@ -38,7 +41,11 @@ class ProformaInvoiceController
         }
 
         if ($request->filled('storeId')) {
-            $query->where('store_id', (int) $request->integer('storeId'));
+            $storeId = (int) $request->integer('storeId');
+            $this->assertStoreAccessible($request, $storeId);
+            $query->where('store_id', $storeId);
+        } else {
+            $this->applyStoreColumnScope($query, $request);
         }
 
         if ($request->filled('customerId')) {

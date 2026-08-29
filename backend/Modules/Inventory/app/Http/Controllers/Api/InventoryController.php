@@ -2,6 +2,7 @@
 
 namespace Modules\Inventory\Http\Controllers\Api;
 
+use App\Http\Concerns\ResolvesStoreScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Inventory\Http\Resources\InventoryBalanceResource;
@@ -14,6 +15,8 @@ use Modules\Organization\Services\OrganizationService;
 
 class InventoryController
 {
+    use ResolvesStoreScope;
+
     public function lowStockAlerts(
         Request $request,
         OrganizationService $organizations,
@@ -32,12 +35,20 @@ class InventoryController
         $warehouseId = isset($validated['warehouseId']) ? (int) $validated['warehouseId'] : null;
         $perPage = max(1, min(100, (int) ($validated['per_page'] ?? 50)));
 
-        $page = $alerts->paginate(
-            $organizationId,
-            $storeId,
-            $warehouseId,
-            $perPage,
-        );
+        $this->assertStoreAccessible($request, $storeId);
+
+        $query = $alerts->query($organizationId, $storeId, $warehouseId);
+
+        if ($storeId === null) {
+            $this->applyLocationScope(
+                $query,
+                $request,
+                'inventory_balances.location_type',
+                'inventory_balances.location_id',
+            );
+        }
+
+        $page = $query->paginate($perPage);
 
         return response()->json([
             'data' => LowStockAlertResource::collection($page->items()),
@@ -59,8 +70,12 @@ class InventoryController
             ->orderBy('id');
 
         if ($request->filled('storeId')) {
+            $storeId = (int) $request->integer('storeId');
+            $this->assertStoreAccessible($request, $storeId);
             $query->where('location_type', 'store')
-                ->where('location_id', $request->integer('storeId'));
+                ->where('location_id', $storeId);
+        } else {
+            $this->applyLocationScope($query, $request);
         }
 
         if ($request->filled('warehouseId')) {
@@ -94,8 +109,12 @@ class InventoryController
             ->orderByDesc('id');
 
         if ($request->filled('storeId')) {
+            $storeId = (int) $request->integer('storeId');
+            $this->assertStoreAccessible($request, $storeId);
             $query->where('location_type', 'store')
-                ->where('location_id', $request->integer('storeId'));
+                ->where('location_id', $storeId);
+        } else {
+            $this->applyLocationScope($query, $request);
         }
 
         if ($request->filled('productVariantId')) {

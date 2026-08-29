@@ -13,6 +13,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // TLS terminates at nginx in the v1 stack, so X-Forwarded-* must be honoured
+        // for HTTPS detection and for throttle keys to see the real client IP.
+        $middleware->trustProxies(at: '*');
+
+        $middleware->throttleApi();
+
+        $middleware->api(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
         $middleware->alias([
             'staff' => \App\Http\Middleware\EnsureStaffUser::class,
             'portal' => \App\Http\Middleware\EnsurePortalAccount::class,

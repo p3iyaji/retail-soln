@@ -404,6 +404,6 @@
   summary: Rename the `notifications` table or reconcile it with Laravel's `Notifiable` database channel.
   evidence: `User` and `CustomerAccount` use the `Notifiable` trait; `$user->notifications` would now hit this table, which has no `notifiable_type`/`notifiable_id`. Nothing calls it today.
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-notification-service.md`
-  summary: Automated Admin NotificationsView tests (filter, mark-read, permission empty state).
-  evidence: Repo has no Admin frontend test runner; verification is API tests + npm build + manual check only.
+- source_spec: `_bmad-output/implementation-artifacts/spec-9-1-security-review.md`
+  summary: Enforce store access on purchase-order and proforma invoice creation (write-side twin of read scoping).
+  evidence: `POST /api/v1/purchase-orders` and proforma create still accept any org `storeId` without `canAccessStore`; procurement officer can create for a store they cannot list.

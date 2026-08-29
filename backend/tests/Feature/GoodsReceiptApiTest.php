@@ -18,11 +18,12 @@ use Modules\Products\Models\ProductVariant;
 use Modules\Purchasing\Models\GoodsReceipt;
 use Modules\Purchasing\Models\PurchaseOrderItem;
 use Modules\Purchasing\Models\Supplier;
+use Tests\Concerns\PostsIdempotentPurchasing;
 use Tests\TestCase;
 
 class GoodsReceiptApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use PostsIdempotentPurchasing, RefreshDatabase;
 
     private int $orgId;
 
@@ -133,7 +134,7 @@ class GoodsReceiptApiTest extends TestCase
         $ids = $this->createApprovedPo();
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $response = $this->postJson('/api/v1/goods-receipts', [
+        $response = $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '4.0000'],
@@ -170,14 +171,14 @@ class GoodsReceiptApiTest extends TestCase
         $ids = $this->createApprovedPo();
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '4.0000'],
             ],
         ])->assertCreated()->assertJsonPath('data.purchaseOrder.status', 'partial');
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '6.0000'],
@@ -213,7 +214,7 @@ class GoodsReceiptApiTest extends TestCase
         ]);
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '5.0000'],
@@ -222,7 +223,7 @@ class GoodsReceiptApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.purchaseOrder.status', 'partial');
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][1], 'qty' => '3.0000'],
@@ -262,7 +263,7 @@ class GoodsReceiptApiTest extends TestCase
         ]);
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '5.0000'],
@@ -283,7 +284,7 @@ class GoodsReceiptApiTest extends TestCase
         ]);
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '6.0000'],
@@ -322,7 +323,7 @@ class GoodsReceiptApiTest extends TestCase
 
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $poId,
             'items' => [
                 ['purchaseOrderItemId' => $itemId, 'qty' => '1.0000'],
@@ -333,7 +334,7 @@ class GoodsReceiptApiTest extends TestCase
         $this->postJson("/api/v1/purchase-orders/{$poId}/submit")->assertOk();
 
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $poId,
             'items' => [
                 ['purchaseOrderItemId' => $itemId, 'qty' => '1.0000'],
@@ -368,7 +369,7 @@ class GoodsReceiptApiTest extends TestCase
         $itemId = (int) PurchaseOrderItem::query()->where('purchase_order_id', $poId)->value('id');
 
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $poId,
             'items' => [
                 ['purchaseOrderItemId' => $itemId, 'qty' => '1.0000'],
@@ -395,7 +396,7 @@ class GoodsReceiptApiTest extends TestCase
 
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $poA['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $poB['itemIds'][0], 'qty' => '1.0000'],
@@ -420,7 +421,9 @@ class GoodsReceiptApiTest extends TestCase
     public function test_inventory_manager_can_list_and_show_purchase_orders(): void
     {
         $ids = $this->createApprovedPo();
-        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
+        $manager = User::factory()->inventoryManager()->create();
+        $manager->stores()->attach($this->store->id, ['is_default' => true]);
+        Sanctum::actingAs($manager, ['staff']);
 
         $this->getJson('/api/v1/purchase-orders')
             ->assertOk()
@@ -437,7 +440,7 @@ class GoodsReceiptApiTest extends TestCase
         $ids = $this->createApprovedPo();
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $grnId = $this->postJson('/api/v1/goods-receipts', [
+        $grnId = $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '2.0000'],
@@ -458,7 +461,7 @@ class GoodsReceiptApiTest extends TestCase
         $ids = $this->createApprovedPo();
         Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '1.0000'],
@@ -468,7 +471,7 @@ class GoodsReceiptApiTest extends TestCase
 
     public function test_unauthenticated_returns_401(): void
     {
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => 1,
             'items' => [
                 ['purchaseOrderItemId' => 1, 'qty' => '1.0000'],
@@ -490,10 +493,10 @@ class GoodsReceiptApiTest extends TestCase
         ];
         $headers = ['Idempotency-Key' => 'grn-test-key-001'];
 
-        $first = $this->postJson('/api/v1/goods-receipts', $payload, $headers)->assertCreated();
+        $first = $this->postGoodsReceipt($payload, $headers)->assertCreated();
         $grnId = $first->json('data.id');
 
-        $second = $this->postJson('/api/v1/goods-receipts', $payload, $headers)->assertOk();
+        $second = $this->postGoodsReceipt($payload, $headers)->assertOk();
         $this->assertSame($grnId, $second->json('data.id'));
         $this->assertSame($first->json('data'), $second->json('data'));
 
@@ -520,7 +523,7 @@ class GoodsReceiptApiTest extends TestCase
         $ids = $this->createApprovedPo();
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '1.0000'],
@@ -536,14 +539,14 @@ class GoodsReceiptApiTest extends TestCase
 
         $headers = ['Idempotency-Key' => 'grn-conflict-key'];
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '2.0000'],
             ],
         ], $headers)->assertCreated();
 
-        $this->postJson('/api/v1/goods-receipts', [
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '3.0000'],
@@ -562,12 +565,30 @@ class GoodsReceiptApiTest extends TestCase
         );
     }
 
-    public function test_zero_qty_returns_422(): void
+    public function test_missing_idempotency_key_returns_422_without_writing(): void
     {
         $ids = $this->createApprovedPo();
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $this->postJson('/api/v1/goods-receipts', [
+            'purchaseOrderId' => $ids['poId'],
+            'items' => [
+                ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '1.0000'],
+            ],
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Idempotency-Key header is required.');
+
+        $this->assertSame(0, GoodsReceipt::query()->count());
+        $this->assertSame(0, InventoryMovement::query()->where('type', MovementType::Purchase->value)->count());
+    }
+
+    public function test_zero_qty_returns_422(): void
+    {
+        $ids = $this->createApprovedPo();
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
+
+        $this->postGoodsReceipt([
             'purchaseOrderId' => $ids['poId'],
             'items' => [
                 ['purchaseOrderItemId' => $ids['itemIds'][0], 'qty' => '0'],

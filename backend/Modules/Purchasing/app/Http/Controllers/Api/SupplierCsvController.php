@@ -37,7 +37,7 @@ class SupplierCsvController
         $this->assertManage($request);
 
         $request->validate([
-            'file' => ['required', 'file', 'max:10240'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:csv,txt'],
         ]);
 
         try {
@@ -65,7 +65,7 @@ class SupplierCsvController
         $this->assertManage($request);
 
         $request->validate([
-            'file' => ['required', 'file', 'max:10240'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:csv,txt'],
         ]);
 
         try {

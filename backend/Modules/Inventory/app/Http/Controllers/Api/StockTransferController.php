@@ -2,6 +2,8 @@
 
 namespace Modules\Inventory\Http\Controllers\Api;
 
+use App\Http\Concerns\ResolvesStoreScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,6 +15,8 @@ use RuntimeException;
 
 class StockTransferController
 {
+    use ResolvesStoreScope;
+
     public function index(Request $request, OrganizationService $organizations): JsonResponse
     {
         $this->assertTransferPermission($request);
@@ -24,6 +28,18 @@ class StockTransferController
 
         if ($request->filled('status')) {
             $query->where('status', $request->string('status')->toString());
+        }
+
+        // Hide any transfer that touches a store the caller is not assigned to.
+        $storeIds = $this->scopedStoreIds($request);
+        if ($storeIds !== null) {
+            $query->where(function (Builder $from) use ($storeIds): void {
+                $from->where('from_location_type', '!=', 'store')
+                    ->orWhereIn('from_location_id', $storeIds);
+            })->where(function (Builder $to) use ($storeIds): void {
+                $to->where('to_location_type', '!=', 'store')
+                    ->orWhereIn('to_location_id', $storeIds);
+            });
         }
 
         $transfers = $query->paginate(perPage: (int) $request->integer('per_page', 20));
@@ -61,6 +77,9 @@ class StockTransferController
             'items.*.quantity' => ['required', 'regex:/^\d+(\.\d{1,4})?$/'],
         ]);
 
+        $this->assertStoreAccessible($request, isset($data['fromStoreId']) ? (int) $data['fromStoreId'] : null);
+        $this->assertStoreAccessible($request, isset($data['toStoreId']) ? (int) $data['toStoreId'] : null);
+
         try {
             $transfer = $transfers->initiate([
                 'organizationId' => $organizationId,
@@ -95,6 +114,15 @@ class StockTransferController
         if ($transfer->organization_id !== $organizations->current()->id) {
             abort(404);
         }
+
+        $this->assertStoreAccessible(
+            $request,
+            $transfer->from_location_type === 'store' ? (int) $transfer->from_location_id : null,
+        );
+        $this->assertStoreAccessible(
+            $request,
+            $transfer->to_location_type === 'store' ? (int) $transfer->to_location_id : null,
+        );
 
         try {
             $transfer = $transfers->receive($transfer, $request->user()->id);

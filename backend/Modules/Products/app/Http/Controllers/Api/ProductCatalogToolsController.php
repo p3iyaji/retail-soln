@@ -77,7 +77,7 @@ class ProductCatalogToolsController
         }
 
         $request->validate([
-            'file' => ['required', 'file', 'max:10240'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:csv,txt'],
         ]);
 
         try {
@@ -107,7 +107,7 @@ class ProductCatalogToolsController
         }
 
         $request->validate([
-            'file' => ['required', 'file', 'max:10240'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:csv,txt'],
         ]);
 
         try {
