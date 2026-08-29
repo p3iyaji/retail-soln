@@ -1,0 +1,13 @@
+{
+  "name": "retail-soln-e2e",
+  "private": true,
+  "description": "Playwright browser tests for critical POS workflows.",
+  "scripts": {
+    "test": "playwright test",
+    "test:login": "playwright test tests/pos-login.spec.ts",
+    "test:critical": "playwright test tests/pos-floor.spec.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}
