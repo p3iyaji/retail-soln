@@ -8,6 +8,15 @@ use Modules\CustomerPortal\Http\Controllers\Api\PortalCatalogueController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalCheckoutController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalOrderController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalReturnRequestController;
+use Modules\CustomerPortal\Http\Controllers\Api\StaffFulfilmentController;
+
+Route::prefix('v1')->middleware(['auth:sanctum', 'staff'])->group(function (): void {
+    Route::get('/fulfilment/orders', [StaffFulfilmentController::class, 'index']);
+    Route::get('/fulfilment/orders/{order}', [StaffFulfilmentController::class, 'show'])
+        ->whereNumber('order');
+    Route::post('/fulfilment/orders/{order}/pack', [StaffFulfilmentController::class, 'pack'])
+        ->whereNumber('order');
+});
 
 Route::prefix('v1/portal')->group(function (): void {
     Route::prefix('auth')->group(function (): void {

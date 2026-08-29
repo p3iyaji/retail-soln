@@ -41,7 +41,7 @@ API must be running (`cd backend && php artisan serve --port=8001` or Docker ngi
 2. Optional: set `CUSTOMER_PORTAL_ORGANIZATION_ID` and `CUSTOMER_PORTAL_DEFAULT_STORE_ID` in `backend/.env` (empty org = first organization; empty store = first active store).
 3. Start portal: `npm run dev:portal` from `frontend/` (or `cd customer-portal && npm run dev`).
 4. Open **http://localhost:5175** — shop catalogue is public; register/verify for account features.
-5. Cart, checkout, and orders are not implemented yet (Stories 6.3–6.5).
+5. Cart → checkout → orders/returns are live (Stories 6.3–6.5). Staff pick/pack is Admin **Fulfilment** (Story 7.2).
 
 ## POS access
 

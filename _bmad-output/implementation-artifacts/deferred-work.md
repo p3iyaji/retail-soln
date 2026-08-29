@@ -323,3 +323,27 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-1-stock-reservation.md`
   summary: Update docs/operational-manual.md for portal stock reservation, cancel, and TTL ops.
   evidence: Customer-portal README updated; operational manual not yet revised for 7.1.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-2-picking-packing.md`
+  summary: Replace inline hasPermission checks on staff fulfilment APIs with a Laravel Policy class (AD-4).
+  evidence: StaffFulfilmentController uses hasPermission like other modules; Policy deferred in 7.2 review.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-2-picking-packing.md`
+  summary: Add fulfilment.view read-only permission for list/show without pack.
+  evidence: MVP uses fulfilment.pick for list/show/pack; view-only role split deferred.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-2-picking-packing.md`
+  summary: AuditLogger / domain event on pack-complete for ops trail and Epic 8 notifications.
+  evidence: No module Events pattern yet; pack persists packed_at only; optional event skipped in 7.2 review.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-2-picking-packing.md`
+  summary: Per-line pick checklist UI before all-or-nothing pack.
+  evidence: Spec default is all lines required then complete; partial pick checklist deferred.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-2-picking-packing.md`
+  summary: Support warehouse LocationType for reservation/consume (not only store).
+  evidence: Portal fulfilment reserves at order store_id + Store location type only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-2-picking-packing.md`
+  summary: Frontend e2e coverage for Admin FulfilmentView (store filter, confirm, pack retry key).
+  evidence: Repo has no frontend e2e runner for admin; verification is API tests + npm build.
