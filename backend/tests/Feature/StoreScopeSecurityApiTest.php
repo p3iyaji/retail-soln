@@ -10,11 +10,13 @@ use Modules\Customers\Services\CustomerService;
 use Modules\Inventory\Data\PostMovementData;
 use Modules\Inventory\Enums\LocationType;
 use Modules\Inventory\Enums\MovementType;
+use Modules\Inventory\Models\InventoryMovement;
 use Modules\Inventory\Services\InventoryLedgerService;
 use Modules\Organization\Models\Store;
 use Modules\Organization\Services\OrganizationService;
 use Modules\Products\Models\Product;
 use Modules\Products\Models\ProductVariant;
+use Modules\Sales\Models\ProformaInvoice;
 use Tests\TestCase;
 
 class StoreScopeSecurityApiTest extends TestCase
@@ -112,5 +114,109 @@ class StoreScopeSecurityApiTest extends TestCase
             'storeId' => $this->storeB->id,
             'qty' => '1.0000',
         ])->assertForbidden();
+    }
+
+    public function test_inventory_reads_reject_inaccessible_store(): void
+    {
+        $this->actAsStoreAManager();
+
+        $this->getJson('/api/v1/inventory/balances?storeId='.$this->storeB->id)->assertForbidden();
+        $this->getJson('/api/v1/inventory/movements?storeId='.$this->storeB->id)->assertForbidden();
+        $this->getJson('/api/v1/inventory/counts?storeId='.$this->storeB->id)->assertForbidden();
+        $this->getJson('/api/v1/inventory/alerts/low-stock?storeId='.$this->storeB->id)->assertForbidden();
+    }
+
+    public function test_unfiltered_inventory_reads_only_return_assigned_stores(): void
+    {
+        $this->actAsStoreAManager();
+
+        $balances = $this->getJson('/api/v1/inventory/balances')->assertOk();
+        $this->assertSame(1, $balances->json('meta.total'));
+        $this->assertSame($this->storeA->id, $balances->json('data.0.locationId'));
+
+        $movements = $this->getJson('/api/v1/inventory/movements')->assertOk();
+        $this->assertSame(1, $movements->json('meta.total'));
+        $this->assertSame($this->storeA->id, $movements->json('data.0.locationId'));
+    }
+
+    public function test_inventory_mutations_reject_inaccessible_store_without_ledger_writes(): void
+    {
+        $this->actAsStoreAManager();
+        $movementsBefore = InventoryMovement::query()->count();
+
+        $this->postJson('/api/v1/inventory/adjustments', [
+            'storeId' => $this->storeB->id,
+            'productVariantId' => $this->variant->id,
+            'quantity' => '5.0000',
+            'reason' => 'Cross-store attempt',
+        ])->assertForbidden();
+
+        $this->postJson('/api/v1/inventory/counts', [
+            'storeId' => $this->storeB->id,
+            'items' => [[
+                'productVariantId' => $this->variant->id,
+                'countedQuantity' => '99.0000',
+            ]],
+        ])->assertForbidden();
+
+        $this->postJson('/api/v1/inventory/transfers', [
+            'fromStoreId' => $this->storeA->id,
+            'toStoreId' => $this->storeB->id,
+            'items' => [[
+                'productVariantId' => $this->variant->id,
+                'quantity' => '1.0000',
+            ]],
+        ])->assertForbidden();
+
+        $this->assertSame($movementsBefore, InventoryMovement::query()->count());
+        $this->assertSame('10.0000', $this->availableAt($this->storeB));
+    }
+
+    public function test_proforma_list_is_scoped_to_assigned_stores(): void
+    {
+        $manager = $this->actAsStoreAManager();
+        $this->makeProforma($this->storeA, 'PF-A-1', $manager->id);
+        $this->makeProforma($this->storeB, 'PF-B-1', $manager->id);
+
+        $response = $this->getJson('/api/v1/proforma-invoices')->assertOk();
+        $this->assertSame(1, $response->json('meta.total'));
+        $this->assertSame($this->storeA->id, $response->json('data.0.storeId'));
+
+        $this->getJson('/api/v1/proforma-invoices?storeId='.$this->storeB->id)->assertForbidden();
+    }
+
+    private function actAsStoreAManager(): User
+    {
+        $manager = User::factory()->storeManager()->create();
+        $manager->stores()->attach($this->storeA->id, ['is_default' => true]);
+        Sanctum::actingAs($manager, ['staff']);
+
+        return $manager;
+    }
+
+    private function availableAt(Store $store): ?string
+    {
+        return app(InventoryLedgerService::class)->balanceFor(
+            $this->orgId,
+            LocationType::Store->value,
+            $store->id,
+            $this->variant->id,
+        )?->available;
+    }
+
+    private function makeProforma(Store $store, string $number, int $userId): ProformaInvoice
+    {
+        return ProformaInvoice::query()->create([
+            'organization_id' => $this->orgId,
+            'store_id' => $store->id,
+            'customer_id' => app(CustomerService::class)->ensureWalkIn($this->orgId)->id,
+            'number' => $number,
+            'status' => 'draft',
+            'subtotal' => '0.0000',
+            'discount_total' => '0.0000',
+            'tax_total' => '0.0000',
+            'total' => '0.0000',
+            'created_by' => $userId,
+        ]);
     }
 }

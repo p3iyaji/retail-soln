@@ -69,8 +69,7 @@ class StockTransferApiTest extends TestCase
 
     public function test_initiate_and_receive_transfer_tracks_in_transit_and_movements(): void
     {
-        $user = User::factory()->inventoryManager()->create();
-        Sanctum::actingAs($user, ['staff']);
+        $user = $this->actAsTransferManager();
 
         $create = $this->postJson('/api/v1/inventory/transfers', [
             'fromStoreId' => $this->source->id,
@@ -137,7 +136,7 @@ class StockTransferApiTest extends TestCase
 
     public function test_cannot_transfer_more_than_available(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
+        $this->actAsTransferManager();
 
         $this->postJson('/api/v1/inventory/transfers', [
             'fromStoreId' => $this->source->id,
@@ -151,6 +150,57 @@ class StockTransferApiTest extends TestCase
         ])
             ->assertStatus(422)
             ->assertJsonPath('message', 'Insufficient available stock at source location.');
+    }
+
+    public function test_transfer_to_unassigned_store_is_forbidden(): void
+    {
+        $this->actAsTransferManager();
+        $foreign = Store::factory()->create(['organization_id' => $this->orgId, 'name' => 'Foreign']);
+
+        $this->postJson('/api/v1/inventory/transfers', [
+            'fromStoreId' => $this->source->id,
+            'toStoreId' => $foreign->id,
+            'items' => [
+                [
+                    'productVariantId' => $this->variant->id,
+                    'quantity' => '1.0000',
+                ],
+            ],
+        ])->assertForbidden();
+
+        $this->assertSame(
+            0,
+            InventoryMovement::query()->where('type', MovementType::TransferOut->value)->count()
+        );
+    }
+
+    public function test_transfer_list_hides_transfers_touching_unassigned_stores(): void
+    {
+        $this->actAsTransferManager();
+        $transferId = $this->postJson('/api/v1/inventory/transfers', [
+            'fromStoreId' => $this->source->id,
+            'toStoreId' => $this->destination->id,
+            'items' => [
+                [
+                    'productVariantId' => $this->variant->id,
+                    'quantity' => '2.0000',
+                ],
+            ],
+        ])->assertCreated()->json('data.id');
+
+        $outsider = User::factory()->inventoryManager()->create();
+        $outsider->stores()->attach(
+            Store::factory()->create(['organization_id' => $this->orgId, 'name' => 'Elsewhere'])->id,
+            ['is_default' => true],
+        );
+        Sanctum::actingAs($outsider, ['staff']);
+
+        $this->getJson('/api/v1/inventory/transfers')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 0);
+
+        $this->postJson("/api/v1/inventory/transfers/{$transferId}/receive")
+            ->assertForbidden();
     }
 
     public function test_cashier_cannot_transfer(): void
@@ -167,5 +217,17 @@ class StockTransferApiTest extends TestCase
                 ],
             ],
         ])->assertForbidden();
+    }
+
+    private function actAsTransferManager(): User
+    {
+        $user = User::factory()->inventoryManager()->create();
+        $user->stores()->attach([
+            $this->source->id => ['is_default' => true],
+            $this->destination->id => ['is_default' => false],
+        ]);
+        Sanctum::actingAs($user, ['staff']);
+
+        return $user;
     }
 }

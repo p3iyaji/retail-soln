@@ -185,7 +185,9 @@ class InventoryLedgerServiceTest extends TestCase
 
     public function test_inventory_manager_can_list_balances_and_movements(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
+        $manager = User::factory()->inventoryManager()->create();
+        $manager->stores()->attach($this->store->id, ['is_default' => true]);
+        Sanctum::actingAs($manager, ['staff']);
 
         $this->ledger->post(new PostMovementData(
             organizationId: $this->orgId,

@@ -186,4 +186,21 @@ class ProductSearchImportApiTest extends TestCase
         $this->post('/api/v1/products/import', ['file' => $file], ['Accept' => 'application/json'])
             ->assertForbidden();
     }
+
+    public function test_non_csv_upload_is_rejected_before_storage(): void
+    {
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
+
+        $file = UploadedFile::fake()->createWithContent('payload.exe', "MZ\x90\x00binary");
+
+        $this->post('/api/v1/products/import/preview', ['file' => $file], ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('file');
+
+        $this->post('/api/v1/products/import', ['file' => $file], ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('file');
+
+        $this->assertSame(0, ProductImport::query()->count());
+    }
 }

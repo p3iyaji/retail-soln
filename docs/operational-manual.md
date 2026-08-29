@@ -810,6 +810,20 @@ Footer reminder on POS floor: `F2 search · F4 customer · F8 discount · F9 pay
 
 - **Admin → Users** — assign store access to that user  
 
+### Inventory or purchase orders look empty, or return “This action is unauthorized”
+
+- Inventory balances, movements, counts, transfers, low-stock alerts, purchase orders, and proforma
+  invoices are limited to the stores a user is assigned to. Org Admin and Super Admin see every store.
+- **Admin → Users** — assign the missing store, then reload. Warehouse locations are not store-assigned
+  and stay visible to anyone with the inventory permissions.
+
+### “Too many requests” (HTTP 429)
+
+- The API is rate limited per signed-in user (or per IP when unauthenticated); payment webhooks have
+  their own, tighter limit. Defaults are `API_RATE_LIMIT` and `PAYMENT_WEBHOOK_RATE_LIMIT` in the
+  backend `.env`. Wait a minute or raise the limit for bulk/import work.
+- `GET /api/v1/health` is deliberately exempt, so it stays usable for liveness checks during a flood.
+
 ### Migrations / empty database
 
 ```bash

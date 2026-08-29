@@ -54,8 +54,7 @@ class StockAdjustmentsCountsApiTest extends TestCase
 
     public function test_inventory_manager_can_post_adjustment_with_reason_and_user(): void
     {
-        $user = User::factory()->inventoryManager()->create();
-        Sanctum::actingAs($user, ['staff']);
+        $user = $this->actAsInventoryManager();
 
         $response = $this->postJson('/api/v1/inventory/adjustments', [
             'storeId' => $this->store->id,
@@ -93,8 +92,7 @@ class StockAdjustmentsCountsApiTest extends TestCase
 
     public function test_stock_count_variance_posts_count_variance_movement(): void
     {
-        $user = User::factory()->inventoryManager()->create();
-        Sanctum::actingAs($user, ['staff']);
+        $user = $this->actAsInventoryManager();
 
         app(InventoryLedgerService::class)->post(new PostMovementData(
             organizationId: $this->orgId,
@@ -144,7 +142,7 @@ class StockAdjustmentsCountsApiTest extends TestCase
 
     public function test_stock_count_with_zero_variance_does_not_create_movement(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
+        $this->actAsInventoryManager();
 
         app(InventoryLedgerService::class)->post(new PostMovementData(
             organizationId: $this->orgId,
@@ -171,6 +169,21 @@ class StockAdjustmentsCountsApiTest extends TestCase
         $this->assertSame(1, InventoryMovement::query()->count());
     }
 
+    public function test_inventory_manager_cannot_adjust_an_unassigned_store(): void
+    {
+        $this->actAsInventoryManager();
+        $otherStore = Store::factory()->create(['organization_id' => $this->orgId]);
+
+        $this->postJson('/api/v1/inventory/adjustments', [
+            'storeId' => $otherStore->id,
+            'productVariantId' => $this->variant->id,
+            'quantity' => '5.0000',
+            'reason' => 'Cross-store attempt',
+        ])->assertForbidden();
+
+        $this->assertSame(0, InventoryMovement::query()->count());
+    }
+
     public function test_cashier_cannot_post_adjustments(): void
     {
         Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
@@ -181,5 +194,14 @@ class StockAdjustmentsCountsApiTest extends TestCase
             'quantity' => '1.0000',
             'reason' => 'Nope',
         ])->assertForbidden();
+    }
+
+    private function actAsInventoryManager(): User
+    {
+        $user = User::factory()->inventoryManager()->create();
+        $user->stores()->attach($this->store->id, ['is_default' => true]);
+        Sanctum::actingAs($user, ['staff']);
+
+        return $user;
     }
 }

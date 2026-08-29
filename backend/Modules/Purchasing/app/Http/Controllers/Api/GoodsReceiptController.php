@@ -18,7 +18,11 @@ class GoodsReceiptController
         GoodsReceiptService $service,
     ): JsonResponse {
         $idempotencyKey = $request->header('Idempotency-Key');
-        if ($idempotencyKey !== null && $idempotencyKey !== '' && strlen($idempotencyKey) > 64) {
+        if ($idempotencyKey === null || $idempotencyKey === '') {
+            return response()->json(['message' => 'Idempotency-Key header is required.'], 422);
+        }
+
+        if (strlen($idempotencyKey) > 64) {
             return response()->json(['message' => 'Idempotency-Key must be at most 64 characters.'], 422);
         }
 
@@ -30,7 +34,7 @@ class GoodsReceiptController
                 'purchaseOrderId' => $attrs['purchaseOrderId'],
                 'userId' => $request->user()->id,
                 'notes' => $attrs['notes'],
-                'idempotencyKey' => $idempotencyKey !== null && $idempotencyKey !== '' ? $idempotencyKey : null,
+                'idempotencyKey' => $idempotencyKey,
                 'items' => $attrs['items'],
             ]);
         } catch (IdempotencyConflictException $e) {

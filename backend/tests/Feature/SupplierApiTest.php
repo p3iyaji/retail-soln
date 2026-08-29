@@ -443,4 +443,21 @@ class SupplierApiTest extends TestCase
         $this->patchJson("/api/v1/suppliers/{$foreign->id}", ['name' => 'X'])->assertNotFound();
         $this->deleteJson("/api/v1/suppliers/{$foreign->id}")->assertNotFound();
     }
+
+    public function test_non_csv_supplier_upload_is_rejected_before_storage(): void
+    {
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
+
+        $file = UploadedFile::fake()->createWithContent('payload.exe', "MZ\x90\x00binary");
+
+        $this->post('/api/v1/suppliers/import/preview', ['file' => $file], ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('file');
+
+        $this->post('/api/v1/suppliers/import', ['file' => $file], ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('file');
+
+        $this->assertSame(0, SupplierImport::query()->count());
+    }
 }

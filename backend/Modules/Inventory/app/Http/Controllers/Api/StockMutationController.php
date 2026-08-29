@@ -2,6 +2,7 @@
 
 namespace Modules\Inventory\Http\Controllers\Api;
 
+use App\Http\Concerns\ResolvesStoreScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,6 +16,8 @@ use RuntimeException;
 
 class StockMutationController
 {
+    use ResolvesStoreScope;
+
     public function storeAdjustment(
         Request $request,
         OrganizationService $organizations,
@@ -37,6 +40,8 @@ class StockMutationController
             'quantity' => ['required', 'regex:/^-?\d+(\.\d{1,4})?$/'],
             'reason' => ['required', 'string', 'max:500'],
         ]);
+
+        $this->assertStoreAccessible($request, isset($data['storeId']) ? (int) $data['storeId'] : null);
 
         try {
             $adjustment = $adjustments->adjust([
@@ -81,6 +86,8 @@ class StockMutationController
             'items.*.countedQuantity' => ['required', 'regex:/^\d+(\.\d{1,4})?$/'],
         ]);
 
+        $this->assertStoreAccessible($request, isset($data['storeId']) ? (int) $data['storeId'] : null);
+
         try {
             $count = $counts->complete([
                 'organizationId' => $organizationId,
@@ -115,8 +122,12 @@ class StockMutationController
             ->orderByDesc('id');
 
         if ($request->filled('storeId')) {
+            $storeId = (int) $request->integer('storeId');
+            $this->assertStoreAccessible($request, $storeId);
             $query->where('location_type', 'store')
-                ->where('location_id', $request->integer('storeId'));
+                ->where('location_id', $storeId);
+        } else {
+            $this->applyLocationScope($query, $request);
         }
 
         $counts = $query->paginate(perPage: (int) $request->integer('per_page', 20));

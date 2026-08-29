@@ -15,11 +15,12 @@ use Modules\Purchasing\Models\PurchaseOrderItem;
 use Modules\Purchasing\Models\Supplier;
 use Modules\Purchasing\Models\SupplierInvoice;
 use Modules\Purchasing\Models\SupplierPayment;
+use Tests\Concerns\PostsIdempotentPurchasing;
 use Tests\TestCase;
 
 class SupplierInvoicePaymentApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use PostsIdempotentPurchasing, RefreshDatabase;
 
     private int $orgId;
 
@@ -97,7 +98,7 @@ class SupplierInvoicePaymentApiTest extends TestCase
             ->all();
 
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
-        $grnId = $this->postJson('/api/v1/goods-receipts', [
+        $grnId = $this->postGoodsReceipt([
             'purchaseOrderId' => $poId,
             'items' => [
                 ['purchaseOrderItemId' => $itemIds[0], 'qty' => $qty],
@@ -112,7 +113,7 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn('10.0000', '2.5000');
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $response = $this->postJson('/api/v1/supplier-invoices', [
+        $response = $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ], ['Idempotency-Key' => 'inv-1']);
 
@@ -140,7 +141,7 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn();
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ])->assertCreated()
             ->assertJsonPath('data.supplierId', $this->supplier->id);
@@ -150,7 +151,7 @@ class SupplierInvoicePaymentApiTest extends TestCase
     {
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => 999999,
         ])->assertStatus(422);
     }
@@ -160,7 +161,7 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn('10.0000', '2.5000');
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
             'totalAmount' => '0.0000',
         ])->assertStatus(422);
@@ -173,7 +174,7 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn();
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
             'totalAmount' => '123456789012.0000',
         ])->assertStatus(422);
@@ -184,11 +185,11 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn('10.0000', '2.5000');
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $invoiceId = $this->postJson('/api/v1/supplier-invoices', [
+        $invoiceId = $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ])->assertCreated()->json('data.id');
 
-        $partial = $this->postJson('/api/v1/supplier-payments', [
+        $partial = $this->postSupplierPayment([
             'supplierInvoiceId' => $invoiceId,
             'amount' => '10.0000',
             'method' => 'transfer',
@@ -202,7 +203,7 @@ class SupplierInvoicePaymentApiTest extends TestCase
 
         $this->assertSame(1, SupplierPayment::query()->count());
 
-        $full = $this->postJson('/api/v1/supplier-payments', [
+        $full = $this->postSupplierPayment([
             'supplierInvoiceId' => $invoiceId,
             'amount' => '15.0000',
         ], ['Idempotency-Key' => 'pay-2']);
@@ -225,11 +226,11 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn('4.0000', '2.5000');
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $invoiceId = $this->postJson('/api/v1/supplier-invoices', [
+        $invoiceId = $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ])->assertCreated()->json('data.id');
 
-        $this->postJson('/api/v1/supplier-payments', [
+        $this->postSupplierPayment([
             'supplierInvoiceId' => $invoiceId,
             'amount' => '10.0001',
         ])->assertStatus(422)
@@ -244,17 +245,17 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn();
         Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ])->assertForbidden();
 
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
-        $invoiceId = $this->postJson('/api/v1/supplier-invoices', [
+        $invoiceId = $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ])->assertCreated()->json('data.id');
 
         Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
-        $this->postJson('/api/v1/supplier-payments', [
+        $this->postSupplierPayment([
             'supplierInvoiceId' => $invoiceId,
             'amount' => '1.0000',
         ])->assertForbidden();
@@ -265,11 +266,11 @@ class SupplierInvoicePaymentApiTest extends TestCase
 
     public function test_unauthenticated_gets_401(): void
     {
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => 1,
         ])->assertUnauthorized();
 
-        $this->postJson('/api/v1/supplier-payments', [
+        $this->postSupplierPayment([
             'supplierInvoiceId' => 1,
             'amount' => '1.0000',
         ])->assertUnauthorized();
@@ -280,12 +281,12 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn('10.0000', '1.2500');
         Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
 
-        $invoiceId = $this->postJson('/api/v1/supplier-invoices', [
+        $invoiceId = $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
             'totalAmount' => '12.5000',
         ])->assertCreated()->json('data.id');
 
-        $this->postJson('/api/v1/supplier-payments', [
+        $this->postSupplierPayment([
             'supplierInvoiceId' => $invoiceId,
             'amount' => '3.2500',
         ])->assertCreated();
@@ -308,7 +309,7 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $grnIds = collect($before->json('meta.invoiceableGoodsReceipts'))->pluck('id')->all();
         $this->assertContains($ids['grnId'], $grnIds);
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ])->assertCreated();
 
@@ -331,7 +332,7 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn();
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $invoiceId = $this->postJson('/api/v1/supplier-invoices', [
+        $invoiceId = $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ])->assertCreated()->json('data.id');
 
@@ -343,7 +344,7 @@ class SupplierInvoicePaymentApiTest extends TestCase
                 ->exists()
         );
 
-        $paymentId = $this->postJson('/api/v1/supplier-payments', [
+        $paymentId = $this->postSupplierPayment([
             'supplierInvoiceId' => $invoiceId,
             'amount' => '1.0000',
         ])->assertCreated()->json('data.id');
@@ -362,11 +363,11 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn();
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ])->assertCreated();
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ])->assertStatus(422);
     }
@@ -377,11 +378,11 @@ class SupplierInvoicePaymentApiTest extends TestCase
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
         $headers = ['Idempotency-Key' => 'inv-replay-001'];
 
-        $first = $this->postJson('/api/v1/supplier-invoices', [
+        $first = $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ], $headers)->assertCreated();
 
-        $second = $this->postJson('/api/v1/supplier-invoices', [
+        $second = $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ], $headers)->assertOk();
 
@@ -394,7 +395,7 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn();
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ], ['Idempotency-Key' => str_repeat('k', 65)])
             ->assertStatus(422);
@@ -407,11 +408,11 @@ class SupplierInvoicePaymentApiTest extends TestCase
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
         $headers = ['Idempotency-Key' => 'inv-conflict-key'];
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => $first['grnId'],
         ], $headers)->assertCreated();
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => $second['grnId'],
         ], $headers)->assertStatus(409);
     }
@@ -421,17 +422,17 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $ids = $this->createReceivedGrn('10.0000', '2.0000');
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $invoiceId = $this->postJson('/api/v1/supplier-invoices', [
+        $invoiceId = $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ])->assertCreated()->json('data.id');
 
         $headers = ['Idempotency-Key' => 'pay-replay-001'];
-        $first = $this->postJson('/api/v1/supplier-payments', [
+        $first = $this->postSupplierPayment([
             'supplierInvoiceId' => $invoiceId,
             'amount' => '5.0000',
         ], $headers)->assertCreated();
 
-        $second = $this->postJson('/api/v1/supplier-payments', [
+        $second = $this->postSupplierPayment([
             'supplierInvoiceId' => $invoiceId,
             'amount' => '5.0000',
         ], $headers)->assertOk();
@@ -439,15 +440,40 @@ class SupplierInvoicePaymentApiTest extends TestCase
         $this->assertSame($first->json('data.id'), $second->json('data.id'));
         $this->assertSame(1, SupplierPayment::query()->count());
 
-        $this->postJson('/api/v1/supplier-payments', [
+        $this->postSupplierPayment([
             'supplierInvoiceId' => $invoiceId,
             'amount' => '1.0000',
         ], $headers)->assertStatus(409);
 
-        $this->postJson('/api/v1/supplier-payments', [
+        $this->postSupplierPayment([
             'supplierInvoiceId' => $invoiceId,
             'amount' => '1.0000',
         ], ['Idempotency-Key' => str_repeat('p', 65)])
             ->assertStatus(422);
+    }
+
+    public function test_invoice_and_payment_require_idempotency_key(): void
+    {
+        $ids = $this->createReceivedGrn('10.0000', '2.0000');
+        Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
+
+        $this->postJson('/api/v1/supplier-invoices', ['goodsReceiptId' => $ids['grnId']])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Idempotency-Key header is required.');
+
+        $this->assertSame(0, SupplierInvoice::query()->count());
+
+        $invoiceId = $this->postSupplierInvoice([
+            'goodsReceiptId' => $ids['grnId'],
+        ])->assertCreated()->json('data.id');
+
+        $this->postJson('/api/v1/supplier-payments', [
+            'supplierInvoiceId' => $invoiceId,
+            'amount' => '5.0000',
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Idempotency-Key header is required.');
+
+        $this->assertSame(0, SupplierPayment::query()->count());
     }
 }

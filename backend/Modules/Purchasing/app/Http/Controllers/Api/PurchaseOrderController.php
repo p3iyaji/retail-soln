@@ -2,6 +2,7 @@
 
 namespace Modules\Purchasing\Http\Controllers\Api;
 
+use App\Http\Concerns\ResolvesStoreScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,6 +18,8 @@ use RuntimeException;
 
 class PurchaseOrderController
 {
+    use ResolvesStoreScope;
+
     public function index(Request $request, OrganizationService $organizations): JsonResponse
     {
         $this->assertView($request);
@@ -36,7 +39,11 @@ class PurchaseOrderController
         }
 
         if ($request->filled('storeId')) {
-            $query->where('store_id', (int) $request->integer('storeId'));
+            $storeId = (int) $request->integer('storeId');
+            $this->assertStoreAccessible($request, $storeId);
+            $query->where('store_id', $storeId);
+        } else {
+            $this->applyStoreColumnScope($query, $request);
         }
 
         $perPage = max(1, min(100, (int) $request->integer('per_page', 20)));

@@ -20,11 +20,12 @@ use Modules\Purchasing\Models\GoodsReceiptItem;
 use Modules\Purchasing\Models\PurchaseOrderItem;
 use Modules\Purchasing\Models\PurchaseReturn;
 use Modules\Purchasing\Models\Supplier;
+use Tests\Concerns\PostsIdempotentPurchasing;
 use Tests\TestCase;
 
 class PurchaseReturnApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use PostsIdempotentPurchasing, RefreshDatabase;
 
     private int $orgId;
 
@@ -105,7 +106,7 @@ class PurchaseReturnApiTest extends TestCase
             ->all();
 
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
-        $grnId = $this->postJson('/api/v1/goods-receipts', [
+        $grnId = $this->postGoodsReceipt([
             'purchaseOrderId' => $poId,
             'items' => [
                 ['purchaseOrderItemId' => $itemIds[0], 'qty' => $qty],
@@ -129,7 +130,7 @@ class PurchaseReturnApiTest extends TestCase
         $ids = $this->createReceivedGrn('10.0000', '2.5000');
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $response = $this->postJson('/api/v1/purchase-returns', [
+        $response = $this->postPurchaseReturn([
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '4.0000'],
@@ -170,13 +171,13 @@ class PurchaseReturnApiTest extends TestCase
         $ids = $this->createReceivedGrn('10.0000', '2.5000');
         Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
-        $this->postJson('/api/v1/supplier-invoices', [
+        $this->postSupplierInvoice([
             'goodsReceiptId' => $ids['grnId'],
         ])->assertCreated()
             ->assertJsonPath('meta.outstanding', '25.0000');
 
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
-        $this->postJson('/api/v1/purchase-returns', [
+        $this->postPurchaseReturn([
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '2.0000'],
@@ -196,7 +197,7 @@ class PurchaseReturnApiTest extends TestCase
         $ids = $this->createReceivedGrn('8.0000', '1.2500');
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $this->postJson('/api/v1/purchase-returns', [
+        $this->postPurchaseReturn([
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '3.0000'],
@@ -221,14 +222,14 @@ class PurchaseReturnApiTest extends TestCase
         $ids = $this->createReceivedGrn('5.0000', '1.0000');
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $this->postJson('/api/v1/purchase-returns', [
+        $this->postPurchaseReturn([
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '3.0000'],
             ],
         ])->assertCreated();
 
-        $this->postJson('/api/v1/purchase-returns', [
+        $this->postPurchaseReturn([
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '3.0000'],
@@ -264,7 +265,7 @@ class PurchaseReturnApiTest extends TestCase
         ));
 
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
-        $this->postJson('/api/v1/purchase-returns', [
+        $this->postPurchaseReturn([
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '5.0000'],
@@ -300,8 +301,8 @@ class PurchaseReturnApiTest extends TestCase
             ],
         ];
 
-        $first = $this->postJson('/api/v1/purchase-returns', $payload, $headers)->assertCreated();
-        $second = $this->postJson('/api/v1/purchase-returns', $payload, $headers)->assertOk();
+        $first = $this->postPurchaseReturn($payload, $headers)->assertCreated();
+        $second = $this->postPurchaseReturn($payload, $headers)->assertOk();
 
         $this->assertSame($first->json('data.id'), $second->json('data.id'));
         $this->assertSame(1, PurchaseReturn::query()->count());
@@ -310,7 +311,7 @@ class PurchaseReturnApiTest extends TestCase
             InventoryMovement::query()->where('type', MovementType::PurchaseReturn->value)->count()
         );
 
-        $this->postJson('/api/v1/purchase-returns', [
+        $this->postPurchaseReturn([
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '1.0000'],
@@ -323,7 +324,7 @@ class PurchaseReturnApiTest extends TestCase
         $ids = $this->createReceivedGrn();
         Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
-        $this->postJson('/api/v1/purchase-returns', [
+        $this->postPurchaseReturn([
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '1.0000'],
@@ -335,7 +336,7 @@ class PurchaseReturnApiTest extends TestCase
 
     public function test_unauthenticated_returns_401(): void
     {
-        $this->postJson('/api/v1/purchase-returns', [
+        $this->postPurchaseReturn([
             'goodsReceiptId' => 1,
             'items' => [
                 ['goodsReceiptItemId' => 1, 'qty' => '1.0000'],
@@ -348,7 +349,7 @@ class PurchaseReturnApiTest extends TestCase
         $ids = $this->createReceivedGrn();
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $returnId = $this->postJson('/api/v1/purchase-returns', [
+        $returnId = $this->postPurchaseReturn([
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '1.0000'],
@@ -370,14 +371,14 @@ class PurchaseReturnApiTest extends TestCase
         $second = $this->createReceivedGrn('4.0000', '1.0000');
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $returnId = $this->postJson('/api/v1/purchase-returns', [
+        $returnId = $this->postPurchaseReturn([
             'goodsReceiptId' => $first['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $first['grnItemId'], 'qty' => '1.5000'],
             ],
         ])->assertCreated()->json('data.id');
 
-        $otherReturnId = $this->postJson('/api/v1/purchase-returns', [
+        $otherReturnId = $this->postPurchaseReturn([
             'goodsReceiptId' => $second['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $second['grnItemId'], 'qty' => '1.0000'],
@@ -433,7 +434,7 @@ class PurchaseReturnApiTest extends TestCase
             ->all();
 
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
-        $grnId = $this->postJson('/api/v1/goods-receipts', [
+        $grnId = $this->postGoodsReceipt([
             'purchaseOrderId' => $poId,
             'items' => [
                 ['purchaseOrderItemId' => $itemIds[0], 'qty' => '5.0000'],
@@ -471,7 +472,7 @@ class PurchaseReturnApiTest extends TestCase
             notes: 'Drain for aggregate stock test',
         ));
 
-        $this->postJson('/api/v1/purchase-returns', [
+        $this->postPurchaseReturn([
             'goodsReceiptId' => $grnId,
             'items' => [
                 ['goodsReceiptItemId' => $grnItemIds[0], 'qty' => '4.0000'],
@@ -500,7 +501,7 @@ class PurchaseReturnApiTest extends TestCase
         $ids = $this->createReceivedGrn('6.0000', '1.0000');
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $this->postJson('/api/v1/purchase-returns', [
+        $this->postPurchaseReturn([
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '2.0000'],
@@ -520,12 +521,29 @@ class PurchaseReturnApiTest extends TestCase
         $ids = $this->createReceivedGrn();
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
-        $this->postJson('/api/v1/purchase-returns', [
+        $this->postPurchaseReturn([
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
                 ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '1.0000'],
             ],
         ], ['Idempotency-Key' => str_repeat('k', 65)])
             ->assertStatus(422);
+    }
+
+    public function test_missing_idempotency_key_returns_422_without_writing(): void
+    {
+        $ids = $this->createReceivedGrn();
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
+
+        $this->postJson('/api/v1/purchase-returns', [
+            'goodsReceiptId' => $ids['grnId'],
+            'items' => [
+                ['goodsReceiptItemId' => $ids['grnItemId'], 'qty' => '1.0000'],
+            ],
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Idempotency-Key header is required.');
+
+        $this->assertSame(0, PurchaseReturn::query()->count());
     }
 }
