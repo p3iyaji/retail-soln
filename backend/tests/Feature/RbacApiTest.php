@@ -30,8 +30,10 @@ class RbacApiTest extends TestCase
         $this->assertFalse($cashier->hasPermission('sales.refund'));
         $this->assertTrue($manager->hasPermission('fulfilment.pick'));
         $this->assertTrue($manager->hasPermission('fulfilment.ship'));
+        $this->assertTrue($manager->hasPermission('fulfilment.pickup'));
         $this->assertFalse($cashier->hasPermission('fulfilment.pick'));
         $this->assertFalse($cashier->hasPermission('fulfilment.ship'));
+        $this->assertFalse($cashier->hasPermission('fulfilment.pickup'));
     }
 
     public function test_cashier_cannot_refund_via_gate(): void

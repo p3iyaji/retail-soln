@@ -355,3 +355,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-3-shipment-delivery.md`
   summary: Multi-parcel / multi-carrier shipments per order.
   evidence: Spec Ask First default is single shipment per order; multi-parcel deferred.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-4-store-pickup.md`
+  summary: Emphasize order number on fulfilment list rows (not only detail panel).
+  evidence: Review polish; detail already shows prominent order number for pickup counter handoff.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-4-store-pickup.md`
+  summary: Hide home_delivery carrier/tracking fields for pickup-only staff (no fulfilment.ship).
+  evidence: Review polish; carrier fields already gated to home_delivery mode; pickup-only role UX trim deferred.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-4-store-pickup.md`
+  summary: Emphasize order number on fulfilment list rows for pickup queue matching; hide HD carrier fields for pickup-only staff.
+  evidence: Detail panel shows order number; list rows and carrier UI polish deferred after 7.4 review.

@@ -12,8 +12,8 @@ use Modules\Inventory\Services\StockReservationService;
 use RuntimeException;
 
 /**
- * Staff pick/pack/ship/deliver for portal orders.
- * Pack consumes reserved via StockReservationService; ship/deliver do not touch inventory.
+ * Staff pick/pack/ship/deliver/pickup for portal orders.
+ * Pack consumes reserved via StockReservationService; ship/deliver/pickup do not touch inventory.
  */
 class PortalFulfilmentService
 {
@@ -22,17 +22,22 @@ class PortalFulfilmentService
     private const STAFF_LIST = [
         PortalOrderStatuses::CONFIRMED,
         PortalOrderStatuses::PROCESSING,
+        PortalOrderStatuses::READY_FOR_PICKUP,
         PortalOrderStatuses::OUT_FOR_DELIVERY,
     ];
 
-    /** Show/detail may still resolve delivered for refetch after deliver. */
+    /** Show/detail may still resolve delivered for refetch after deliver/collect. */
     /** @var list<string> */
     private const STAFF_VISIBLE = [
         PortalOrderStatuses::CONFIRMED,
         PortalOrderStatuses::PROCESSING,
+        PortalOrderStatuses::READY_FOR_PICKUP,
         PortalOrderStatuses::OUT_FOR_DELIVERY,
         PortalOrderStatuses::DELIVERED,
     ];
+
+    /** @var list<string> */
+    private const PICKUP_MODES = ['store_pickup', 'click_collect'];
 
     public function __construct(
         private readonly StockReservationService $reservations,
@@ -71,6 +76,19 @@ class PortalFulfilmentService
     }
 
     /**
+     * Mutator lookup for ready/collect — store-scoped only; payment/status validated in service (422).
+     */
+    public function findForStoreAction(int $organizationId, int $storeId, int $orderId): ?PortalOrder
+    {
+        return PortalOrder::query()
+            ->with(['store', 'items', 'customer', 'address', 'shipment'])
+            ->where('organization_id', $organizationId)
+            ->where('store_id', $storeId)
+            ->whereKey($orderId)
+            ->first();
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toListItem(PortalOrder $order): array
@@ -79,7 +97,7 @@ class PortalFulfilmentService
             'id' => $order->id,
             'orderNumber' => $order->order_number,
             'status' => $order->status,
-            'statusLabel' => PortalOrderStatuses::label((string) $order->status),
+            'statusLabel' => $this->staffStatusLabel($order),
             'paymentStatus' => $order->payment_status,
             'fulfilmentMode' => $order->fulfilment_mode,
             'store' => $order->store ? [
@@ -91,11 +109,14 @@ class PortalFulfilmentService
             ],
             'itemCount' => $order->items->count(),
             'packedAt' => $order->packed_at?->toIso8601String(),
+            'collectedAt' => $order->collected_at?->toIso8601String(),
             'createdAt' => $order->created_at?->toIso8601String(),
             'paidAt' => $order->paid_at?->toIso8601String(),
             'packable' => $this->isPackable($order),
             'shippable' => $this->isShippable($order),
             'deliverable' => $this->isDeliverable($order),
+            'readyForPickup' => $this->isReadyForPickup($order),
+            'collectable' => $this->isCollectable($order),
             'shipment' => $this->shipmentSummary($order->shipment),
         ];
     }
@@ -107,10 +128,14 @@ class PortalFulfilmentService
     {
         $order->loadMissing(['shipment']);
         $base = $this->payloads->build($order, enriched: true);
+        $base['statusLabel'] = $this->staffStatusLabel($order);
         $base['packedAt'] = $order->packed_at?->toIso8601String();
+        $base['collectedAt'] = $order->collected_at?->toIso8601String();
         $base['packable'] = $this->isPackable($order);
         $base['shippable'] = $this->isShippable($order);
         $base['deliverable'] = $this->isDeliverable($order);
+        $base['readyForPickup'] = $this->isReadyForPickup($order);
+        $base['collectable'] = $this->isCollectable($order);
         $base['shipment'] = $this->shipmentSummary($order->shipment);
 
         return $base;
@@ -343,6 +368,125 @@ class PortalFulfilmentService
         });
     }
 
+    /**
+     * Pickup / click & collect: processing → ready_for_pickup. No ledger posts; no shipment.
+     *
+     * @return array{order: PortalOrder, created: bool}
+     */
+    public function markReadyForPickup(
+        PortalOrder $order,
+        int $storeId,
+        string $idempotencyKey,
+    ): array {
+        $this->assertIdempotencyKey($idempotencyKey);
+
+        if ((int) $order->store_id !== $storeId) {
+            throw new RuntimeException('Order does not belong to this store.');
+        }
+
+        return DB::transaction(function () use ($order, $idempotencyKey): array {
+            /** @var PortalOrder $locked */
+            $locked = PortalOrder::query()
+                ->whereKey($order->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $this->assertPaidPickupMode($locked, 'marked ready for pickup');
+
+            if ($locked->status === PortalOrderStatuses::READY_FOR_PICKUP) {
+                $storedKey = $locked->ready_idempotency_key;
+                if ($storedKey === null || $storedKey === '') {
+                    throw new RuntimeException('Order was already marked ready for pickup; provide the original Idempotency-Key to replay.');
+                }
+                if ($storedKey !== $idempotencyKey) {
+                    throw new RuntimeException('Idempotency-Key conflicts with a previous ready-for-pickup for this order.');
+                }
+
+                return [
+                    'order' => $locked->fresh(['store', 'items', 'customer', 'address', 'shipment']),
+                    'created' => false,
+                ];
+            }
+
+            if (PortalOrderStatuses::isTerminal((string) $locked->status)) {
+                throw new RuntimeException('Cancelled or terminal orders cannot be marked ready for pickup.');
+            }
+
+            if ($locked->status !== PortalOrderStatuses::PROCESSING) {
+                throw new RuntimeException('Only packed (processing) store_pickup or click_collect orders can be marked ready for pickup.');
+            }
+
+            $locked->status = PortalOrderStatuses::READY_FOR_PICKUP;
+            $locked->ready_idempotency_key = $idempotencyKey;
+            $locked->save();
+
+            return [
+                'order' => $locked->fresh(['store', 'items', 'customer', 'address', 'shipment']),
+                'created' => true,
+            ];
+        });
+    }
+
+    /**
+     * Pickup / click & collect: ready_for_pickup → delivered (collected). No ledger posts.
+     *
+     * @return array{order: PortalOrder, created: bool}
+     */
+    public function markCollected(
+        PortalOrder $order,
+        int $storeId,
+        string $idempotencyKey,
+    ): array {
+        $this->assertIdempotencyKey($idempotencyKey);
+
+        if ((int) $order->store_id !== $storeId) {
+            throw new RuntimeException('Order does not belong to this store.');
+        }
+
+        return DB::transaction(function () use ($order, $idempotencyKey): array {
+            /** @var PortalOrder $locked */
+            $locked = PortalOrder::query()
+                ->whereKey($order->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $this->assertPaidPickupMode($locked, 'marked collected');
+
+            if ($locked->status === PortalOrderStatuses::DELIVERED) {
+                $storedKey = $locked->collect_idempotency_key;
+                if ($storedKey === null || $storedKey === '') {
+                    throw new RuntimeException('Order was already collected; provide the original Idempotency-Key to replay.');
+                }
+                if ($storedKey !== $idempotencyKey) {
+                    throw new RuntimeException('Idempotency-Key conflicts with a previous collect for this order.');
+                }
+
+                return [
+                    'order' => $locked->fresh(['store', 'items', 'customer', 'address', 'shipment']),
+                    'created' => false,
+                ];
+            }
+
+            if (PortalOrderStatuses::isTerminal((string) $locked->status)) {
+                throw new RuntimeException('Cancelled or terminal orders cannot be marked collected.');
+            }
+
+            if ($locked->status !== PortalOrderStatuses::READY_FOR_PICKUP) {
+                throw new RuntimeException('Only ready_for_pickup orders can be marked collected.');
+            }
+
+            $locked->status = PortalOrderStatuses::DELIVERED;
+            $locked->collect_idempotency_key = $idempotencyKey;
+            $locked->collected_at = now();
+            $locked->save();
+
+            return [
+                'order' => $locked->fresh(['store', 'items', 'customer', 'address', 'shipment']),
+                'created' => true,
+            ];
+        });
+    }
+
     public function isPackable(PortalOrder $order): bool
     {
         return $order->payment_status === 'paid'
@@ -367,6 +511,20 @@ class PortalFulfilmentService
             && $order->shipment !== null;
     }
 
+    public function isReadyForPickup(PortalOrder $order): bool
+    {
+        return $order->payment_status === 'paid'
+            && in_array((string) $order->fulfilment_mode, self::PICKUP_MODES, true)
+            && $order->status === PortalOrderStatuses::PROCESSING;
+    }
+
+    public function isCollectable(PortalOrder $order): bool
+    {
+        return $order->payment_status === 'paid'
+            && in_array((string) $order->fulfilment_mode, self::PICKUP_MODES, true)
+            && $order->status === PortalOrderStatuses::READY_FOR_PICKUP;
+    }
+
     private function assertPaidHomeDelivery(PortalOrder $order, string $action): void
     {
         if ($order->payment_status !== 'paid') {
@@ -376,6 +534,27 @@ class PortalFulfilmentService
         if ($order->fulfilment_mode !== 'home_delivery') {
             throw new RuntimeException("Only home_delivery orders can be {$action}.");
         }
+    }
+
+    private function assertPaidPickupMode(PortalOrder $order, string $action): void
+    {
+        if ($order->payment_status !== 'paid') {
+            throw new RuntimeException("Only paid orders can be {$action}.");
+        }
+
+        if (! in_array((string) $order->fulfilment_mode, self::PICKUP_MODES, true)) {
+            throw new RuntimeException("Only store_pickup or click_collect orders can be {$action}.");
+        }
+    }
+
+    private function staffStatusLabel(PortalOrder $order): string
+    {
+        if ($order->status === PortalOrderStatuses::DELIVERED
+            && in_array((string) $order->fulfilment_mode, self::PICKUP_MODES, true)) {
+            return 'Collected';
+        }
+
+        return PortalOrderStatuses::label((string) $order->status);
     }
 
     /**
