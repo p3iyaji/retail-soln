@@ -2,15 +2,15 @@
 
 Vue 3 + TypeScript + Vite + Tailwind CSS 4. Consumes `/api/v1` with Sanctum Bearer tokens (`retail_soln_pos_token`). Sends `X-Store-Id` after store selection. **No Inertia.**
 
-## PWA / offline shell (Story 5.1) + local catalog cache (Story 5.2) + offline sale queue (Story 5.3) + push sync (Story 5.4)
+## PWA / offline shell (Story 5.1) + local catalog cache (Story 5.2) + offline sale queue (Story 5.3) + push sync (Story 5.4) + pull cursors (Story 5.5)
 
 - Install metadata: `public/manifest.webmanifest`
 - Production builds register a service worker via `vite-plugin-pwa` (app-shell precache). **Dev (`npm run dev`) does not register a SW** so Vite HMR stays intact.
-- Local store: Dexie IndexedDB (`src/db/posDb.ts`) — typed `products`, `prices`, `taxes`, `inventory_snapshot`, `pos_config`; `pending_sales` uuid PK + envelope (schema v5); stable `deviceUuid` / `localSequence` in `sync_meta`.
-- **Cache warm** on store select / floor mount (`src/sync/cacheWarm.ts`): paginates existing `GET /products`, `GET /inventory/balances?storeId=`, `GET /stores/{id}` (taxConfig). Badge → SYNCING → ONLINE; failure → SYNC ERROR.
+- Local store: Dexie IndexedDB (`src/db/posDb.ts`) — typed `products`, `prices`, `taxes`, `customers`, `inventory_snapshot`, `pos_config`; `pending_sales` uuid PK + envelope (schema v7); stable `deviceUuid` / `localSequence` / per-store `pullCursor` + `lastPullAt` in `sync_meta`.
+- **Pull sync (5.5):** online store select / floor refresh / reconnect use `GET /sync/pull` (`src/sync/pullCache.ts`) — opaque cursor, capped pages, hasMore loop (page budget). Upserts Dexie; deletes/inactive remove sellable rows. Prefer store price rows; fallback to variant list price. `warmCache` remains for tests/legacy full replace only.
 - **Online:** search + cart pricing stay on live `GET /products/search` and `POST /pricing/resolve`. Checkout uses `POST /pos/sales` with `body.uuid === Idempotency-Key`.
 - **Offline:** search Dexie (`src/sync/localCatalog.ts`); cart lines from cached unit price + store tax (no promos). Inventory snapshot is advisory only. Completed cash/card checkouts enqueue into `pending_sales` (`src/sync/pendingSales.ts`) — local success “Queued — will sync when online”; no receipt/print API. Installment plan create and **held-sale completion** stay **online-only**.
-- **Push sync (5.4):** on reconnect / when online with pending rows, `pushPendingSales` posts `POST /sync/push` (idempotent uuid, AD-9 oversell on server). Dexie `syncStatus` → `pushing` → `synced`/`error`; badge SYNCING / SYNC ERROR. Cursor pull is Story 5.5.
+- **Push sync (5.4):** on reconnect, `pushPendingSales` then `pullCache` (push errors do not skip pull). Dexie `syncStatus` → `pushing` → `synced`/`error`; badge SYNCING / SYNC ERROR.
 - Sync badge (chrome): ONLINE / OFFLINE / SYNCING / SYNC ERROR — driven by `stores/sync.ts` + browser connectivity.
 
 ## Run

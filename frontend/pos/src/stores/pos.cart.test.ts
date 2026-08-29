@@ -7,7 +7,7 @@ import { posDb } from '@/db/posDb'
 const resolvePrice = vi.fn()
 const searchProducts = vi.fn()
 const listCategories = vi.fn()
-const warmCache = vi.fn().mockResolvedValue(undefined)
+const pullCache = vi.fn().mockResolvedValue(undefined)
 const searchLocalCatalog = vi.fn()
 const localCatalogProductCount = vi.fn()
 
@@ -25,8 +25,8 @@ vi.mock('@/api/posCatalog', () => ({
   listCategories: (...args: unknown[]) => listCategories(...args),
 }))
 
-vi.mock('@/sync/cacheWarm', () => ({
-  warmCache: (...args: unknown[]) => warmCache(...args),
+vi.mock('@/sync/pullCache', () => ({
+  pullCache: (...args: unknown[]) => pullCache(...args),
 }))
 
 vi.mock('@/sync/localCatalog', () => ({
@@ -70,8 +70,8 @@ describe('pos cart store resolve/merge', () => {
     resolvePrice.mockReset()
     searchProducts.mockReset()
     listCategories.mockReset()
-    warmCache.mockReset()
-    warmCache.mockResolvedValue(undefined)
+    pullCache.mockReset()
+    pullCache.mockResolvedValue(undefined)
     searchLocalCatalog.mockReset()
     localCatalogProductCount.mockReset()
     listCategories.mockResolvedValue({ data: [{ id: 1, name: 'Snacks', slug: 'snacks', isActive: true }] })
@@ -153,7 +153,7 @@ describe('pos cart store resolve/merge', () => {
     expect(pos.categoryId).toBeNull()
     expect(pos.selectedStoreId).toBe(2)
     expect(listCategories).toHaveBeenCalled()
-    expect(warmCache).toHaveBeenCalledWith(2)
+    expect(pullCache).toHaveBeenCalledWith(2)
   })
 
   it('setPriceOverride success applies override unit', async () => {
