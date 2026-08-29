@@ -24,7 +24,7 @@ class OrganizationApiTest extends TestCase
     public function test_org_admin_can_get_and_update_current_organization(): void
     {
         $admin = User::factory()->orgAdmin()->create();
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['staff']);
 
         $this->getJson('/api/v1/organizations/current')
             ->assertOk()
@@ -51,7 +51,7 @@ class OrganizationApiTest extends TestCase
 
     public function test_cashier_cannot_update_organization(): void
     {
-        Sanctum::actingAs(User::factory()->create(['role' => 'cashier']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'cashier']), ['staff']);
 
         $this->postJson('/api/v1/organizations/current', [
             'name' => 'Hacked Org',
@@ -60,7 +60,7 @@ class OrganizationApiTest extends TestCase
 
     public function test_org_admin_can_crud_stores_with_address_currency_tax(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $create = $this->postJson('/api/v1/stores', [
             'name' => 'Downtown',
@@ -110,7 +110,7 @@ class OrganizationApiTest extends TestCase
 
     public function test_cashier_cannot_create_store(): void
     {
-        Sanctum::actingAs(User::factory()->create(['role' => 'cashier']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'cashier']), ['staff']);
 
         $this->postJson('/api/v1/stores', [
             'name' => 'Unauthorized Store',
@@ -120,7 +120,7 @@ class OrganizationApiTest extends TestCase
 
     public function test_org_admin_can_crud_warehouses_belonging_to_organization(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
         $organization = Organization::factory()->create();
         $store = Store::factory()->create(['organization_id' => $organization->id]);
 
@@ -162,7 +162,7 @@ class OrganizationApiTest extends TestCase
         $organization = Organization::factory()->create();
         $warehouse = Warehouse::factory()->create(['organization_id' => $organization->id]);
 
-        Sanctum::actingAs(User::factory()->create(['role' => 'cashier']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'cashier']), ['staff']);
 
         $this->deleteJson("/api/v1/warehouses/{$warehouse->id}")
             ->assertForbidden();

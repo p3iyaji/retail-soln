@@ -75,7 +75,7 @@ class StoreScopeSecurityApiTest extends TestCase
     {
         $manager = User::factory()->storeManager()->create();
         $manager->stores()->attach($this->storeA->id, ['is_default' => true]);
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
 
         $sessionId = (int) $this->postJson('/api/v1/pos/sessions/open', [
             'terminalName' => 'SCOPE-A',
@@ -105,7 +105,7 @@ class StoreScopeSecurityApiTest extends TestCase
     {
         $cashier = User::factory()->cashier()->create();
         $cashier->stores()->attach($this->storeA->id, ['is_default' => true]);
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['staff']);
 
         $this->postJson('/api/v1/pricing/resolve', [
             'variantId' => $this->variant->id,

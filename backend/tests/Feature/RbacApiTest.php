@@ -33,7 +33,7 @@ class RbacApiTest extends TestCase
     public function test_cashier_cannot_refund_via_gate(): void
     {
         $cashier = User::factory()->cashier()->create();
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['staff']);
 
         $this->assertFalse($cashier->can('sales.refund'));
     }
@@ -47,7 +47,7 @@ class RbacApiTest extends TestCase
         $manager = User::factory()->storeManager()->create();
         $manager->stores()->attach($storeA->id, ['is_default' => true]);
 
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
 
         $this->getJson("/api/v1/stores/{$storeA->id}")
             ->assertOk()
@@ -65,7 +65,7 @@ class RbacApiTest extends TestCase
     public function test_org_admin_can_assign_role_and_store_access(): void
     {
         $admin = User::factory()->orgAdmin()->create();
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['staff']);
 
         $organization = Organization::factory()->create();
         Organization::query()->whereKeyNot($organization->id)->delete();
@@ -116,7 +116,7 @@ class RbacApiTest extends TestCase
 
     public function test_cashier_cannot_manage_users(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
         $this->getJson('/api/v1/users')->assertForbidden();
         $this->postJson('/api/v1/users', [
@@ -129,7 +129,7 @@ class RbacApiTest extends TestCase
 
     public function test_roles_and_permissions_endpoints_return_seeded_matrix(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->getJson('/api/v1/roles')
             ->assertOk()
@@ -152,7 +152,7 @@ class RbacApiTest extends TestCase
         $manager = User::factory()->storeManager()->create();
         $manager->stores()->attach($store->id, ['is_default' => true]);
 
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
 
         $this->getJson('/api/v1/auth/me')
             ->assertOk()

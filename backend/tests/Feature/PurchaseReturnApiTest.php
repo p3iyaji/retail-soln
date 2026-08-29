@@ -77,7 +77,7 @@ class PurchaseReturnApiTest extends TestCase
     private function createReceivedGrn(string $qty = '10.0000', string $unitCost = '2.5000'): array
     {
         $creator = User::factory()->procurementOfficer()->create();
-        Sanctum::actingAs($creator);
+        Sanctum::actingAs($creator, ['staff']);
 
         $poId = $this->postJson('/api/v1/purchase-orders', [
             'storeId' => $this->store->id,
@@ -94,7 +94,7 @@ class PurchaseReturnApiTest extends TestCase
 
         $this->postJson("/api/v1/purchase-orders/{$poId}/submit")->assertOk();
 
-        Sanctum::actingAs(User::factory()->storeManager()->create());
+        Sanctum::actingAs(User::factory()->storeManager()->create(), ['staff']);
         $this->postJson("/api/v1/purchase-orders/{$poId}/approve")->assertOk();
 
         $itemIds = PurchaseOrderItem::query()
@@ -104,7 +104,7 @@ class PurchaseReturnApiTest extends TestCase
             ->map(fn ($id) => (int) $id)
             ->all();
 
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $grnId = $this->postJson('/api/v1/goods-receipts', [
             'purchaseOrderId' => $poId,
             'items' => [
@@ -127,7 +127,7 @@ class PurchaseReturnApiTest extends TestCase
     public function test_happy_path_posts_negative_purchase_return_and_credit(): void
     {
         $ids = $this->createReceivedGrn('10.0000', '2.5000');
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $response = $this->postJson('/api/v1/purchase-returns', [
             'goodsReceiptId' => $ids['grnId'],
@@ -168,14 +168,14 @@ class PurchaseReturnApiTest extends TestCase
     public function test_outstanding_drops_by_credit_after_invoice(): void
     {
         $ids = $this->createReceivedGrn('10.0000', '2.5000');
-        Sanctum::actingAs(User::factory()->create(['role' => 'accountant']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
         $this->postJson('/api/v1/supplier-invoices', [
             'goodsReceiptId' => $ids['grnId'],
         ])->assertCreated()
             ->assertJsonPath('meta.outstanding', '25.0000');
 
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $this->postJson('/api/v1/purchase-returns', [
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
@@ -185,7 +185,7 @@ class PurchaseReturnApiTest extends TestCase
             ->assertJsonPath('data.creditAmount', '5.0000')
             ->assertJsonPath('meta.outstanding', '20.0000');
 
-        Sanctum::actingAs(User::factory()->procurementOfficer()->create());
+        Sanctum::actingAs(User::factory()->procurementOfficer()->create(), ['staff']);
         $this->getJson("/api/v1/suppliers/{$this->supplier->id}")
             ->assertOk()
             ->assertJsonPath('data.outstandingBalance', '20.0000');
@@ -194,7 +194,7 @@ class PurchaseReturnApiTest extends TestCase
     public function test_uninvoiced_grn_return_still_applies_credit_and_stock(): void
     {
         $ids = $this->createReceivedGrn('8.0000', '1.2500');
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $this->postJson('/api/v1/purchase-returns', [
             'goodsReceiptId' => $ids['grnId'],
@@ -219,7 +219,7 @@ class PurchaseReturnApiTest extends TestCase
     public function test_cap_exceeded_returns_422_without_partial_commit(): void
     {
         $ids = $this->createReceivedGrn('5.0000', '1.0000');
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $this->postJson('/api/v1/purchase-returns', [
             'goodsReceiptId' => $ids['grnId'],
@@ -263,7 +263,7 @@ class PurchaseReturnApiTest extends TestCase
             notes: 'Drain for stock test',
         ));
 
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $this->postJson('/api/v1/purchase-returns', [
             'goodsReceiptId' => $ids['grnId'],
             'items' => [
@@ -290,7 +290,7 @@ class PurchaseReturnApiTest extends TestCase
     public function test_idempotency_replay_and_conflict(): void
     {
         $ids = $this->createReceivedGrn('10.0000', '2.0000');
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $headers = ['Idempotency-Key' => 'ret-replay-001'];
         $payload = [
             'goodsReceiptId' => $ids['grnId'],
@@ -321,7 +321,7 @@ class PurchaseReturnApiTest extends TestCase
     public function test_without_receive_permission_returns_403(): void
     {
         $ids = $this->createReceivedGrn();
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
         $this->postJson('/api/v1/purchase-returns', [
             'goodsReceiptId' => $ids['grnId'],
@@ -346,7 +346,7 @@ class PurchaseReturnApiTest extends TestCase
     public function test_create_writes_audit_log(): void
     {
         $ids = $this->createReceivedGrn();
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $returnId = $this->postJson('/api/v1/purchase-returns', [
             'goodsReceiptId' => $ids['grnId'],
@@ -368,7 +368,7 @@ class PurchaseReturnApiTest extends TestCase
     {
         $first = $this->createReceivedGrn('10.0000', '2.5000');
         $second = $this->createReceivedGrn('4.0000', '1.0000');
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $returnId = $this->postJson('/api/v1/purchase-returns', [
             'goodsReceiptId' => $first['grnId'],
@@ -402,7 +402,7 @@ class PurchaseReturnApiTest extends TestCase
     public function test_multi_line_same_variant_aggregate_stock_insufficient(): void
     {
         $creator = User::factory()->procurementOfficer()->create();
-        Sanctum::actingAs($creator);
+        Sanctum::actingAs($creator, ['staff']);
 
         $poId = $this->postJson('/api/v1/purchase-orders', [
             'storeId' => $this->store->id,
@@ -422,7 +422,7 @@ class PurchaseReturnApiTest extends TestCase
         ])->assertCreated()->json('data.id');
 
         $this->postJson("/api/v1/purchase-orders/{$poId}/submit")->assertOk();
-        Sanctum::actingAs(User::factory()->storeManager()->create());
+        Sanctum::actingAs(User::factory()->storeManager()->create(), ['staff']);
         $this->postJson("/api/v1/purchase-orders/{$poId}/approve")->assertOk();
 
         $itemIds = PurchaseOrderItem::query()
@@ -432,7 +432,7 @@ class PurchaseReturnApiTest extends TestCase
             ->map(fn ($id) => (int) $id)
             ->all();
 
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $grnId = $this->postJson('/api/v1/goods-receipts', [
             'purchaseOrderId' => $poId,
             'items' => [
@@ -498,7 +498,7 @@ class PurchaseReturnApiTest extends TestCase
     public function test_po_show_includes_returnable_grn_lines(): void
     {
         $ids = $this->createReceivedGrn('6.0000', '1.0000');
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $this->postJson('/api/v1/purchase-returns', [
             'goodsReceiptId' => $ids['grnId'],
@@ -518,7 +518,7 @@ class PurchaseReturnApiTest extends TestCase
     public function test_idempotency_key_too_long_returns_422(): void
     {
         $ids = $this->createReceivedGrn();
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $this->postJson('/api/v1/purchase-returns', [
             'goodsReceiptId' => $ids['grnId'],

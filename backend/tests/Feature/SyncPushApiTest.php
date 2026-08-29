@@ -80,7 +80,7 @@ class SyncPushApiTest extends TestCase
 
         $this->cashier = User::factory()->cashier()->create();
         $this->cashier->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
         $this->sessionId = $this->openSession($this->cashier);
 
         Device::query()->create([
@@ -108,7 +108,7 @@ class SyncPushApiTest extends TestCase
 
     private function openSession(User $user): int
     {
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
         $response = $this->postJson('/api/v1/pos/sessions/open', [
             'terminalName' => 'POS-SYNC',
             'openingFloat' => '0.0000',
@@ -155,7 +155,7 @@ class SyncPushApiTest extends TestCase
      */
     private function push(array $records, ?string $deviceUuid = null): \Illuminate\Testing\TestResponse
     {
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
 
         return $this->postJson('/api/v1/sync/push', [
             'deviceUuid' => $deviceUuid ?? $this->deviceUuid,
@@ -253,7 +253,7 @@ class SyncPushApiTest extends TestCase
 
     public function test_online_sale_still_hard_rejects_insufficient_stock(): void
     {
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
         $this->postJson('/api/v1/pos/sales', $this->salePayload(
             '550e8400-e29b-41d4-a716-4466554400aa',
             null,
@@ -316,7 +316,7 @@ class SyncPushApiTest extends TestCase
             ->firstOrFail();
         $originalStoreId = (int) $device->store_id;
 
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
         $uuid = '550e8400-e29b-41d4-a716-446655440006';
         $this->postJson('/api/v1/sync/push', [
             'deviceUuid' => $this->deviceUuid,
@@ -526,7 +526,7 @@ class SyncPushApiTest extends TestCase
 
         $manager = User::factory()->inventoryManager()->create();
         $manager->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
 
         $this->postJson("/api/v1/sync/oversell-exceptions/{$exceptionId}/approve", [], $this->headers())
             ->assertOk()

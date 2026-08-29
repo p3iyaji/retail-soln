@@ -97,14 +97,14 @@ class SaleHoldVoidApiTest extends TestCase
     {
         $user = User::factory()->cashier()->create();
         $user->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         return $user;
     }
 
     private function openSessionFor(User $user, string $terminal = 'POS-HV'): int
     {
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         $response = $this->postJson('/api/v1/pos/sessions/open', [
             'terminalName' => $terminal,
@@ -200,7 +200,7 @@ class SaleHoldVoidApiTest extends TestCase
 
         $manager = User::factory()->storeManager()->create();
         $manager->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
 
         $this->postJson("/api/v1/pos/sales/{$saleId}/void", ['reason' => 'Wrong item'])
             ->assertOk()

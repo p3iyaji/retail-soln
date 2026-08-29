@@ -77,7 +77,7 @@ class ProformaInvoiceApiTest extends TestCase
 
         $manager = User::factory()->storeManager()->create();
         $manager->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
     }
 
     private function seedStock(string $qty = '10.0000'): void

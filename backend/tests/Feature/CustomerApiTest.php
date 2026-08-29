@@ -24,7 +24,7 @@ class CustomerApiTest extends TestCase
 
     public function test_walk_in_is_available_via_list_and_walk_in_endpoint(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $list = $this->getJson('/api/v1/customers')->assertOk();
         $this->assertTrue(
@@ -45,7 +45,7 @@ class CustomerApiTest extends TestCase
 
     public function test_search_matches_name_phone_email_and_account_number(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $created = $this->postJson('/api/v1/customers', [
             'name' => 'Ada Lovelace',
@@ -69,7 +69,7 @@ class CustomerApiTest extends TestCase
 
     public function test_create_registered_customer_with_addresses(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $group = $this->postJson('/api/v1/customer-groups', [
             'name' => 'VIP',
@@ -101,7 +101,7 @@ class CustomerApiTest extends TestCase
 
     public function test_history_returns_empty_sections_when_authorized(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $customerId = $this->postJson('/api/v1/customers', [
             'name' => 'History Subject',
@@ -118,12 +118,12 @@ class CustomerApiTest extends TestCase
 
     public function test_history_forbidden_without_view_permission(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
         $customerId = $this->postJson('/api/v1/customers', [
             'name' => 'Secret Customer',
         ])->assertCreated()->json('data.id');
 
-        Sanctum::actingAs(User::factory()->create(['role' => 'delivery_staff']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'delivery_staff']), ['staff']);
 
         $this->getJson("/api/v1/customers/{$customerId}/history")->assertForbidden();
         $this->getJson('/api/v1/customers')->assertForbidden();
@@ -131,7 +131,7 @@ class CustomerApiTest extends TestCase
 
     public function test_cannot_delete_walk_in_customer(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $walkInId = $this->getJson('/api/v1/customers/walk-in')
             ->assertOk()
@@ -150,7 +150,7 @@ class CustomerApiTest extends TestCase
 
     public function test_manage_forbidden_without_manage_permission(): void
     {
-        Sanctum::actingAs(User::factory()->create(['role' => 'accountant']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
         $this->getJson('/api/v1/customers')->assertOk();
 
@@ -158,12 +158,12 @@ class CustomerApiTest extends TestCase
             'name' => 'Blocked Create',
         ])->assertForbidden();
 
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
         $customerId = $this->postJson('/api/v1/customers', [
             'name' => 'Editable',
         ])->assertCreated()->json('data.id');
 
-        Sanctum::actingAs(User::factory()->create(['role' => 'accountant']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
         $this->patchJson("/api/v1/customers/{$customerId}", [
             'name' => 'Hacked',
@@ -180,7 +180,7 @@ class CustomerApiTest extends TestCase
 
     public function test_soft_deleted_customers_are_excluded_from_search(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $id = $this->postJson('/api/v1/customers', [
             'name' => 'Gone Customer',
@@ -196,7 +196,7 @@ class CustomerApiTest extends TestCase
 
     public function test_account_number_auto_generated_when_omitted(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $data = $this->postJson('/api/v1/customers', [
             'name' => 'Auto Account',
@@ -207,7 +207,7 @@ class CustomerApiTest extends TestCase
 
     public function test_cannot_patch_walk_in_rename_type_or_deactivate(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $walkInId = $this->getJson('/api/v1/customers/walk-in')
             ->assertOk()
@@ -240,7 +240,7 @@ class CustomerApiTest extends TestCase
 
     public function test_cannot_convert_registered_customer_to_walk_in(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $customerId = $this->postJson('/api/v1/customers', [
             'name' => 'Registered Only',
@@ -255,7 +255,7 @@ class CustomerApiTest extends TestCase
 
     public function test_can_patch_registered_customer_fields_and_addresses(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $customerId = $this->postJson('/api/v1/customers', [
             'name' => 'Before Update',
@@ -292,7 +292,7 @@ class CustomerApiTest extends TestCase
 
     public function test_can_show_customer(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $customerId = $this->postJson('/api/v1/customers', [
             'name' => 'Show Me',
@@ -308,7 +308,7 @@ class CustomerApiTest extends TestCase
 
     public function test_group_create_forbidden_without_manage(): void
     {
-        Sanctum::actingAs(User::factory()->create(['role' => 'accountant']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
         $this->postJson('/api/v1/customer-groups', [
             'name' => 'Blocked Group',
@@ -317,7 +317,7 @@ class CustomerApiTest extends TestCase
 
     public function test_create_writes_audit_log(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $customerId = $this->postJson('/api/v1/customers', [
             'name' => 'Audited Customer',

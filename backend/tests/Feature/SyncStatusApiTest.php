@@ -84,7 +84,7 @@ class SyncStatusApiTest extends TestCase
 
         $this->cashier = User::factory()->cashier()->create();
         $this->cashier->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
     }
 
     /**
@@ -222,7 +222,7 @@ class SyncStatusApiTest extends TestCase
         $this->getJson('/api/v1/sync/status', ['X-Store-Id' => (string) $this->store->id])
             ->assertUnauthorized();
 
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
         $this->getJson('/api/v1/sync/status')
             ->assertForbidden();
     }
@@ -237,7 +237,7 @@ class SyncStatusApiTest extends TestCase
 
         $manager = User::factory()->inventoryManager()->create();
         $manager->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
 
         $this->getJson('/api/v1/sync/oversell-exceptions', $this->headers())
             ->assertOk()

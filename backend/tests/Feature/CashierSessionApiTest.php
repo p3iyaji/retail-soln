@@ -32,7 +32,7 @@ class CashierSessionApiTest extends TestCase
         $this->store = Store::factory()->create(['organization_id' => $this->orgId]);
         $this->cashier = User::factory()->cashier()->create();
         $this->cashier->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
     }
 
     private function headers(): array
@@ -154,7 +154,7 @@ class CashierSessionApiTest extends TestCase
 
         $manager = User::factory()->storeManager()->create();
         $manager->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
 
         $this->getJson('/api/v1/pos/sessions', $this->headers())
             ->assertOk()
@@ -164,7 +164,7 @@ class CashierSessionApiTest extends TestCase
     public function test_user_without_store_access_cannot_list_sessions(): void
     {
         $otherCashier = User::factory()->cashier()->create();
-        Sanctum::actingAs($otherCashier);
+        Sanctum::actingAs($otherCashier, ['staff']);
 
         $this->getJson('/api/v1/pos/sessions', $this->headers())->assertForbidden();
     }
@@ -173,7 +173,7 @@ class CashierSessionApiTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'accountant']);
         $user->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         $this->postJson('/api/v1/pos/sessions/open', [
             'terminalName' => 'POS-001',

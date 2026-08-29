@@ -60,7 +60,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_resolve_uses_store_list_price(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $list = PriceList::query()->create([
             'organization_id' => $this->orgId,
@@ -92,7 +92,7 @@ class PricingResolveApiTest extends TestCase
     {
         $cashier = User::factory()->cashier()->create();
         $cashier->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['staff']);
 
         $this->postJson('/api/v1/pricing/resolve', [
             'variantId' => $this->variant->id,
@@ -106,7 +106,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_resolve_applies_percent_promo(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->createOrgListPrice('20.0000');
         $this->createPromo('10% Off', 'percent', '10.0000');
@@ -127,7 +127,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_resolve_applies_fixed_promo_capped_at_unit(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->createOrgListPrice('5.0000');
         $this->createPromo('Big Off', 'fixed', '10.0000');
@@ -144,7 +144,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_resolve_applies_simple_bogo(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->createOrgListPrice('10.0000');
 
@@ -174,7 +174,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_resolve_tax_exclusive(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->postJson('/api/v1/pricing/resolve', [
             'variantId' => $this->variant->id,
@@ -189,7 +189,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_resolve_tax_inclusive(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->store->update([
             'tax_config' => [
@@ -213,7 +213,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_resolve_missing_variant_or_store_returns_422(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->postJson('/api/v1/pricing/resolve', [
             'variantId' => 999999,
@@ -228,7 +228,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_crud_unauthorized_without_manage_permission(): void
     {
-        Sanctum::actingAs(User::factory()->cashier()->create());
+        Sanctum::actingAs(User::factory()->cashier()->create(), ['staff']);
 
         $this->postJson('/api/v1/price-lists', [
             'name' => 'Retail',
@@ -252,7 +252,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_price_list_and_promotion_crud_happy_path(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $listId = $this->postJson('/api/v1/price-lists', [
             'name' => 'Retail',
@@ -303,7 +303,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_resolve_prefers_store_list_over_org_default(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $orgList = PriceList::query()->create([
             'organization_id' => $this->orgId,
@@ -343,7 +343,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_inactive_price_list_ignored_falls_back(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $inactive = PriceList::query()->create([
             'organization_id' => $this->orgId,
@@ -390,7 +390,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_expired_inactive_wrong_store_promo_gives_zero_discount(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
         $this->createOrgListPrice('20.0000');
 
         $otherStore = Store::factory()->create([
@@ -432,7 +432,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_competing_promos_apply_best_single_only(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
         $this->createOrgListPrice('100.0000');
 
         $this->createPromo('Five Off', 'percent', '5.0000');
@@ -453,7 +453,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_resolve_forbidden_without_resolve_permissions(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $this->postJson('/api/v1/pricing/resolve', [
             'variantId' => $this->variant->id,
@@ -463,7 +463,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_empty_tax_config_yields_zero_tax(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->store->update(['tax_config' => null]);
 
@@ -489,7 +489,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_org_default_list_wins_over_non_default_when_both_price_variant(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         // Create non-default first so it would win if prices.id order were used.
         $nonDefault = PriceList::query()->create([
@@ -530,7 +530,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_inactive_variant_returns_422(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
         $this->variant->update(['is_active' => false]);
 
         $this->postJson('/api/v1/pricing/resolve', [
@@ -542,7 +542,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_qty_zero_decimal_rejected(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $this->postJson('/api/v1/pricing/resolve', [
             'variantId' => $this->variant->id,
@@ -553,7 +553,7 @@ class PricingResolveApiTest extends TestCase
 
     public function test_updating_price_list_to_store_clears_default(): void
     {
-        Sanctum::actingAs(User::factory()->orgAdmin()->create());
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
 
         $listId = $this->postJson('/api/v1/price-lists', [
             'name' => 'Retail',

@@ -57,7 +57,7 @@ class LowStockAlertsApiTest extends TestCase
 
     public function test_lists_alert_when_available_at_or_below_reorder_level(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $this->postStock('2.0000');
 
         $response = $this->getJson('/api/v1/inventory/alerts/low-stock?storeId='.$this->store->id);
@@ -76,7 +76,7 @@ class LowStockAlertsApiTest extends TestCase
 
     public function test_lists_alert_when_available_equals_reorder_level(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $this->postStock('5.0000');
 
         $this->getJson('/api/v1/inventory/alerts/low-stock?storeId='.$this->store->id)
@@ -89,7 +89,7 @@ class LowStockAlertsApiTest extends TestCase
 
     public function test_excludes_balance_above_reorder_level(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $this->postStock('6.0000');
 
         $this->getJson('/api/v1/inventory/alerts/low-stock?storeId='.$this->store->id)
@@ -100,7 +100,7 @@ class LowStockAlertsApiTest extends TestCase
 
     public function test_excludes_products_without_reorder_level(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $this->product->update(['reorder_level' => null]);
         $this->postStock('1.0000');
 
@@ -111,7 +111,7 @@ class LowStockAlertsApiTest extends TestCase
 
     public function test_zero_available_is_critical(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $this->postStock('1.0000');
         $this->adjustStock('-1.0000');
 
@@ -123,7 +123,7 @@ class LowStockAlertsApiTest extends TestCase
 
     public function test_negative_available_is_critical(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
         $this->postStock('1.0000');
         $this->adjustStock('-3.0000');
 
@@ -135,7 +135,7 @@ class LowStockAlertsApiTest extends TestCase
 
     public function test_rejects_combined_store_and_warehouse_filters(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $this->getJson('/api/v1/inventory/alerts/low-stock?storeId=1&warehouseId=1')
             ->assertUnprocessable();
@@ -143,7 +143,7 @@ class LowStockAlertsApiTest extends TestCase
 
     public function test_forbidden_without_inventory_view(): void
     {
-        Sanctum::actingAs(User::factory()->create(['role' => 'accountant']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'accountant']), ['staff']);
 
         $this->getJson('/api/v1/inventory/alerts/low-stock?storeId='.$this->store->id)
             ->assertForbidden();

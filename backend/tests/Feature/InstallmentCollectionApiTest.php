@@ -84,7 +84,7 @@ class InstallmentCollectionApiTest extends TestCase
 
         $manager = User::factory()->storeManager()->create();
         $manager->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
 
         $sessionRes = $this->postJson('/api/v1/pos/sessions/open', [
             'terminalName' => 'POS-COL',
@@ -136,7 +136,7 @@ class InstallmentCollectionApiTest extends TestCase
     {
         $cashier = User::factory()->cashier()->create();
         $cashier->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['staff']);
         $sessionId = $this->openSessionFor($cashier);
 
         $response = $this->postJson(
@@ -183,7 +183,7 @@ class InstallmentCollectionApiTest extends TestCase
     {
         $cashier = User::factory()->cashier()->create();
         $cashier->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['staff']);
         $sessionId = $this->openSessionFor($cashier);
 
         $this->postJson(
@@ -205,7 +205,7 @@ class InstallmentCollectionApiTest extends TestCase
     {
         $cashier = User::factory()->cashier()->create();
         $cashier->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['staff']);
         $sessionId = $this->openSessionFor($cashier);
 
         $this->postJson(
@@ -219,7 +219,7 @@ class InstallmentCollectionApiTest extends TestCase
     {
         $manager = User::factory()->storeManager()->create();
         $manager->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
         $sessionId = $this->openSessionFor($manager);
 
         $this->postJson(
@@ -233,7 +233,7 @@ class InstallmentCollectionApiTest extends TestCase
     {
         $cashier = User::factory()->cashier()->create();
         $cashier->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['staff']);
 
         $this->getJson('/api/v1/installment-plans?overdueOnly=1', [
             'X-Store-Id' => (string) $this->store->id,
@@ -248,7 +248,7 @@ class InstallmentCollectionApiTest extends TestCase
         $balanceBefore = (string) $this->customer->balance;
         $manager = User::factory()->storeManager()->create();
         $manager->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
 
         $this->postJson(
             '/api/v1/installment-plans/'.$this->plan->id.'/cancel',

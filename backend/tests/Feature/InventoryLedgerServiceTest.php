@@ -185,7 +185,7 @@ class InventoryLedgerServiceTest extends TestCase
 
     public function test_inventory_manager_can_list_balances_and_movements(): void
     {
-        Sanctum::actingAs(User::factory()->inventoryManager()->create());
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
 
         $this->ledger->post(new PostMovementData(
             organizationId: $this->orgId,
@@ -212,7 +212,7 @@ class InventoryLedgerServiceTest extends TestCase
 
     public function test_user_without_inventory_view_cannot_list_balances(): void
     {
-        Sanctum::actingAs(User::factory()->create(['role' => 'delivery_staff']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'delivery_staff']), ['staff']);
 
         $this->getJson('/api/v1/inventory/balances')->assertForbidden();
     }

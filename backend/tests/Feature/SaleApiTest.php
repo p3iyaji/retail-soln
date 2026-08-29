@@ -95,7 +95,7 @@ class SaleApiTest extends TestCase
         if (! $actor->isOrgWide() && ! $actor->stores()->whereKey($this->store->id)->exists()) {
             $actor->stores()->attach($this->store->id, ['is_default' => true]);
         }
-        Sanctum::actingAs($actor);
+        Sanctum::actingAs($actor, ['staff']);
 
         $response = $this->postJson('/api/v1/pos/sessions/open', [
             'terminalName' => 'POS-TEST',
@@ -137,7 +137,7 @@ class SaleApiTest extends TestCase
         if (! $actor->isOrgWide() && ! $actor->stores()->whereKey($this->store->id)->exists()) {
             $actor->stores()->attach($this->store->id, ['is_default' => true]);
         }
-        Sanctum::actingAs($actor);
+        Sanctum::actingAs($actor, ['staff']);
 
         if (! isset($payload['sessionId'])) {
             if ($this->sessionId === null) {
@@ -234,7 +234,7 @@ class SaleApiTest extends TestCase
     {
         $manager = User::factory()->storeManager()->create();
         $manager->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($manager);
+        Sanctum::actingAs($manager, ['staff']);
         if ($this->sessionId === null) {
             $this->sessionId = $this->openSession($manager);
         }
@@ -275,7 +275,7 @@ class SaleApiTest extends TestCase
     {
         $user = User::factory()->cashier()->create();
         $user->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
         $sessionId = $this->openSession($user);
 
         $this->postJson('/api/v1/pos/sales', $this->salePayload(sessionId: $sessionId), [
@@ -287,7 +287,7 @@ class SaleApiTest extends TestCase
     {
         $user = User::factory()->cashier()->create();
         $user->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         $this->postJson('/api/v1/pos/sales', [
             'uuid' => '990e8400-e29b-41d4-a716-446655440099',
@@ -320,7 +320,7 @@ class SaleApiTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'accountant']);
         $user->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($user, ['staff']);
 
         $this->postJson('/api/v1/pos/sales', $this->salePayload(), [
             'Idempotency-Key' => 'sale-auth-1',
@@ -349,7 +349,7 @@ class SaleApiTest extends TestCase
 
         $cashier = User::factory()->cashier()->create();
         $cashier->stores()->attach($this->store->id, ['is_default' => true]);
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['staff']);
 
         $this->getJson("/api/v1/pos/receipts/{$saleId}", ['X-Store-Id' => (string) $this->store->id])
             ->assertOk()

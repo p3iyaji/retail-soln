@@ -52,7 +52,7 @@ class DeviceApiTest extends TestCase
 
     public function test_manager_can_register_list_rename_and_disable_device(): void
     {
-        Sanctum::actingAs($this->manager);
+        Sanctum::actingAs($this->manager, ['staff']);
         $uuid = '550e8400-e29b-41d4-a716-446655440701';
 
         $create = $this->postJson('/api/v1/devices', [
@@ -98,7 +98,7 @@ class DeviceApiTest extends TestCase
 
     public function test_duplicate_uuid_returns_validation_422(): void
     {
-        Sanctum::actingAs($this->manager);
+        Sanctum::actingAs($this->manager, ['staff']);
         $uuid = '550e8400-e29b-41d4-a716-446655440702';
 
         Device::query()->create([
@@ -119,7 +119,7 @@ class DeviceApiTest extends TestCase
 
     public function test_missing_store_header_returns_422(): void
     {
-        Sanctum::actingAs($this->manager);
+        Sanctum::actingAs($this->manager, ['staff']);
 
         $this->postJson('/api/v1/devices', [
             'uuid' => '550e8400-e29b-41d4-a716-44665544070a',
@@ -130,7 +130,7 @@ class DeviceApiTest extends TestCase
 
     public function test_cashier_without_devices_manage_is_forbidden(): void
     {
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
 
         $device = Device::query()->create([
             'organization_id' => $this->orgId,
@@ -157,7 +157,7 @@ class DeviceApiTest extends TestCase
 
     public function test_registered_device_reports_enabled_on_sync_status(): void
     {
-        Sanctum::actingAs($this->manager);
+        Sanctum::actingAs($this->manager, ['staff']);
         $uuid = '550e8400-e29b-41d4-a716-446655440704';
 
         $this->postJson('/api/v1/devices', [
@@ -165,7 +165,7 @@ class DeviceApiTest extends TestCase
             'name' => 'Ready POS',
         ], $this->headers())->assertCreated();
 
-        Sanctum::actingAs($this->cashier);
+        Sanctum::actingAs($this->cashier, ['staff']);
         $this->getJson('/api/v1/sync/status?deviceUuid='.$uuid, $this->headers())
             ->assertOk()
             ->assertJsonPath('data.deviceEnabled', true);
