@@ -79,7 +79,7 @@ development_status:
   epic-5-retrospective: optional
 
   epic-6: in-progress
-  6-1-customer-registration-auth: review
+  6-1-customer-registration-auth: done
   6-2-product-catalogue: backlog
   6-3-cart-checkout: backlog
   6-4-order-tracking-invoices: backlog
