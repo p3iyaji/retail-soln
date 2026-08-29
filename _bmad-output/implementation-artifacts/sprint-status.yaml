@@ -86,11 +86,11 @@ development_status:
   6-5-returns-request: done
   epic-6-retrospective: optional
 
-  epic-7: in-progress
+  epic-7: done
   7-1-stock-reservation: done
   7-2-picking-packing: done
   7-3-shipment-delivery: done
-  7-4-store-pickup: review
+  7-4-store-pickup: done
   epic-7-retrospective: optional
 
   epic-8: backlog
