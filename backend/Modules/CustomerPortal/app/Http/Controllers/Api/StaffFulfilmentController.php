@@ -127,6 +127,13 @@ class StaffFulfilmentController
         }
 
         $validated = $request->validate([
+            'carrierId' => [
+                'nullable',
+                'integer',
+                \Illuminate\Validation\Rule::exists('carriers', 'id')->where(
+                    fn ($q) => $q->where('organization_id', $orgId)->where('is_active', true)
+                ),
+            ],
             'carrierName' => ['nullable', 'string', 'max:120'],
             'trackingNumber' => ['nullable', 'string', 'max:120'],
         ]);
@@ -142,6 +149,7 @@ class StaffFulfilmentController
                 $storeId,
                 $idempotencyKey,
                 [
+                    'carrierId' => $validated['carrierId'] ?? null,
                     'carrierName' => $validated['carrierName'] ?? null,
                     'trackingNumber' => $validated['trackingNumber'] ?? null,
                 ],

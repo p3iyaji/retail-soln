@@ -11,6 +11,7 @@ class PortalShipment extends Model
     protected $fillable = [
         'organization_id',
         'portal_order_id',
+        'carrier_id',
         'carrier_name',
         'tracking_number',
         'shipped_at',
@@ -30,6 +31,11 @@ class PortalShipment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(PortalOrder::class, 'portal_order_id');
+    }
+
+    public function carrier(): BelongsTo
+    {
+        return $this->belongsTo(Carrier::class);
     }
 
     public function organization(): BelongsTo

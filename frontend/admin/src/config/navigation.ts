@@ -62,6 +62,12 @@ export const navGroups: NavGroup[] = [
         to: '/fulfilment',
         permission: ['fulfilment.pick', 'fulfilment.ship', 'fulfilment.pickup'],
       },
+      {
+        name: 'carriers',
+        label: 'Carriers',
+        to: '/carriers',
+        permission: 'carriers.view',
+      },
       { name: 'devices', label: 'Devices', to: '/devices' },
     ],
   },

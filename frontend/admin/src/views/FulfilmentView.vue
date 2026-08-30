@@ -6,11 +6,14 @@ import { useAuthStore } from '@/stores/auth'
 type Store = { id: number; name: string }
 
 type ShipmentInfo = {
+  carrierId: number | null
   carrierName: string | null
   trackingNumber: string | null
   shippedAt: string | null
   deliveredAt: string | null
 } | null
+
+type CarrierOption = { id: number; name: string }
 
 type FulfilmentOrderListItem = {
   id: number
@@ -87,7 +90,9 @@ const collecting = ref(false)
 const error = ref('')
 const message = ref('')
 const carrierName = ref('')
+const carrierId = ref<number | ''>('')
 const trackingNumber = ref('')
+const carriers = ref<CarrierOption[]>([])
 
 function isPickupMode(mode: string): boolean {
   return mode === 'store_pickup' || mode === 'click_collect'
@@ -148,8 +153,29 @@ function formatAddress(addr: FulfilmentOrderDetail['address']): string {
 }
 
 function syncShipmentForm(detail: FulfilmentOrderDetail | null) {
+  carrierId.value = detail?.shipment?.carrierId ?? ''
   carrierName.value = detail?.shipment?.carrierName ?? ''
   trackingNumber.value = detail?.shipment?.trackingNumber ?? ''
+}
+
+async function loadCarriers() {
+  if (!canShip.value) {
+    carriers.value = []
+    return
+  }
+  try {
+    const res = await api.get<{ data: CarrierOption[] }>('/carriers?activeOnly=1&per_page=100')
+    carriers.value = res.data.map((c) => ({ id: c.id, name: c.name }))
+  } catch {
+    carriers.value = []
+  }
+}
+
+function onCarrierChange() {
+  if (carrierId.value) {
+    const match = carriers.value.find((c) => c.id === carrierId.value)
+    if (match) carrierName.value = match.name
+  }
 }
 
 async function loadStores() {
@@ -212,6 +238,7 @@ async function refresh() {
   message.value = ''
   try {
     await loadStores()
+    await loadCarriers()
     await loadOrders()
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : 'Failed to load fulfilment orders'
@@ -300,7 +327,8 @@ async function shipOrder() {
     const res = await api.post<{ data: FulfilmentOrderDetail }>(
       `/fulfilment/orders/${orderId}/ship`,
       {
-        carrierName: carrierName.value.trim() || null,
+        carrierId: carrierId.value || null,
+        carrierName: carrierId.value ? null : carrierName.value.trim() || null,
         trackingNumber: trackingNumber.value.trim() || null,
       },
       {
@@ -673,13 +701,24 @@ onMounted(() => {
           >
             <label class="text-sm">
               <span class="text-[var(--muted)]">Carrier</span>
+              <select
+                v-if="carriers.length > 0"
+                v-model="carrierId"
+                class="mt-1 block w-full rounded-md border border-[var(--line)] bg-white px-3 py-1.5"
+                :disabled="!selected.shippable"
+                @change="onCarrierChange"
+              >
+                <option value="">Custom / other</option>
+                <option v-for="c in carriers" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
               <input
+                v-if="carriers.length === 0 || !carrierId"
                 v-model="carrierName"
                 type="text"
                 maxlength="120"
                 class="mt-1 block w-full rounded-md border border-[var(--line)] bg-white px-3 py-1.5"
                 :disabled="!selected.shippable"
-                placeholder="Optional"
+                placeholder="Carrier name (optional)"
               />
             </label>
             <label class="text-sm">

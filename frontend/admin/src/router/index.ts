@@ -98,6 +98,11 @@ const router = createRouter({
           component: () => import('@/views/FulfilmentView.vue'),
         },
         {
+          path: 'carriers',
+          name: 'carriers',
+          component: () => import('@/views/CarriersView.vue'),
+        },
+        {
           path: 'devices',
           name: 'devices',
           component: () => import('@/views/DevicesView.vue'),

@@ -6,6 +6,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Modules\CustomerPortal\Models\Carrier;
 use Modules\CustomerPortal\Models\PortalOrder;
 use Modules\CustomerPortal\Models\PortalShipment;
 use Modules\CustomerPortal\Support\PortalOrderStatuses;
@@ -248,7 +249,7 @@ class PortalFulfilmentService
     /**
      * Home-delivery ship: create thin shipment, status → out_for_delivery. No ledger posts.
      *
-     * @param  array{carrierName?: ?string, trackingNumber?: ?string}  $input
+     * @param  array{carrierId?: ?int, carrierName?: ?string, trackingNumber?: ?string}  $input
      * @return array{order: PortalOrder, created: bool}
      */
     public function ship(
@@ -263,10 +264,26 @@ class PortalFulfilmentService
             throw new RuntimeException('Order does not belong to this store.');
         }
 
+        $carrierId = isset($input['carrierId']) ? (int) $input['carrierId'] : null;
         $carrierName = $this->nullableTrimmed($input['carrierName'] ?? null, 120, 'carrierName');
         $trackingNumber = $this->nullableTrimmed($input['trackingNumber'] ?? null, 120, 'trackingNumber');
 
-        $result = DB::transaction(function () use ($order, $idempotencyKey, $carrierName, $trackingNumber): array {
+        if ($carrierId !== null && $carrierId > 0) {
+            $carrier = Carrier::query()
+                ->where('organization_id', $order->organization_id)
+                ->where('is_active', true)
+                ->find($carrierId);
+            if ($carrier === null) {
+                throw ValidationException::withMessages([
+                    'carrierId' => ['Selected carrier is invalid or inactive.'],
+                ]);
+            }
+            $carrierName = $carrier->name;
+        } else {
+            $carrierId = null;
+        }
+
+        $result = DB::transaction(function () use ($order, $idempotencyKey, $carrierId, $carrierName, $trackingNumber): array {
             /** @var PortalOrder $locked */
             $locked = PortalOrder::query()
                 ->whereKey($order->id)
@@ -308,6 +325,7 @@ class PortalFulfilmentService
 
             $shipment->organization_id = (int) $locked->organization_id;
             $shipment->portal_order_id = (int) $locked->id;
+            $shipment->carrier_id = $carrierId;
             $shipment->carrier_name = $carrierName;
             $shipment->tracking_number = $trackingNumber;
             $shipment->shipped_at = now();
@@ -595,7 +613,7 @@ class PortalFulfilmentService
     }
 
     /**
-     * @return array{carrierName: string|null, trackingNumber: string|null, shippedAt: string|null, deliveredAt: string|null}|null
+     * @return array{carrierId: int|null, carrierName: string|null, trackingNumber: string|null, shippedAt: string|null, deliveredAt: string|null}|null
      */
     private function shipmentSummary(?PortalShipment $shipment): ?array
     {
@@ -604,6 +622,7 @@ class PortalFulfilmentService
         }
 
         return [
+            'carrierId' => $shipment->carrier_id,
             'carrierName' => $shipment->carrier_name,
             'trackingNumber' => $shipment->tracking_number,
             'shippedAt' => $shipment->shipped_at?->toIso8601String(),
