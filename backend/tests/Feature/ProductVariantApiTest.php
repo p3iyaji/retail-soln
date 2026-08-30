@@ -78,6 +78,49 @@ class ProductVariantApiTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_variant_images_can_be_created_and_updated(): void
+    {
+        Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);
+        $orgId = app(OrganizationService::class)->current()->id;
+
+        $product = Product::factory()->create([
+            'organization_id' => $orgId,
+            'sku' => 'IMG-PARENT',
+        ]);
+
+        $create = $this->postJson("/api/v1/products/{$product->id}/variants", [
+            'name' => 'Red',
+            'sku' => 'IMG-RED',
+            'price' => '5.0000',
+            'images' => [
+                ['url' => 'https://cdn.example.test/red.jpg', 'altText' => 'Red variant', 'isPrimary' => true],
+            ],
+        ]);
+
+        $create->assertCreated()
+            ->assertJsonPath('data.images.0.url', 'https://cdn.example.test/red.jpg')
+            ->assertJsonPath('data.images.0.altText', 'Red variant');
+
+        $variantId = $create->json('data.id');
+
+        $this->patchJson("/api/v1/products/{$product->id}/variants/{$variantId}", [
+            'images' => [
+                ['url' => 'https://cdn.example.test/red-v2.jpg', 'altText' => 'Updated red'],
+            ],
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.images.0.url', 'https://cdn.example.test/red-v2.jpg');
+
+        $this->assertDatabaseHas('product_variant_images', [
+            'product_variant_id' => $variantId,
+            'url' => 'https://cdn.example.test/red-v2.jpg',
+        ]);
+        $this->assertDatabaseMissing('product_variant_images', [
+            'product_variant_id' => $variantId,
+            'url' => 'https://cdn.example.test/red.jpg',
+        ]);
+    }
+
     public function test_barcode_uniqueness_enforced_across_products_and_variants(): void
     {
         Sanctum::actingAs(User::factory()->inventoryManager()->create(), ['staff']);

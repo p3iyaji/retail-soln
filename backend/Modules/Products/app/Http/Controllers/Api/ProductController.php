@@ -20,7 +20,7 @@ class ProductController
 
         $organization = $organizations->current();
         $query = Product::query()
-            ->with(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes'])
+            ->with(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes', 'variants.images'])
             ->where('organization_id', $organization->id)
             ->orderBy('name');
 
@@ -73,7 +73,7 @@ class ProductController
 
             $variantProvisioner->ensureDefaultVariant($product);
 
-            return $product->load(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes']);
+            return $product->load(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes', 'variants.images']);
         });
 
         return response()->json([
@@ -86,7 +86,7 @@ class ProductController
         $this->authorize($request, 'view', $product);
         $this->ensureCurrentOrg($product);
 
-        $product->load(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes']);
+        $product->load(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes', 'variants.images']);
 
         return response()->json([
             'data' => new ProductResource($product),
@@ -109,7 +109,7 @@ class ProductController
                 }
             }
 
-            return $product->fresh()->load(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes']);
+            return $product->fresh()->load(['category', 'brand', 'unit', 'supplier', 'images', 'variants.barcodes', 'variants.images']);
         });
 
         return response()->json([

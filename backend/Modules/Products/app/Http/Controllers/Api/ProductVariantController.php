@@ -19,7 +19,7 @@ class ProductVariantController
         $this->authorize($request, 'view', $product);
         $this->ensureCurrentOrg($product);
 
-        $variants = $product->variants()->with('barcodes')->orderBy('sort_order')->get();
+        $variants = $product->variants()->with(['barcodes', 'images'])->orderBy('sort_order')->get();
 
         return response()->json([
             'data' => ProductVariantResource::collection($variants),
@@ -46,7 +46,13 @@ class ProductVariantController
                 ]);
             }
 
-            return $variant->load('barcodes');
+            if ($request->hasImages()) {
+                foreach ($request->imageAttributes() as $image) {
+                    $variant->images()->create($image);
+                }
+            }
+
+            return $variant->load(['barcodes', 'images']);
         });
 
         return response()->json([
@@ -59,7 +65,7 @@ class ProductVariantController
         $this->authorize($request, 'view', $product);
         $this->ensureVariantBelongsToProduct($product, $variant);
 
-        $variant->load('barcodes');
+        $variant->load(['barcodes', 'images']);
 
         return response()->json([
             'data' => new ProductVariantResource($variant),
@@ -93,7 +99,14 @@ class ProductVariantController
                 }
             }
 
-            return $variant->fresh()->load('barcodes');
+            if ($request->hasImages()) {
+                $variant->images()->delete();
+                foreach ($request->imageAttributes() as $image) {
+                    $variant->images()->create($image);
+                }
+            }
+
+            return $variant->fresh()->load(['barcodes', 'images']);
         });
 
         return response()->json([

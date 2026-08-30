@@ -41,6 +41,11 @@ class ProductVariant extends Model
         return $this->hasMany(Barcode::class)->orderByDesc('is_primary');
     }
 
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductVariantImage::class)->orderBy('sort_order');
+    }
+
     public function primaryBarcode(): ?Barcode
     {
         return $this->barcodes()->where('is_primary', true)->first()

@@ -99,18 +99,25 @@ class PortalCatalogueController
         $variants = $model->variants->map(function ($variant) use ($catalogue, $organization, $store) {
             $price = $catalogue->resolvePrice($organization, $variant, $store);
             $stock = $catalogue->stockSignal($store, $variant);
+            $variantImage = $variant->images->firstWhere('is_primary', true) ?? $variant->images->first();
 
             return [
                 'id' => $variant->id,
                 'name' => $variant->name,
                 'sku' => $variant->sku,
                 'isDefault' => (bool) $variant->is_default,
+                'imageUrl' => $variantImage?->url,
                 'price' => $price,
                 'stock' => $stock,
             ];
         })->values();
 
         $image = $model->images->firstWhere('is_primary', true) ?? $model->images->first();
+        $primaryVariantImage = $primary
+            ? ($primary->relationLoaded('images')
+                ? ($primary->images->firstWhere('is_primary', true) ?? $primary->images->first())
+                : null)
+            : null;
 
         return response()->json([
             'data' => [
@@ -123,7 +130,7 @@ class PortalCatalogueController
                     'name' => $model->category->name,
                     'slug' => $model->category->slug,
                 ] : null,
-                'imageUrl' => $image?->url,
+                'imageUrl' => $primaryVariantImage?->url ?? $image?->url,
                 'primaryVariantId' => $primary?->id,
                 'price' => $primary ? $catalogue->resolvePrice($organization, $primary, $store) : null,
                 'stock' => $catalogue->stockSignal($store, $primary),
@@ -147,6 +154,11 @@ class PortalCatalogueController
     ): array {
         $primary = $catalogue->primaryVariant($product);
         $image = $product->images->firstWhere('is_primary', true) ?? $product->images->first();
+        $primaryVariantImage = $primary
+            ? ($primary->relationLoaded('images')
+                ? ($primary->images->firstWhere('is_primary', true) ?? $primary->images->first())
+                : null)
+            : null;
 
         return [
             'id' => $product->id,
@@ -157,7 +169,7 @@ class PortalCatalogueController
                 'name' => $product->category->name,
                 'slug' => $product->category->slug,
             ] : null,
-            'imageUrl' => $image?->url,
+            'imageUrl' => $primaryVariantImage?->url ?? $image?->url,
             'primaryVariantId' => $primary?->id,
             'price' => $primary ? $catalogue->resolvePrice($organization, $primary, $store) : null,
             'stock' => $catalogue->stockSignal($store, $primary),

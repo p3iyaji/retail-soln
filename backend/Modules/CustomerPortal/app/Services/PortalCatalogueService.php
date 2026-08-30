@@ -191,7 +191,7 @@ class PortalCatalogueService
             ->with([
                 'category:id,name,slug',
                 'images',
-                'variants' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order'),
+                'variants' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')->with('images'),
             ])
             ->where('organization_id', $organizationId)
             ->where('is_active', true)
