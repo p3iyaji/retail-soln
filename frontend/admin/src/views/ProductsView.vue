@@ -13,6 +13,7 @@ type ProductVariant = {
   costPrice: string | null
   isDefault: boolean
   isActive: boolean
+  images?: ProductImage[]
 }
 
 type Product = {
@@ -78,6 +79,7 @@ const variantForm = reactive({
   barcode: '',
   price: '0.0000',
   costPrice: '',
+  imageUrl: '',
   isDefault: false,
   isActive: true,
 })
@@ -207,6 +209,7 @@ function resetVariantForm() {
   variantForm.barcode = ''
   variantForm.price = '0.0000'
   variantForm.costPrice = ''
+  variantForm.imageUrl = ''
   variantForm.isDefault = false
   variantForm.isActive = true
 }
@@ -263,6 +266,7 @@ function openVariantEdit(variant: ProductVariant) {
   variantForm.barcode = variant.barcode ?? ''
   variantForm.price = variant.price
   variantForm.costPrice = variant.costPrice ?? ''
+  variantForm.imageUrl = variant.images?.[0]?.url ?? ''
   variantForm.isDefault = variant.isDefault
   variantForm.isActive = variant.isActive
   showVariantForm.value = true
@@ -273,6 +277,9 @@ async function onVariantSubmit() {
   variantSaving.value = true
   error.value = ''
   try {
+    const images = variantForm.imageUrl
+      ? [{ url: variantForm.imageUrl, altText: variantForm.name, sortOrder: 0, isPrimary: true }]
+      : []
     const body = {
       name: variantForm.name,
       sku: variantForm.sku,
@@ -281,6 +288,7 @@ async function onVariantSubmit() {
       costPrice: variantForm.costPrice || null,
       isDefault: variantForm.isDefault,
       isActive: variantForm.isActive,
+      images,
     }
     if (editingVariantId.value) {
       await api.patch(`/products/${editingId.value}/variants/${editingVariantId.value}`, body)
@@ -571,6 +579,11 @@ onMounted(refresh)
           <input v-model="variantForm.barcode" placeholder="Barcode" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm font-mono" />
           <input v-model="variantForm.price" required placeholder="Selling price" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
           <input v-model="variantForm.costPrice" placeholder="Cost" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
+          <input
+            v-model="variantForm.imageUrl"
+            placeholder="Image URL"
+            class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm sm:col-span-2"
+          />
           <label class="flex items-center gap-2 text-sm">
             <input v-model="variantForm.isDefault" type="checkbox" />
             Default variant
@@ -590,6 +603,7 @@ onMounted(refresh)
         <table v-if="variants.length" class="mt-3 min-w-full text-left text-sm">
           <thead class="text-[var(--muted)]">
             <tr>
+              <th class="py-1 pr-3 font-medium">Image</th>
               <th class="py-1 pr-3 font-medium">Name</th>
               <th class="py-1 pr-3 font-medium">SKU</th>
               <th class="py-1 pr-3 font-medium">Barcode</th>
@@ -600,6 +614,15 @@ onMounted(refresh)
           </thead>
           <tbody>
             <tr v-for="v in variants" :key="v.id" class="border-t border-[var(--line)]">
+              <td class="py-2 pr-3">
+                <img
+                  v-if="v.images?.[0]?.url"
+                  :src="v.images[0].url"
+                  :alt="v.name"
+                  class="h-8 w-8 rounded object-cover"
+                />
+                <span v-else class="text-[var(--muted)]">—</span>
+              </td>
               <td class="py-2 pr-3">{{ v.name }}{{ v.isDefault ? ' (default)' : '' }}</td>
               <td class="py-2 pr-3 font-mono text-xs">{{ v.sku }}</td>
               <td class="py-2 pr-3 font-mono text-xs">{{ v.barcode ?? '—' }}</td>

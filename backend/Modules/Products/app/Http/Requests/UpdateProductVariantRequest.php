@@ -29,6 +29,11 @@ class UpdateProductVariantRequest extends FormRequest
             'isDefault' => ['sometimes', 'boolean'],
             'isActive' => ['sometimes', 'boolean'],
             'sortOrder' => ['sometimes', 'integer', 'min:0'],
+            'images' => ['sometimes', 'array'],
+            'images.*.url' => ['required_with:images', 'string', 'max:2048'],
+            'images.*.altText' => ['nullable', 'string', 'max:255'],
+            'images.*.sortOrder' => ['nullable', 'integer', 'min:0'],
+            'images.*.isPrimary' => ['nullable', 'boolean'],
         ];
     }
 
@@ -92,5 +97,25 @@ class UpdateProductVariantRequest extends FormRequest
         $code = $this->validated()['barcode'];
 
         return ($code === null || $code === '') ? null : $code;
+    }
+
+    public function hasImages(): bool
+    {
+        return array_key_exists('images', $this->validated());
+    }
+
+    /**
+     * @return list<array{url: string, alt_text: ?string, sort_order: int, is_primary: bool}>
+     */
+    public function imageAttributes(): array
+    {
+        $images = $this->validated()['images'] ?? [];
+
+        return collect($images)->values()->map(fn (array $image, int $index) => [
+            'url' => $image['url'],
+            'alt_text' => $image['altText'] ?? null,
+            'sort_order' => $image['sortOrder'] ?? $index,
+            'is_primary' => (bool) ($image['isPrimary'] ?? $index === 0),
+        ])->all();
     }
 }

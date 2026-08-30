@@ -29,6 +29,7 @@ class ProductVariantResource extends JsonResource
             'isDefault' => $this->is_default,
             'isActive' => $this->is_active,
             'sortOrder' => $this->sort_order,
+            'images' => ProductVariantImageResource::collection($this->whenLoaded('images')),
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
         ];
