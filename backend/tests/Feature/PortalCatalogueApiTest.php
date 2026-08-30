@@ -98,9 +98,9 @@ class PortalCatalogueApiTest extends TestCase
             ->assertJsonPath('data.0.price.listPrice', '1850.0000')
             ->assertJsonPath('data.0.price.amount', '1988.7500')
             ->assertJsonPath('data.0.stock.inStock', true)
-            ->assertJsonPath('data.0.stock.storeName', 'Ikeja Store A');
+            ->assertJsonPath('data.0.stock.storeName', null)
+            ->assertJsonPath('data.0.stock.label', 'In stock');
 
-        $this->assertStringContainsString('In stock', (string) $response->json('data.0.stock.label'));
         $this->assertArrayNotHasKey('available', $response->json('data.0.stock'));
         $this->assertArrayNotHasKey('reserved', $response->json('data.0.stock'));
     }
@@ -191,7 +191,8 @@ class PortalCatalogueApiTest extends TestCase
             ->assertJsonPath('data.price.listPrice', '1850.0000')
             ->assertJsonPath('data.price.amount', '1988.7500')
             ->assertJsonPath('data.stock.inStock', true)
-            ->assertJsonPath('data.stock.label', 'In stock · Ikeja Store A')
+            ->assertJsonPath('data.stock.label', 'In stock')
+            ->assertJsonPath('data.stock.storeName', null)
             ->assertJsonPath('data.variants.0.id', $this->activeVariant->id)
             ->assertJsonPath('data.store.name', 'Ikeja Store A');
 
@@ -199,6 +200,11 @@ class PortalCatalogueApiTest extends TestCase
         $this->assertIsArray($stock);
         $this->assertArrayNotHasKey('available', $stock);
         $this->assertArrayNotHasKey('reserved', $stock);
+
+        $this->getJson('/api/v1/portal/catalogue/products/'.$this->activeProduct->id.'?storeId='.$this->store->id)
+            ->assertOk()
+            ->assertJsonPath('data.stock.label', 'In stock · Ikeja Store A')
+            ->assertJsonPath('data.stock.storeName', 'Ikeja Store A');
     }
 
     public function test_inactive_product_returns_404(): void
@@ -253,6 +259,46 @@ class PortalCatalogueApiTest extends TestCase
         $this->getJson('/api/v1/portal/catalogue/products?storeId=999999')
             ->assertStatus(422)
             ->assertJsonValidationErrors(['storeId']);
+    }
+
+    public function test_catalogue_stock_is_org_wide_without_store_id(): void
+    {
+        $other = Store::factory()->create([
+            'organization_id' => $this->organization->id,
+            'name' => 'Other Store',
+            'is_active' => true,
+        ]);
+
+        // Zero out default store stock.
+        app(InventoryLedgerService::class)->post(new PostMovementData(
+            organizationId: $this->organization->id,
+            locationType: LocationType::Store,
+            locationId: $this->store->id,
+            productVariantId: $this->activeVariant->id,
+            type: MovementType::Adjustment,
+            quantity: '-12.0000',
+        ));
+
+        $this->getJson('/api/v1/portal/catalogue/products?storeId='.$this->store->id)
+            ->assertOk()
+            ->assertJsonPath('data.0.stock.inStock', false);
+
+        // Stock only at another store — still visible as in stock when browsing all stores.
+        app(InventoryLedgerService::class)->post(new PostMovementData(
+            organizationId: $this->organization->id,
+            locationType: LocationType::Store,
+            locationId: $other->id,
+            productVariantId: $this->activeVariant->id,
+            type: MovementType::Purchase,
+            quantity: '5.0000',
+            unitCost: '1000.0000',
+        ));
+
+        $this->getJson('/api/v1/portal/catalogue/products')
+            ->assertOk()
+            ->assertJsonPath('data.0.stock.inStock', true)
+            ->assertJsonPath('data.0.stock.label', 'In stock')
+            ->assertJsonPath('data.0.stock.storeName', null);
     }
 
     public function test_missing_store_returns_null_price_and_check_availability(): void
