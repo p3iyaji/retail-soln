@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { api, ApiError } from '@/api/client'
+import { catalogImageErrorMessage, uploadCatalogImage } from '@/lib/catalogImageUpload'
 
 type Lookup = { id: number; name: string; abbreviation?: string }
 type ProductImage = { url: string; altText?: string; sortOrder?: number; isPrimary?: boolean }
@@ -54,6 +55,8 @@ const showForm = ref(false)
 const showVariantForm = ref(false)
 const editingVariantId = ref<number | null>(null)
 const variantSaving = ref(false)
+const productImageUploading = ref(false)
+const variantImageUploading = ref(false)
 
 const form = reactive({
   name: '',
@@ -317,6 +320,40 @@ async function onVariantDelete(variant: ProductVariant) {
   }
 }
 
+async function onProductImageSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  productImageUploading.value = true
+  error.value = ''
+  try {
+    form.imageUrl = await uploadCatalogImage(file)
+  } catch (e) {
+    error.value = catalogImageErrorMessage(e, 'Product image upload failed')
+  } finally {
+    productImageUploading.value = false
+  }
+}
+
+async function onVariantImageSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  variantImageUploading.value = true
+  error.value = ''
+  try {
+    variantForm.imageUrl = await uploadCatalogImage(file)
+  } catch (e) {
+    error.value = catalogImageErrorMessage(e, 'Variant image upload failed')
+  } finally {
+    variantImageUploading.value = false
+  }
+}
+
 function payload() {
   const images = form.imageUrl
     ? [{ url: form.imageUrl, altText: form.name, sortOrder: 0, isPrimary: true }]
@@ -480,9 +517,29 @@ onMounted(refresh)
           <span class="text-[var(--muted)]">Cost price</span>
           <input v-model="form.costPrice" class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
         </label>
-        <label class="block text-sm">
-          <span class="text-[var(--muted)]">Image URL</span>
-          <input v-model="form.imageUrl" class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2" />
+        <label class="block text-sm sm:col-span-2">
+          <span class="text-[var(--muted)]">Product image</span>
+          <div class="mt-1 flex flex-wrap items-center gap-3">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              class="text-sm"
+              :disabled="productImageUploading"
+              @change="onProductImageSelected"
+            />
+            <span v-if="productImageUploading" class="text-xs text-[var(--muted)]">Uploading…</span>
+            <img
+              v-if="form.imageUrl"
+              :src="form.imageUrl"
+              :alt="form.name || 'Product preview'"
+              class="h-12 w-12 rounded border border-[var(--line)] object-cover"
+            />
+          </div>
+          <input
+            v-model="form.imageUrl"
+            placeholder="Or paste image URL"
+            class="mt-2 w-full rounded-md border border-[var(--line)] px-3 py-2"
+          />
         </label>
 
         <label class="block text-sm">
@@ -579,11 +636,30 @@ onMounted(refresh)
           <input v-model="variantForm.barcode" placeholder="Barcode" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm font-mono" />
           <input v-model="variantForm.price" required placeholder="Selling price" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
           <input v-model="variantForm.costPrice" placeholder="Cost" class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm" />
-          <input
-            v-model="variantForm.imageUrl"
-            placeholder="Image URL"
-            class="rounded-md border border-[var(--line)] px-2 py-1.5 text-sm sm:col-span-2"
-          />
+          <div class="sm:col-span-3">
+            <span class="text-xs text-[var(--muted)]">Variant image</span>
+            <div class="mt-1 flex flex-wrap items-center gap-3">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                class="text-sm"
+                :disabled="variantImageUploading"
+                @change="onVariantImageSelected"
+              />
+              <span v-if="variantImageUploading" class="text-xs text-[var(--muted)]">Uploading…</span>
+              <img
+                v-if="variantForm.imageUrl"
+                :src="variantForm.imageUrl"
+                :alt="variantForm.name || 'Variant preview'"
+                class="h-10 w-10 rounded border border-[var(--line)] object-cover"
+              />
+            </div>
+            <input
+              v-model="variantForm.imageUrl"
+              placeholder="Or paste image URL"
+              class="mt-2 w-full rounded-md border border-[var(--line)] px-2 py-1.5 text-sm"
+            />
+          </div>
           <label class="flex items-center gap-2 text-sm">
             <input v-model="variantForm.isDefault" type="checkbox" />
             Default variant

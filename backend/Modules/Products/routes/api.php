@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Products\Http\Controllers\Api\CatalogController;
 use Modules\Products\Http\Controllers\Api\ProductCatalogToolsController;
 use Modules\Products\Http\Controllers\Api\ProductController;
+use Modules\Products\Http\Controllers\Api\ProductImageUploadController;
 use Modules\Products\Http\Controllers\Api\ProductVariantController;
 
 Route::prefix('v1')->group(function (): void {
@@ -20,6 +21,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/products/import/preview', [ProductCatalogToolsController::class, 'previewImport']);
         Route::post('/products/import', [ProductCatalogToolsController::class, 'import']);
         Route::get('/products/imports/{import}', [ProductCatalogToolsController::class, 'showImport']);
+        Route::post('/products/images/upload', [ProductImageUploadController::class, 'store']);
 
         Route::get('/products', [ProductController::class, 'index']);
         Route::post('/products', [ProductController::class, 'store']);
