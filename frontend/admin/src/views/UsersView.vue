@@ -18,6 +18,7 @@ type RoleOption = {
   id: number
   code: string
   name: string
+  permissions?: string[]
 }
 
 type StoreOption = {
@@ -80,6 +81,10 @@ function formatError(e: unknown, fallback: string): string {
 
 function roleLabel(code: string): string {
   return roles.value.find((r) => r.code === code)?.name ?? code.replace(/_/g, ' ')
+}
+
+function permissionsForRole(code: string): string[] {
+  return roles.value.find((r) => r.code === code)?.permissions ?? []
 }
 
 function resetCreateForm() {
@@ -304,6 +309,10 @@ onMounted(refresh)
         <h2 class="text-xl font-semibold tracking-tight">Users</h2>
         <p class="mt-1 text-sm text-[var(--muted)]">
           Create staff accounts, assign roles, and map store access.
+          <RouterLink to="/roles" class="text-[var(--brand-ink)] hover:underline">
+            View role permissions
+          </RouterLink>
+          (permissions come from the assigned role).
         </p>
       </div>
       <button
@@ -593,6 +602,28 @@ onMounted(refresh)
               </span>
             </template>
             <template v-else>—</template>
+          </dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-[var(--muted)]">Permissions (from role)</dt>
+          <dd class="mt-1 flex flex-wrap gap-1">
+            <span
+              v-for="perm in selectedUser.permissions.length
+                ? selectedUser.permissions
+                : permissionsForRole(selectedUser.role)"
+              :key="perm"
+              class="rounded border border-[var(--line)] bg-stone-50 px-1.5 py-0.5 font-mono text-xs"
+            >
+              {{ perm }}
+            </span>
+            <span
+              v-if="
+                !selectedUser.permissions.length && !permissionsForRole(selectedUser.role).length
+              "
+              class="text-[var(--muted)]"
+            >
+              —
+            </span>
           </dd>
         </div>
       </dl>

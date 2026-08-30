@@ -36,6 +36,21 @@ class RbacApiTest extends TestCase
         $this->assertFalse($cashier->hasPermission('fulfilment.pickup'));
     }
 
+    public function test_me_returns_matrix_permissions_when_role_pivot_empty(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+        $role = $admin->roleModel();
+        $this->assertNotNull($role);
+        $role->permissions()->detach();
+
+        Sanctum::actingAs($admin, ['staff']);
+
+        $this->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonFragment(['fulfilment.pick'])
+            ->assertJsonFragment(['roles.view']);
+    }
+
     public function test_cashier_cannot_refund_via_gate(): void
     {
         $cashier = User::factory()->cashier()->create();
