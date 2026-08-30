@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Modules\Authentication\Database\Seeders\PermissionMatrixSeeder;
+use Modules\Authentication\Models\Role;
 use Modules\Organization\Models\Organization;
 use Modules\Organization\Models\Store;
 use Tests\TestCase;
@@ -164,6 +165,64 @@ class RbacApiTest extends TestCase
         $names = collect($permissions)->pluck('name');
         $this->assertTrue($names->contains('sales.refund'));
         $this->assertTrue($names->contains('users.assign-stores'));
+        $this->assertTrue($names->contains('roles.manage'));
+    }
+
+    public function test_org_admin_can_update_role_permissions(): void
+    {
+        $admin = User::factory()->orgAdmin()->create();
+        Sanctum::actingAs($admin, ['staff']);
+
+        $cashierRole = Role::query()->where('code', 'cashier')->firstOrFail();
+
+        $this->patchJson("/api/v1/roles/{$cashierRole->id}", [
+            'permissions' => ['sales.create', 'sales.view', 'pos.session', 'fulfilment.pick'],
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.code', 'cashier')
+            ->assertJsonFragment(['fulfilment.pick']);
+
+        $cashier = User::factory()->cashier()->create();
+        $this->assertTrue($cashier->fresh()->hasPermission('fulfilment.pick'));
+        $this->assertFalse($cashier->fresh()->hasPermission('sales.refund'));
+    }
+
+    public function test_org_admin_can_update_role_display_name(): void
+    {
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
+
+        $role = Role::query()->where('code', 'cashier')->firstOrFail();
+
+        $this->patchJson("/api/v1/roles/{$role->id}", [
+            'name' => 'Front-line cashier',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Front-line cashier');
+    }
+
+    public function test_cannot_strip_required_permissions_from_org_admin_role(): void
+    {
+        Sanctum::actingAs(User::factory()->orgAdmin()->create(), ['staff']);
+
+        $role = Role::query()->where('code', 'org_admin')->firstOrFail();
+        $keep = array_values(array_diff($role->resolvedPermissionNames(), ['roles.manage']));
+
+        $this->patchJson("/api/v1/roles/{$role->id}", [
+            'permissions' => $keep,
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['permissions']);
+    }
+
+    public function test_store_manager_cannot_update_roles_without_manage_permission(): void
+    {
+        Sanctum::actingAs(User::factory()->storeManager()->create(), ['staff']);
+
+        $role = Role::query()->where('code', 'cashier')->firstOrFail();
+
+        $this->patchJson("/api/v1/roles/{$role->id}", [
+            'permissions' => ['sales.create'],
+        ])->assertForbidden();
     }
 
     public function test_me_includes_permissions_and_store_access(): void
