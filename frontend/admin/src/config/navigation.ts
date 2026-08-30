@@ -30,6 +30,12 @@ export const navGroups: NavGroup[] = [
     label: 'Catalog & stock',
     items: [
       { name: 'products', label: 'Products', to: '/products' },
+      {
+        name: 'catalog-taxonomy',
+        label: 'Categories & brands',
+        to: '/catalog',
+        permission: ['catalog.view', 'products.view'],
+      },
       { name: 'pricing', label: 'Pricing', to: '/pricing' },
       { name: 'inventory', label: 'Inventory', to: '/inventory' },
       { name: 'oversell-exceptions', label: 'Oversells', to: '/oversell-exceptions' },
