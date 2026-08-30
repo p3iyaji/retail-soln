@@ -28,13 +28,27 @@ trait HasRbac
 
     public function hasPermission(string $permission): bool
     {
-        $role = $this->roleModel();
+        return in_array($permission, $this->permissionNames(), true);
+    }
 
-        if ($role === null) {
-            return false;
+    /**
+     * @return list<string>
+     */
+    public function permissionNames(): array
+    {
+        if ($this->role === null || $this->role === '') {
+            return [];
         }
 
-        return $role->permissions()->where('name', $permission)->exists();
+        $role = $this->roleModel();
+        if ($role !== null) {
+            $fromDb = $role->permissions()->pluck('name')->all();
+            if ($fromDb !== []) {
+                return array_values($fromDb);
+            }
+        }
+
+        return PermissionMatrix::permissionNamesForRoleCode($this->role);
     }
 
     public function isOrgWide(): bool

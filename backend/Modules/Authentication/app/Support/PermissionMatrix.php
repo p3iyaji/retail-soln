@@ -139,4 +139,39 @@ final class PermissionMatrix
 
         return $permissions;
     }
+
+    /**
+     * Resolve permission names for a role code from the canonical matrix (no DB).
+     *
+     * @return list<string>
+     */
+    public static function permissionNamesForRoleCode(string $roleCode): array
+    {
+        $abbr = self::abbrForRoleCode($roleCode);
+        if ($abbr === null) {
+            return [];
+        }
+
+        $names = [];
+        foreach (self::permissions() as $name => $definition) {
+            if (in_array($abbr, $definition['roles'], true)) {
+                $names[] = $name;
+            }
+        }
+
+        sort($names);
+
+        return $names;
+    }
+
+    public static function abbrForRoleCode(string $roleCode): ?string
+    {
+        foreach (self::roles() as $abbr => $meta) {
+            if ($meta['code'] === $roleCode) {
+                return $abbr;
+            }
+        }
+
+        return null;
+    }
 }
