@@ -115,6 +115,16 @@ class ProductCatalogApiTest extends TestCase
             ->assertJsonPath('data.name', 'Cola 500ml Zero')
             ->assertJsonPath('data.reorderLevel', '12.0000');
 
+        // Re-submitting the same product SKU (shared with the default variant) must succeed.
+        $this->patchJson("/api/v1/products/{$productId}", [
+            'name' => 'Cola 500ml Zero',
+            'sku' => 'COLA-500',
+            'barcode' => '1234567890123',
+            'sellingPrice' => '2.5000',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.sku', 'COLA-500');
+
         $this->deleteJson("/api/v1/products/{$productId}")
             ->assertOk();
 
