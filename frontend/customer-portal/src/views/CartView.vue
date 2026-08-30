@@ -64,7 +64,14 @@ async function remove(lineId: number) {
           :key="line.id"
           class="grid grid-cols-[72px_1fr_auto] items-center gap-3 border-b border-[var(--line)] p-4 last:border-b-0"
         >
-          <div class="h-[72px] w-[72px] rounded bg-[#E8ECF0]" />
+          <div class="h-[72px] w-[72px] overflow-hidden rounded bg-[#E8ECF0]">
+            <img
+              v-if="line.imageUrl"
+              :src="line.imageUrl"
+              :alt="line.productName"
+              class="h-full w-full object-cover"
+            />
+          </div>
           <div>
             <div class="text-sm font-semibold">{{ line.productName }}</div>
             <div class="font-mono text-[11px] text-[var(--muted)]">{{ line.sku }}</div>

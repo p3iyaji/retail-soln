@@ -251,6 +251,7 @@ export type CartLine = {
   productName: string
   variantName: string
   sku: string
+  imageUrl: string | null
   qty: string
   unitListPrice: string
   unitNetPrice: string

@@ -37,7 +37,7 @@ class PortalCartService
 
         $items = PortalCartItem::query()
             ->where('customer_account_id', $account->id)
-            ->with(['variant.product'])
+            ->with(['variant.product.images', 'variant.images'])
             ->orderBy('id')
             ->get();
 
@@ -176,7 +176,7 @@ class PortalCartService
     {
         return PortalCartItem::query()
             ->where('customer_account_id', $account->id)
-            ->with(['variant.product'])
+            ->with(['variant.product.images', 'variant.images'])
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
@@ -264,6 +264,7 @@ class PortalCartService
                 'productName' => $variant->product->name,
                 'variantName' => $variant->name,
                 'sku' => $variant->sku,
+                'imageUrl' => $this->resolveLineImageUrl($variant),
                 'qty' => $qty,
                 'unitListPrice' => $priced['listPrice'],
                 'unitNetPrice' => $unitNet,
@@ -328,6 +329,31 @@ class PortalCartService
                 'variantId' => [$e->getMessage()],
             ]);
         }
+    }
+
+    private function resolveLineImageUrl(ProductVariant $variant): ?string
+    {
+        $variantImages = $variant->relationLoaded('images')
+            ? $variant->images
+            : $variant->images()->orderBy('sort_order')->get();
+
+        $variantImage = $variantImages->firstWhere('is_primary', true) ?? $variantImages->first();
+        if ($variantImage !== null) {
+            return $variantImage->url;
+        }
+
+        $product = $variant->product;
+        if ($product === null) {
+            return null;
+        }
+
+        $productImages = $product->relationLoaded('images')
+            ? $product->images
+            : $product->images()->orderBy('sort_order')->get();
+
+        $productImage = $productImages->firstWhere('is_primary', true) ?? $productImages->first();
+
+        return $productImage?->url;
     }
 
     private function assertAccountOrg(CustomerAccount $account, Organization $organization): void
