@@ -133,8 +133,10 @@ class PortalCatalogueService
     }
 
     /**
-     * Read-only customer-facing stock signal for a variant at a store (no ledger writes).
-     * Omits warehouse quantity internals from the public payload.
+     * Read-only customer-facing stock signal for a variant.
+     * When $store is null, availability is aggregated across all stores in the org
+     * so the catalogue shows sellable products regardless of which store is default.
+     * When $store is set (explicit storeId), signal is scoped to that store.
      *
      * @return array{
      *   inStock: bool|null,
@@ -145,13 +147,17 @@ class PortalCatalogueService
      */
     public function stockSignal(?Store $store, ?ProductVariant $variant): array
     {
-        if ($store === null || $variant === null) {
+        if ($variant === null) {
             return [
                 'inStock' => null,
                 'storeId' => $store?->id,
                 'storeName' => $store?->name,
                 'label' => 'Check availability',
             ];
+        }
+
+        if ($store === null) {
+            return $this->orgWideStockSignal($variant);
         }
 
         $balance = InventoryBalance::query()
@@ -179,6 +185,47 @@ class PortalCatalogueService
             'label' => $inStock
                 ? 'In stock · '.$store->name
                 : 'Out of stock',
+        ];
+    }
+
+    /**
+     * @return array{inStock: bool, storeId: null, storeName: null, label: string}
+     */
+    private function orgWideStockSignal(ProductVariant $variant): array
+    {
+        $activeStoreIds = Store::query()
+            ->where('organization_id', $variant->organization_id)
+            ->where('is_active', true)
+            ->pluck('id');
+
+        if ($activeStoreIds->isEmpty()) {
+            return [
+                'inStock' => null,
+                'storeId' => null,
+                'storeName' => null,
+                'label' => 'Check availability',
+            ];
+        }
+
+        $balances = InventoryBalance::query()
+            ->where('organization_id', $variant->organization_id)
+            ->where('location_type', LocationType::Store->value)
+            ->whereIn('location_id', $activeStoreIds)
+            ->where('product_variant_id', $variant->id)
+            ->get(['available']);
+
+        $total = '0.0000';
+        foreach ($balances as $balance) {
+            $total = bcadd($total, (string) $balance->available, 4);
+        }
+
+        $inStock = bccomp($total, '0', 4) > 0;
+
+        return [
+            'inStock' => $inStock,
+            'storeId' => null,
+            'storeName' => null,
+            'label' => $inStock ? 'In stock' : 'Out of stock',
         ];
     }
 

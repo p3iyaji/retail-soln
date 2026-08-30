@@ -45,10 +45,10 @@ class PortalCatalogueController
         ]);
 
         $organization = $organizations->resolve();
-        $store = $stores->resolve(
-            $organization,
-            isset($validated['storeId']) ? (int) $validated['storeId'] : null,
-        );
+        $explicitStoreId = isset($validated['storeId']) ? (int) $validated['storeId'] : null;
+        $store = $stores->resolve($organization, $explicitStoreId);
+        // Browse without storeId: show org-wide stock so products aren't hidden behind one store's inventory.
+        $stockStore = $explicitStoreId !== null ? $store : null;
 
         $page = $catalogue->listProducts(
             $organization,
@@ -58,7 +58,7 @@ class PortalCatalogueController
         );
 
         $data = collect($page->items())->map(
-            fn (Product $product) => $this->productCard($catalogue, $organization, $product, $store),
+            fn (Product $product) => $this->productCard($catalogue, $organization, $product, $store, $stockStore),
         );
 
         return response()->json([
@@ -85,10 +85,9 @@ class PortalCatalogueController
         ]);
 
         $organization = $organizations->resolve();
-        $store = $stores->resolve(
-            $organization,
-            isset($validated['storeId']) ? (int) $validated['storeId'] : null,
-        );
+        $explicitStoreId = isset($validated['storeId']) ? (int) $validated['storeId'] : null;
+        $store = $stores->resolve($organization, $explicitStoreId);
+        $stockStore = $explicitStoreId !== null ? $store : null;
 
         $model = $catalogue->findActiveProduct($organization, $product);
         if ($model === null) {
@@ -96,9 +95,9 @@ class PortalCatalogueController
         }
 
         $primary = $catalogue->primaryVariant($model);
-        $variants = $model->variants->map(function ($variant) use ($catalogue, $organization, $store) {
+        $variants = $model->variants->map(function ($variant) use ($catalogue, $organization, $store, $stockStore) {
             $price = $catalogue->resolvePrice($organization, $variant, $store);
-            $stock = $catalogue->stockSignal($store, $variant);
+            $stock = $catalogue->stockSignal($stockStore, $variant);
             $variantImage = $variant->images->firstWhere('is_primary', true) ?? $variant->images->first();
 
             return [
@@ -133,7 +132,7 @@ class PortalCatalogueController
                 'imageUrl' => $primaryVariantImage?->url ?? $image?->url,
                 'primaryVariantId' => $primary?->id,
                 'price' => $primary ? $catalogue->resolvePrice($organization, $primary, $store) : null,
-                'stock' => $catalogue->stockSignal($store, $primary),
+                'stock' => $catalogue->stockSignal($stockStore, $primary),
                 'variants' => $variants,
                 'store' => $store ? [
                     'id' => $store->id,
@@ -151,6 +150,7 @@ class PortalCatalogueController
         Organization $organization,
         Product $product,
         ?Store $store,
+        ?Store $stockStore = null,
     ): array {
         $primary = $catalogue->primaryVariant($product);
         $image = $product->images->firstWhere('is_primary', true) ?? $product->images->first();
@@ -172,7 +172,7 @@ class PortalCatalogueController
             'imageUrl' => $primaryVariantImage?->url ?? $image?->url,
             'primaryVariantId' => $primary?->id,
             'price' => $primary ? $catalogue->resolvePrice($organization, $primary, $store) : null,
-            'stock' => $catalogue->stockSignal($store, $primary),
+            'stock' => $catalogue->stockSignal($stockStore, $primary),
         ];
     }
 }

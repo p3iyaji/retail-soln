@@ -16,7 +16,6 @@ const products = ref<CatalogueProductCard[]>([])
 const total = ref(0)
 const currentPage = ref(1)
 const lastPage = ref(1)
-const storeName = ref<string | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -66,7 +65,6 @@ async function loadProducts() {
     total.value = res.meta.total
     currentPage.value = res.meta.currentPage
     lastPage.value = res.meta.lastPage
-    storeName.value = res.meta.storeName
   } catch (err) {
     if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
       return
@@ -128,10 +126,8 @@ watch(
 
 <template>
   <section class="bg-[linear-gradient(120deg,#0B6E4F_0%,#1A2330_100%)] px-7 py-12 text-center text-[var(--brand-fg)]">
-    <h1 class="brand m-0 text-4xl font-semibold tracking-tight">
-      Shop {{ storeName ?? 'our store' }}
-    </h1>
-    <p class="m-0 mt-2 text-base opacity-90">Browse products and check prices at your store</p>
+    <h1 class="brand m-0 text-4xl font-semibold tracking-tight">Shop our catalogue</h1>
+    <p class="m-0 mt-2 text-base opacity-90">Browse all products across our stores</p>
   </section>
 
   <div class="mx-auto grid max-w-[1100px] gap-6 px-7 py-7 md:grid-cols-[200px_1fr]">
