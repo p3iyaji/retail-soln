@@ -172,6 +172,42 @@ class FulfilmentShipApiTest extends TestCase
             ->assertJsonPath('data.timeline.3.state', 'current');
     }
 
+    public function test_ship_with_carrier_id_links_shipment_to_carrier(): void
+    {
+        $carrier = \Modules\CustomerPortal\Models\Carrier::query()->create([
+            'organization_id' => $this->organization->id,
+            'name' => 'DHL Express',
+            'code' => 'DHL',
+            'is_active' => true,
+        ]);
+
+        Sanctum::actingAs($this->account, ['portal']);
+        $orderId = $this->placePayAndPack('ship-carrier-id', qty: 1, mode: 'home_delivery');
+
+        Sanctum::actingAs($this->manager, ['staff']);
+        $this->flushHeaders();
+
+        $this->postJson(
+            '/api/v1/fulfilment/orders/'.$orderId.'/ship',
+            [
+                'carrierId' => $carrier->id,
+                'trackingNumber' => 'DHL-999',
+            ],
+            array_merge($this->storeHeaders(), ['Idempotency-Key' => 'ship-carrier']),
+        )
+            ->assertOk()
+            ->assertJsonPath('data.shipment.carrierId', $carrier->id)
+            ->assertJsonPath('data.shipment.carrierName', 'DHL Express')
+            ->assertJsonPath('data.shipment.trackingNumber', 'DHL-999');
+
+        $this->assertDatabaseHas('portal_shipments', [
+            'portal_order_id' => $orderId,
+            'carrier_id' => $carrier->id,
+            'carrier_name' => 'DHL Express',
+            'tracking_number' => 'DHL-999',
+        ]);
+    }
+
     public function test_deliver_out_for_delivery_sets_delivered_and_excludes_from_list(): void
     {
         Sanctum::actingAs($this->account, ['portal']);

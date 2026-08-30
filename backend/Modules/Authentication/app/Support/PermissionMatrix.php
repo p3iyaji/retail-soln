@@ -111,6 +111,8 @@ final class PermissionMatrix
             'fulfilment.pick' => ['SA', 'OA', 'SM', 'IM', 'DS'],
             'fulfilment.ship' => ['SA', 'OA', 'SM', 'IM', 'DS'],
             'fulfilment.pickup' => ['SA', 'OA', 'SM', 'IM', 'DS'],
+            'carriers.view' => ['SA', 'OA', 'SM', 'IM', 'DS'],
+            'carriers.manage' => ['SA', 'OA', 'SM'],
         ];
 
         $storeScoped = [

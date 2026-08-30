@@ -7,10 +7,18 @@ use Modules\CustomerPortal\Http\Controllers\Api\PortalCartController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalCatalogueController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalCheckoutController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalOrderController;
+use Modules\CustomerPortal\Http\Controllers\Api\CarrierController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalReturnRequestController;
 use Modules\CustomerPortal\Http\Controllers\Api\StaffFulfilmentController;
 
 Route::prefix('v1')->middleware(['auth:sanctum', 'staff'])->group(function (): void {
+    Route::get('/carriers', [CarrierController::class, 'index']);
+    Route::post('/carriers', [CarrierController::class, 'store']);
+    Route::get('/carriers/{carrier}', [CarrierController::class, 'show']);
+    Route::patch('/carriers/{carrier}', [CarrierController::class, 'update']);
+    Route::put('/carriers/{carrier}', [CarrierController::class, 'update']);
+    Route::delete('/carriers/{carrier}', [CarrierController::class, 'destroy']);
+
     Route::get('/fulfilment/orders', [StaffFulfilmentController::class, 'index']);
     Route::get('/fulfilment/orders/{order}', [StaffFulfilmentController::class, 'show'])
         ->whereNumber('order');
