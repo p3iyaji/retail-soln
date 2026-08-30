@@ -68,6 +68,11 @@ const router = createRouter({
           component: () => import('@/views/ProductsView.vue'),
         },
         {
+          path: 'catalog',
+          name: 'catalog-taxonomy',
+          component: () => import('@/views/CatalogTaxonomyView.vue'),
+        },
+        {
           path: 'suppliers',
           name: 'suppliers',
           component: () => import('@/views/SuppliersView.vue'),
