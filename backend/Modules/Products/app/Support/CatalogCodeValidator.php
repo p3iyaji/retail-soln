@@ -27,10 +27,12 @@ final class CatalogCodeValidator
                 ->when($ignoreProductId, fn ($q) => $q->where('id', '!=', $ignoreProductId))
                 ->exists();
 
+            // Default variants reuse the product SKU; ignore variants of the product being edited.
             $variantSku = ProductVariant::query()
                 ->where('organization_id', $organizationId)
                 ->where('sku', $sku)
                 ->when($ignoreVariantId, fn ($q) => $q->where('id', '!=', $ignoreVariantId))
+                ->when($ignoreProductId, fn ($q) => $q->where('product_id', '!=', $ignoreProductId))
                 ->exists();
 
             if ($productSku || $variantSku) {
@@ -49,6 +51,13 @@ final class CatalogCodeValidator
                 ->where('organization_id', $organizationId)
                 ->where('code', $barcode)
                 ->when($ignoreVariantId, fn ($q) => $q->where('product_variant_id', '!=', $ignoreVariantId))
+                ->when(
+                    $ignoreProductId,
+                    fn ($q) => $q->whereDoesntHave(
+                        'variant',
+                        fn ($vq) => $vq->where('product_id', $ignoreProductId),
+                    ),
+                )
                 ->exists();
 
             if ($productBarcode || $variantBarcode) {
