@@ -116,6 +116,36 @@ class PortalCartCheckoutApiTest extends TestCase
         $this->assertSame(1, PortalCartItem::query()->count());
     }
 
+    public function test_cart_lines_include_variant_or_product_image_url(): void
+    {
+        Sanctum::actingAs($this->account, ['portal']);
+
+        $this->variant->product->images()->create([
+            'url' => '/storage/catalog/1/product.jpg',
+            'alt_text' => 'Product',
+            'sort_order' => 0,
+            'is_primary' => true,
+        ]);
+
+        $this->postJson('/api/v1/portal/cart/items', [
+            'variantId' => $this->variant->id,
+            'qty' => 1,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.lines.0.imageUrl', '/storage/catalog/1/product.jpg');
+
+        $this->variant->images()->create([
+            'url' => '/storage/catalog/1/variant.jpg',
+            'alt_text' => 'Variant',
+            'sort_order' => 0,
+            'is_primary' => true,
+        ]);
+
+        $this->getJson('/api/v1/portal/cart')
+            ->assertOk()
+            ->assertJsonPath('data.lines.0.imageUrl', '/storage/catalog/1/variant.jpg');
+    }
+
     public function test_add_inactive_or_foreign_variant_rejected(): void
     {
         Sanctum::actingAs($this->account, ['portal']);
