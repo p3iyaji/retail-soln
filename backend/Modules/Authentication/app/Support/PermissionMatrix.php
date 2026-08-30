@@ -52,6 +52,7 @@ final class PermissionMatrix
             'users.assign-roles' => ['SA', 'OA'],
             'users.assign-stores' => ['SA', 'OA', 'SM'],
             'roles.view' => ['SA', 'OA'],
+            'roles.manage' => ['SA', 'OA'],
             'products.view' => ['SA', 'OA', 'SM', 'CA', 'IM', 'PO'],
             'products.manage' => ['SA', 'OA', 'IM'],
             'products.import' => ['SA', 'OA', 'IM'],

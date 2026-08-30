@@ -44,6 +44,7 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('/users/{user}/stores', [UserController::class, 'assignStores']);
 
         Route::get('/roles', [RoleController::class, 'index']);
+        Route::patch('/roles/{role}', [RoleController::class, 'update']);
         Route::get('/permissions', [PermissionController::class, 'index']);
     });
 });
