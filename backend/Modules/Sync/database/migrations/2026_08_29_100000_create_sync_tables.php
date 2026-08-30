@@ -18,8 +18,8 @@ return new class extends Migration
             $table->timestamp('last_seen_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['organization_id', 'uuid']);
-            $table->index(['organization_id', 'store_id', 'enabled']);
+            $table->unique(['organization_id', 'uuid'], 'devices_org_uuid_unique');
+            $table->index(['organization_id', 'store_id', 'enabled'], 'devices_org_store_enabled_idx');
         });
 
         Schema::create('sync_batches', function (Blueprint $table) {
@@ -31,7 +31,7 @@ return new class extends Migration
             $table->unsignedInteger('record_count')->default(0);
             $table->timestamps();
 
-            $table->index(['organization_id', 'store_id', 'created_at']);
+            $table->index(['organization_id', 'store_id', 'created_at'], 'sync_batches_org_store_created_idx');
         });
 
         Schema::create('sync_records', function (Blueprint $table) {
@@ -48,8 +48,8 @@ return new class extends Migration
             $table->json('server_result')->nullable();
             $table->timestamps();
 
-            $table->unique(['organization_id', 'uuid']);
-            $table->index(['organization_id', 'status']);
+            $table->unique(['organization_id', 'uuid'], 'sync_records_org_uuid_unique');
+            $table->index(['organization_id', 'status'], 'sync_records_org_status_idx');
         });
 
         Schema::create('inventory_oversell_exceptions', function (Blueprint $table) {
@@ -64,8 +64,9 @@ return new class extends Migration
             $table->timestamp('approved_at')->nullable();
             $table->timestamps();
 
-            $table->index(['organization_id', 'store_id', 'status']);
-            $table->index(['sale_id']);
+            // MySQL identifier limit is 64 chars; Laravel's default name exceeds it.
+            $table->index(['organization_id', 'store_id', 'status'], 'oversell_exc_org_store_status_idx');
+            $table->index(['sale_id'], 'oversell_exc_sale_id_idx');
         });
 
         Schema::table('sync_records', function (Blueprint $table) {
