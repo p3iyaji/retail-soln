@@ -1,8 +1,19 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import {
+  applySidebarTokens,
+  sidebarColorOptions,
+  type SidebarColor,
+} from '@/config/sidebarPalettes'
+
+export type { SidebarColor } from '@/config/sidebarPalettes'
+export {
+  sidebarColorOptions,
+  sidebarDarkColorOptions,
+  sidebarLightColorOptions,
+} from '@/config/sidebarPalettes'
 
 export type ThemeColor = 'teal' | 'blue' | 'indigo' | 'violet' | 'emerald' | 'slate'
-export type SidebarColor = 'slate' | 'navy' | 'charcoal' | 'forest' | 'plum' | 'wine' | 'light'
 export type AppearanceMode = 'light' | 'dark' | 'system'
 export type TextSize = 'sm' | 'md' | 'lg'
 
@@ -32,16 +43,6 @@ export const themeColorOptions: Array<{ id: ThemeColor; label: string; swatch: s
   { id: 'slate', label: 'Slate', swatch: '#475569' },
 ]
 
-export const sidebarColorOptions: Array<{ id: SidebarColor; label: string; swatch: string }> = [
-  { id: 'slate', label: 'Slate', swatch: '#0f172a' },
-  { id: 'navy', label: 'Navy', swatch: '#0a1628' },
-  { id: 'charcoal', label: 'Charcoal', swatch: '#18181b' },
-  { id: 'forest', label: 'Forest', swatch: '#052e16' },
-  { id: 'plum', label: 'Plum', swatch: '#2e1065' },
-  { id: 'wine', label: 'Wine', swatch: '#450a0a' },
-  { id: 'light', label: 'Light', swatch: '#f8fafc' },
-]
-
 export const appearanceModeOptions: Array<{ id: AppearanceMode; label: string }> = [
   { id: 'light', label: 'Light' },
   { id: 'dark', label: 'Dark' },
@@ -58,6 +59,10 @@ function storageKey(userId?: number | null): string {
   return userId ? `${STORAGE_PREFIX}_${userId}` : STORAGE_PREFIX
 }
 
+function isSidebarColor(value: unknown): value is SidebarColor {
+  return typeof value === 'string' && sidebarColorOptions.some((option) => option.id === value)
+}
+
 function readState(userId?: number | null): AppearanceState {
   try {
     const raw = localStorage.getItem(storageKey(userId))
@@ -67,8 +72,8 @@ function readState(userId?: number | null): AppearanceState {
       themeColor: themeColorOptions.some((o) => o.id === parsed.themeColor)
         ? (parsed.themeColor as ThemeColor)
         : DEFAULT_STATE.themeColor,
-      sidebarColor: sidebarColorOptions.some((o) => o.id === parsed.sidebarColor)
-        ? (parsed.sidebarColor as SidebarColor)
+      sidebarColor: isSidebarColor(parsed.sidebarColor)
+        ? parsed.sidebarColor
         : DEFAULT_STATE.sidebarColor,
       appearanceMode: appearanceModeOptions.some((o) => o.id === parsed.appearanceMode)
         ? (parsed.appearanceMode as AppearanceMode)
@@ -97,11 +102,15 @@ function resolveDark(mode: AppearanceMode): boolean {
 
 function applyToDocument(state: AppearanceState): void {
   const root = document.documentElement
+  const isDark = resolveDark(state.appearanceMode)
+
   root.dataset.theme = state.themeColor
   root.dataset.sidebar = state.sidebarColor
   root.dataset.textSize = state.textSize
-  root.classList.toggle('dark', resolveDark(state.appearanceMode))
-  root.style.colorScheme = resolveDark(state.appearanceMode) ? 'dark' : 'light'
+  root.classList.toggle('dark', isDark)
+  root.style.colorScheme = isDark ? 'dark' : 'light'
+
+  applySidebarTokens(state.sidebarColor, isDark)
 }
 
 let systemListener: ((event: MediaQueryListEvent) => void) | null = null
