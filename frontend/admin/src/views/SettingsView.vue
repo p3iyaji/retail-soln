@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import AppearanceSettings from '@/components/AppearanceSettings.vue'
 import { api, ApiError } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 
@@ -117,7 +118,7 @@ async function loadSettings() {
 async function refresh() {
   if (!canManage.value) {
     loading.value = false
-    error.value = 'You do not have permission to manage settings.'
+    error.value = ''
     return
   }
 
@@ -192,151 +193,168 @@ onMounted(refresh)
 </script>
 
 <template>
-  <section class="space-y-6">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h2 class="text-xl font-semibold tracking-tight">Settings</h2>
-        <p class="mt-1 text-sm text-[var(--muted)]">
-          Organization and store key/value settings (JSON). Requires settings.manage.
-        </p>
-      </div>
-      <button
-        v-if="canManage"
-        type="button"
-        class="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm text-white hover:opacity-90"
-        @click="openCreate"
-      >
-        New setting
-      </button>
-    </div>
+  <section class="space-y-8">
+    <AppearanceSettings />
 
-    <div v-if="canManage" class="flex flex-wrap items-end gap-3">
-      <label class="block text-sm">
-        <span class="text-[var(--muted)]">Scope</span>
-        <select v-model="scope" class="mt-1 rounded-md border border-[var(--line)] px-3 py-2">
-          <option value="all">All</option>
-          <option value="org">Organization only</option>
-          <option value="store">By store</option>
-        </select>
-      </label>
-      <label v-if="scope === 'store'" class="block text-sm">
-        <span class="text-[var(--muted)]">Store</span>
-        <select v-model="filterStoreId" class="mt-1 rounded-md border border-[var(--line)] px-3 py-2">
-          <option value="">Select store…</option>
-          <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
-        </select>
-      </label>
-    </div>
-
-    <p v-if="loading" class="text-sm text-[var(--muted)]">Loading…</p>
-    <p
-      v-if="error"
-      class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
-    >
-      {{ error }}
-    </p>
-    <p
-      v-if="message"
-      class="rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-900"
-    >
-      {{ message }}
-    </p>
-
-    <div
-      v-if="showForm && canManage"
-      class="space-y-4 rounded-md border border-[var(--line)] bg-[var(--panel)] p-4"
-    >
-      <div class="flex items-center justify-between gap-3">
-        <h3 class="text-sm font-semibold">{{ formTitle }}</h3>
-        <button type="button" class="text-sm text-[var(--muted)] hover:text-[var(--ink)]" @click="closeForm">
-          Cancel
+    <div class="space-y-6">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-semibold tracking-tight">Organization settings</h2>
+          <p class="mt-1 text-sm text-[var(--muted)]">
+            Organization and store key/value settings (JSON). Requires settings.manage.
+          </p>
+        </div>
+        <button
+          v-if="canManage"
+          type="button"
+          class="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm text-white hover:opacity-90"
+          @click="openCreate"
+        >
+          New setting
         </button>
       </div>
-      <form class="grid gap-3" @submit.prevent="onSubmit">
-        <label class="block text-sm">
-          <span class="text-[var(--muted)]">Key</span>
-          <input
-            v-model="form.key"
-            list="setting-keys"
-            required
-            maxlength="255"
-            :disabled="Boolean(editingKey)"
-            class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2 disabled:bg-stone-50"
-            placeholder="pos.receipt_footer"
-          />
-          <datalist id="setting-keys">
-            <option v-for="k in SUGGESTED_KEYS" :key="k" :value="k" />
-          </datalist>
-        </label>
-        <label class="block text-sm">
-          <span class="text-[var(--muted)]">Scope</span>
-          <select
-            v-model="form.storeId"
-            :disabled="Boolean(editingKey)"
-            class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2 disabled:bg-stone-50"
-          >
-            <option value="">Organization</option>
-            <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
-          </select>
-        </label>
-        <label class="block text-sm">
-          <span class="text-[var(--muted)]">Value (JSON)</span>
-          <textarea
-            v-model="form.valueText"
-            rows="8"
-            required
-            class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2 font-mono text-xs"
-            spellcheck="false"
-          />
-        </label>
-        <div>
-          <button
-            type="submit"
-            class="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm text-white hover:opacity-90 disabled:opacity-60"
-            :disabled="saving"
-          >
-            {{ saving ? 'Saving…' : 'Save' }}
-          </button>
-        </div>
-      </form>
-    </div>
 
-    <div v-if="!loading && canManage" class="overflow-x-auto rounded-md border border-[var(--line)]">
-      <table class="min-w-full text-left text-sm">
-        <thead class="border-b border-[var(--line)] bg-stone-50 text-[var(--muted)]">
-          <tr>
-            <th class="px-3 py-2 font-medium">Key</th>
-            <th class="px-3 py-2 font-medium">Scope</th>
-            <th class="px-3 py-2 font-medium">Value</th>
-            <th class="px-3 py-2 font-medium"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="setting in settings"
-            :key="`${setting.storeId ?? 'org'}-${setting.key}`"
-            class="border-b border-[var(--line)] last:border-b-0"
-          >
-            <td class="px-3 py-2 font-medium">{{ setting.key }}</td>
-            <td class="px-3 py-2 text-[var(--muted)]">{{ storeName(setting.storeId) }}</td>
-            <td class="max-w-md truncate px-3 py-2 font-mono text-xs" :title="formatValue(setting.value)">
-              {{ formatValue(setting.value) }}
-            </td>
-            <td class="px-3 py-2 text-right">
-              <button
-                type="button"
-                class="text-[var(--brand-ink)] hover:underline"
-                @click="openEdit(setting)"
+      <div
+        v-if="!canManage"
+        class="rounded-lg border border-[var(--line)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--muted)]"
+      >
+        Organization key/value settings require the settings.manage permission. Use
+        <RouterLink to="/appearance" class="text-[var(--brand-ink)] underline-offset-2 hover:underline">
+          Appearance
+        </RouterLink>
+        above or in the sidebar to customise theme, sidebar, and text size.
+      </div>
+
+      <template v-else>
+        <div class="flex flex-wrap items-end gap-3">
+          <label class="block text-sm">
+            <span class="text-[var(--muted)]">Scope</span>
+            <select v-model="scope" class="mt-1 rounded-md border border-[var(--line)] px-3 py-2">
+              <option value="all">All</option>
+              <option value="org">Organization only</option>
+              <option value="store">By store</option>
+            </select>
+          </label>
+          <label v-if="scope === 'store'" class="block text-sm">
+            <span class="text-[var(--muted)]">Store</span>
+            <select v-model="filterStoreId" class="mt-1 rounded-md border border-[var(--line)] px-3 py-2">
+              <option value="">Select store…</option>
+              <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
+            </select>
+          </label>
+        </div>
+
+        <p v-if="loading" class="text-sm text-[var(--muted)]">Loading…</p>
+        <p
+          v-if="error"
+          class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+        >
+          {{ error }}
+        </p>
+        <p
+          v-if="message"
+          class="rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-900"
+        >
+          {{ message }}
+        </p>
+
+        <div
+          v-if="showForm"
+          class="space-y-4 rounded-md border border-[var(--line)] bg-[var(--panel)] p-4"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold">{{ formTitle }}</h3>
+            <button type="button" class="text-sm text-[var(--muted)] hover:text-[var(--ink)]" @click="closeForm">
+              Cancel
+            </button>
+          </div>
+          <form class="grid gap-3" @submit.prevent="onSubmit">
+            <label class="block text-sm">
+              <span class="text-[var(--muted)]">Key</span>
+              <input
+                v-model="form.key"
+                list="setting-keys"
+                required
+                maxlength="255"
+                :disabled="Boolean(editingKey)"
+                class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2 disabled:bg-stone-50"
+                placeholder="pos.receipt_footer"
+              />
+              <datalist id="setting-keys">
+                <option v-for="k in SUGGESTED_KEYS" :key="k" :value="k" />
+              </datalist>
+            </label>
+            <label class="block text-sm">
+              <span class="text-[var(--muted)]">Scope</span>
+              <select
+                v-model="form.storeId"
+                :disabled="Boolean(editingKey)"
+                class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2 disabled:bg-stone-50"
               >
-                Edit
+                <option value="">Organization</option>
+                <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
+              </select>
+            </label>
+            <label class="block text-sm">
+              <span class="text-[var(--muted)]">Value (JSON)</span>
+              <textarea
+                v-model="form.valueText"
+                rows="8"
+                required
+                class="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2 font-mono text-xs"
+                spellcheck="false"
+              />
+            </label>
+            <div>
+              <button
+                type="submit"
+                class="rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm text-white hover:opacity-90 disabled:opacity-60"
+                :disabled="saving"
+              >
+                {{ saving ? 'Saving…' : 'Save' }}
               </button>
-            </td>
-          </tr>
-          <tr v-if="settings.length === 0">
-            <td colspan="4" class="px-3 py-6 text-center text-[var(--muted)]">No settings yet.</td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+          </form>
+        </div>
+
+        <div v-if="!loading" class="overflow-x-auto rounded-md border border-[var(--line)]">
+          <table class="min-w-full text-left text-sm">
+            <thead class="border-b border-[var(--line)] bg-stone-50 text-[var(--muted)]">
+              <tr>
+                <th class="px-3 py-2 font-medium">Key</th>
+                <th class="px-3 py-2 font-medium">Scope</th>
+                <th class="px-3 py-2 font-medium">Value</th>
+                <th class="px-3 py-2 font-medium"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="setting in settings"
+                :key="`${setting.storeId ?? 'org'}-${setting.key}`"
+                class="border-b border-[var(--line)] last:border-b-0"
+              >
+                <td class="px-3 py-2 font-medium">{{ setting.key }}</td>
+                <td class="px-3 py-2 text-[var(--muted)]">{{ storeName(setting.storeId) }}</td>
+                <td class="max-w-md truncate px-3 py-2 font-mono text-xs" :title="formatValue(setting.value)">
+                  {{ formatValue(setting.value) }}
+                </td>
+                <td class="px-3 py-2 text-right">
+                  <button
+                    type="button"
+                    class="text-[var(--brand-ink)] hover:underline"
+                    @click="openEdit(setting)"
+                  >
+                    Edit
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="settings.length === 0">
+                <td colspan="4" class="px-3 py-6 text-center text-[var(--muted)]">No settings yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
     </div>
   </section>
 </template>

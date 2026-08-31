@@ -8,6 +8,7 @@ import {
   type AuthUser,
   type LoginResponse,
 } from '@/api/client'
+import { useAppearanceStore } from '@/stores/appearance'
 
 export const useAuthStore = defineStore('auth', () => {
   const tokenPresent = ref(hasToken())
@@ -34,6 +35,7 @@ export const useAuthStore = defineStore('auth', () => {
         setToken(response.token)
         tokenPresent.value = true
         user.value = response.user
+        useAppearanceStore().load(response.user.id)
         return 'ok'
       }
 
@@ -65,6 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
       tokenPresent.value = true
       user.value = response.user
       sessionStorage.removeItem('retail_soln_2fa_challenge')
+      useAppearanceStore().load(response.user.id)
     } catch (err) {
       error.value = err instanceof ApiError ? err.message : 'Two-factor failed'
       throw err
@@ -81,6 +84,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     const response = await api.get<{ data: AuthUser }>('/auth/me')
     user.value = response.data
+    useAppearanceStore().load(response.data.id)
   }
 
   async function logout(): Promise<void> {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { allNavItems, navGroups, type NavGroup, type NavItem } from '@/config/navigation'
+import { allNavItems, navGroups, personalNavItems, type NavGroup, type NavItem } from '@/config/navigation'
 import { userHasPermission } from '@/lib/rbac'
 import { useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
@@ -27,6 +27,8 @@ const visibleNavGroups = computed(() =>
 
 const title = computed(() => {
   if (route.name === 'dashboard') return 'Dashboard'
+  const personal = personalNavItems.find((item) => item.name === route.name)
+  if (personal) return personal.label
   const match = allNavItems.find((item) => item.name === route.name)
   return match?.label ?? 'Admin'
 })
@@ -91,7 +93,7 @@ async function onLogout() {
   loggingOut.value = true
   try {
     await auth.logout()
-    appearance.load()
+    useAppearanceStore().load()
     await router.push({ name: 'login' })
   } finally {
     loggingOut.value = false
@@ -159,6 +161,21 @@ function closeMobileNav() {
               :class="isActive('dashboard') ? 'bg-[var(--sidebar-accent)]' : 'bg-[var(--sidebar-muted)]'"
             />
             Dashboard
+          </RouterLink>
+          <RouterLink
+            v-for="item in personalNavItems"
+            :key="item.name"
+            :to="item.to"
+            class="mt-0.5 flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition"
+            :class="navLinkClass(isActive(item.name))"
+            :aria-current="isActive(item.name) ? 'page' : undefined"
+            @click="closeMobileNav"
+          >
+            <span
+              class="inline-block h-1.5 w-1.5 rounded-full"
+              :class="isActive(item.name) ? 'bg-[var(--sidebar-accent)]' : 'bg-[var(--sidebar-muted)]'"
+            />
+            {{ item.label }}
           </RouterLink>
         </div>
 
@@ -228,6 +245,13 @@ function closeMobileNav() {
           <p class="truncate text-xs text-[var(--muted)] lg:hidden">{{ auth.displayName }}</p>
         </div>
         <div class="flex shrink-0 items-center gap-3">
+          <RouterLink
+            to="/appearance"
+            class="hidden rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-sm font-medium text-[var(--ink)] shadow-[var(--shadow-sm)] transition hover:border-[var(--brand)]/30 hover:bg-[var(--brand-soft)] sm:inline"
+            :class="isActive('appearance') ? 'border-[var(--brand)]/40 bg-[var(--brand-soft)] text-[var(--brand-ink)]' : ''"
+          >
+            Appearance
+          </RouterLink>
           <span class="hidden text-sm text-[var(--muted)] sm:inline">{{ auth.displayName }}</span>
           <button
             type="button"
