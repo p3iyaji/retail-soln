@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import {
   appearanceModeOptions,
-  sidebarColorOptions,
+  sidebarDarkColorOptions,
+  sidebarLightColorOptions,
   textSizeOptions,
   themeColorOptions,
   useAppearanceStore,
@@ -52,31 +53,62 @@ const appearance = useAppearanceStore()
       </div>
     </div>
 
-    <div class="space-y-2">
+    <div class="space-y-4">
       <p class="text-sm font-medium text-[var(--ink)]">Sidebar colour</p>
       <p class="text-xs text-[var(--muted)]">Background colour for the navigation sidebar.</p>
-      <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Sidebar colour">
-        <button
-          v-for="option in sidebarColorOptions"
-          :key="option.id"
-          type="button"
-          role="radio"
-          :aria-checked="appearance.sidebarColor === option.id"
-          class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
-          :class="
-            appearance.sidebarColor === option.id
-              ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-ink)]'
-              : 'border-[var(--line)] bg-[var(--panel)] text-[var(--ink)] hover:border-[var(--brand)]/40'
-          "
-          @click="appearance.setSidebarColor(option.id)"
-        >
-          <span
-            class="h-4 w-4 shrink-0 rounded-md border border-black/10"
-            :style="{ backgroundColor: option.swatch }"
-            aria-hidden="true"
-          />
-          {{ option.label }}
-        </button>
+
+      <div class="space-y-2">
+        <p class="text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">Dark</p>
+        <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Dark sidebar colours">
+          <button
+            v-for="option in sidebarDarkColorOptions"
+            :key="option.id"
+            type="button"
+            role="radio"
+            :aria-checked="appearance.sidebarColor === option.id"
+            class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
+            :class="
+              appearance.sidebarColor === option.id
+                ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-ink)]'
+                : 'border-[var(--line)] bg-[var(--panel)] text-[var(--ink)] hover:border-[var(--brand)]/40'
+            "
+            @click="appearance.setSidebarColor(option.id)"
+          >
+            <span
+              class="h-4 w-4 shrink-0 rounded-md border border-black/10"
+              :style="{ backgroundColor: option.swatch }"
+              aria-hidden="true"
+            />
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <p class="text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">Light</p>
+        <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Light sidebar colours">
+          <button
+            v-for="option in sidebarLightColorOptions"
+            :key="option.id"
+            type="button"
+            role="radio"
+            :aria-checked="appearance.sidebarColor === option.id"
+            class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
+            :class="
+              appearance.sidebarColor === option.id
+                ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-ink)]'
+                : 'border-[var(--line)] bg-[var(--panel)] text-[var(--ink)] hover:border-[var(--brand)]/40'
+            "
+            @click="appearance.setSidebarColor(option.id)"
+          >
+            <span
+              class="h-4 w-4 shrink-0 rounded-md border border-black/10"
+              :style="{ backgroundColor: option.swatch }"
+              aria-hidden="true"
+            />
+            {{ option.label }}
+          </button>
+        </div>
       </div>
     </div>
 
