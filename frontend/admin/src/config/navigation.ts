@@ -103,3 +103,8 @@ export const navGroups: NavGroup[] = [
 ]
 
 export const allNavItems = navGroups.flatMap((group) => group.items)
+
+/** Always visible — personal preferences, no permission required. */
+export const personalNavItems: NavItem[] = [
+  { name: 'appearance', label: 'Appearance', to: '/appearance' },
+]
