@@ -285,6 +285,9 @@ class PortalReturnRequestService
     {
         $request->loadMissing(['items.orderItem', 'order']);
 
+        $completion = app(PortalReturnCompletionService::class);
+        $refundTotal = $completion->refundTotalForRequest($request);
+
         return [
             'id' => $request->id,
             'orderId' => $request->portal_order_id,
@@ -295,19 +298,26 @@ class PortalReturnRequestService
             'reasonLabel' => PortalReturnReasons::label((string) $request->reason),
             'notes' => $request->notes,
             'createdAt' => $request->created_at?->toIso8601String(),
-            'items' => $request->items->map(function (PortalReturnRequestItem $item) {
+            'completedAt' => $request->completed_at?->toIso8601String(),
+            'refundTotal' => $refundTotal,
+            'canComplete' => (string) $request->status === PortalReturnRequestStatuses::APPROVED,
+            'items' => $request->items->map(function (PortalReturnRequestItem $item) use ($completion, $request) {
                 $orderItem = $item->orderItem;
+                $lineTotals = $completion->computeLineTotals($request);
 
                 return [
                     'id' => $item->id,
                     'orderItemId' => $item->portal_order_item_id,
                     'qty' => (string) $item->quantity,
+                    'lineTotal' => $item->line_total !== null
+                        ? (string) $item->line_total
+                        : ($lineTotals[$item->id]['line_total'] ?? '0.0000'),
                     'productName' => $orderItem?->product_name,
                     'variantName' => $orderItem?->variant_name,
                     'sku' => $orderItem?->sku,
                 ];
             })->values()->all(),
-            'refunds' => [],
+            'refunds' => $completion->refundsToPayload($request),
         ];
     }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { ApiError, catalogueApi, formatPortalMoney, hasToken, type CatalogueProductDetail } from '@/api/client'
 import { useCartStore } from '@/stores/cart'
 
@@ -186,6 +186,12 @@ watch(
         >
           {{ adding ? 'Adding…' : 'Add to cart' }}
         </button>
+        <RouterLink
+          :to="{ name: 'shop' }"
+          class="mt-3 inline-flex h-[52px] w-full items-center justify-center rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] text-base font-semibold text-[var(--ink)] no-underline"
+        >
+          Continue shopping
+        </RouterLink>
         <p v-if="addMessage" class="mt-4 text-[13px] text-[var(--muted)]">{{ addMessage }}</p>
       </div>
     </div>

@@ -48,6 +48,20 @@ type FulfilmentOrderDetail = FulfilmentOrderListItem & {
   }>
   customer?: { name?: string | null; email?: string | null }
   contactPhone?: string | null
+  activeReturnRequest?: {
+    id: number
+    status: string
+    statusLabel: string
+    reason: string
+    createdAt: string | null
+  } | null
+  returnRequest?: {
+    id: number
+    status: string
+    statusLabel: string
+    reason: string
+    createdAt: string | null
+  } | null
   address?: {
     line1: string | null
     line2: string | null
@@ -690,6 +704,27 @@ onMounted(() => {
           >
             Deliver to: {{ formatAddress(selected.address) }}
           </p>
+
+          <div
+            v-if="selected.activeReturnRequest || selected.returnRequest"
+            class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          >
+            <p class="font-medium">
+              {{
+                selected.activeReturnRequest
+                  ? 'Open return request'
+                  : 'Latest return request'
+              }}
+              #{{ (selected.activeReturnRequest ?? selected.returnRequest)?.id }}
+              — {{ (selected.activeReturnRequest ?? selected.returnRequest)?.statusLabel }}
+            </p>
+            <RouterLink
+              :to="{ name: 'return-requests' }"
+              class="mt-1 inline-block text-[var(--brand)] underline"
+            >
+              Review in Return requests
+            </RouterLink>
+          </div>
 
           <div
             v-if="

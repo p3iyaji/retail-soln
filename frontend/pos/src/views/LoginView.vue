@@ -58,9 +58,10 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="flex min-h-full items-center justify-center bg-[radial-gradient(circle_at_top,_#1a2330_0%,_#0b6e4f_55%,_#f4f6f8_55%)] px-4 py-10">
+  <div class="flex min-h-full items-center justify-center bg-[radial-gradient(circle_at_top,_#081838_0%,_#082848_55%,_#f4f6f8_55%)] px-4 py-10">
     <div class="w-full max-w-md border border-[var(--line)] bg-[var(--panel)] p-8 shadow-sm">
-      <p class="text-xs font-semibold tracking-[0.18em] text-[var(--primary)] uppercase">Retail Soln</p>
+      <img src="/logo.png" alt="Bag & Cartons Ltd" class="mx-auto h-20 w-auto object-contain" />
+      <p class="mt-4 text-xs font-semibold tracking-[0.18em] text-[var(--primary)] uppercase">POS</p>
       <h1 class="font-display mt-2 text-2xl font-semibold tracking-tight">POS sign in</h1>
       <p class="mt-2 text-sm text-[var(--muted)]">
         Use your cashier credentials. Tokens stay on this device under a POS-only storage key.

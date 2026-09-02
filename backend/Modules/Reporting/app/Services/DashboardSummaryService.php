@@ -7,6 +7,7 @@ use App\Support\DecimalAggregator;
 use Carbon\CarbonImmutable;
 use DateTimeZone;
 use Modules\CustomerPortal\Services\PortalFulfilmentService;
+use Modules\CustomerPortal\Services\PortalReturnRequestStaffService;
 use Modules\CustomerPortal\Support\PortalOrderStatuses;
 use Modules\Inventory\Services\LowStockAlertService;
 use Modules\Organization\Models\Organization;
@@ -26,6 +27,7 @@ class DashboardSummaryService
     public function __construct(
         private readonly LowStockAlertService $lowStock,
         private readonly PortalFulfilmentService $fulfilment,
+        private readonly PortalReturnRequestStaffService $returnRequests,
         private readonly OversellExceptionService $oversells,
     ) {}
 
@@ -54,6 +56,9 @@ class DashboardSummaryService
         $canViewInventory = $user->hasPermission('inventory.view');
         $canApproveOversell = $user->hasPermission('inventory.approve-oversell');
         $canViewSales = $user->hasPermission('sales.view');
+        $canViewFulfilment = $user->hasPermission('fulfilment.pick')
+            || $user->hasPermission('fulfilment.ship')
+            || $user->hasPermission('fulfilment.pickup');
 
         return [
             'store' => [
@@ -89,6 +94,9 @@ class DashboardSummaryService
                         ->where('store_id', $store->id)
                         ->where('status', SaleStatus::Held)
                         ->count()
+                    : null,
+                'openReturnRequests' => $canViewFulfilment
+                    ? $this->returnRequests->openCountForStore($organization->id, $store->id)
                     : null,
             ],
         ];

@@ -10,6 +10,7 @@ class PortalOrderPayloadBuilder
     public function __construct(
         private readonly PortalOrderTimelineService $timeline,
         private readonly PortalReturnRequestService $returns,
+        private readonly PortalReturnCompletionService $refunds,
     ) {}
 
     /**
@@ -87,7 +88,7 @@ class PortalOrderPayloadBuilder
                 'name' => $order->customer?->name,
                 'email' => $order->customer?->email,
             ];
-            $payload['refunds'] = [];
+            $payload['refunds'] = $this->refunds->orderRefundsPayload($order);
         }
 
         if ($payment !== null) {

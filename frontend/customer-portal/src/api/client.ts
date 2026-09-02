@@ -599,3 +599,47 @@ export const returnsApi = {
       headers: { 'Idempotency-Key': idempotencyKey },
     }),
 }
+
+export type PortalSupportStore = {
+  id: number
+  name: string
+  code: string
+  address: string | null
+}
+
+export type PortalSupportInfo = {
+  organizationName: string
+  supportEmail: string | null
+  supportPhone: string | null
+  businessHours: string | null
+  stores: PortalSupportStore[]
+}
+
+export type PortalChatProductMatch = {
+  id: number
+  name: string
+  sku: string
+  imageUrl: string | null
+  price: CataloguePrice | null
+}
+
+export type PortalChatResponse = {
+  reply: string
+  suggestions: string[]
+  productMatches: PortalChatProductMatch[]
+}
+
+export const supportApi = {
+  info: (init?: RequestInit) =>
+    api.get<{ data: PortalSupportInfo }>('/portal/support/info', init),
+  contact: (payload: {
+    name: string
+    email: string
+    phone?: string | null
+    subject: string
+    message: string
+  }) =>
+    api.post<{ data: { id: number; message: string } }>('/portal/contact', payload),
+  chat: (message: string) =>
+    api.post<{ data: PortalChatResponse }>('/portal/chat', { message }),
+}

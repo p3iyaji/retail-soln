@@ -55,4 +55,31 @@ final class PortalReturnRequestStatuses
     {
         return in_array($status, self::OPEN, true);
     }
+
+    /** Statuses staff can act on from the admin console. */
+    /** @var list<string> */
+    public const STAFF_ACTIONABLE = [
+        self::REQUESTED,
+        self::UNDER_REVIEW,
+        self::APPROVED,
+    ];
+
+    /** @var array<string, list<string>> */
+    private const STAFF_TRANSITIONS = [
+        self::REQUESTED => [self::UNDER_REVIEW, self::APPROVED, self::REJECTED],
+        self::UNDER_REVIEW => [self::APPROVED, self::REJECTED],
+    ];
+
+    /**
+     * @return list<string>
+     */
+    public static function allowedStaffTransitions(string $fromStatus): array
+    {
+        return self::STAFF_TRANSITIONS[$fromStatus] ?? [];
+    }
+
+    public static function canStaffTransition(string $fromStatus, string $toStatus): bool
+    {
+        return in_array($toStatus, self::allowedStaffTransitions($fromStatus), true);
+    }
 }

@@ -55,8 +55,8 @@ async function removeAddress(id: number) {
   <div class="min-h-screen bg-[var(--surface)]">
     <header class="border-b border-[var(--line)] bg-[var(--panel)]">
       <div class="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-        <div>
-          <p class="brand text-xs font-semibold tracking-[0.18em] text-[var(--brand)] uppercase">Retail Soln</p>
+        <div class="flex items-center gap-3">
+          <img src="/logo.png" alt="Bag & Cartons Ltd" class="h-12 w-auto object-contain sm:h-14" />
           <h1 class="text-lg font-semibold">Addresses</h1>
         </div>
         <RouterLink class="text-sm text-[var(--brand)]" :to="{ name: 'account' }">Back to account</RouterLink>

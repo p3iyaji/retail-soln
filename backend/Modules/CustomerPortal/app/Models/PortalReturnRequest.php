@@ -17,13 +17,29 @@ class PortalReturnRequest extends Model
         'notes',
         'idempotency_key',
         'request_fingerprint',
+        'refund_total',
+        'completed_at',
+        'completed_by',
+        'complete_idempotency_key',
     ];
 
     protected function casts(): array
     {
         return [
             'request_fingerprint' => 'array',
+            'refund_total' => 'decimal:4',
+            'completed_at' => 'datetime',
         ];
+    }
+
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(PortalRefund::class, 'portal_return_request_id');
+    }
+
+    public function completedBy(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'completed_by');
     }
 
     public function items(): HasMany

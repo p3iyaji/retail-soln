@@ -191,6 +191,7 @@ function productVariants(product: SearchProduct): SearchVariant[] {
     <header
       class="flex flex-shrink-0 flex-wrap items-center gap-3 bg-[var(--chrome)] px-4 py-2.5 text-[13px] text-[var(--chrome-fg)]"
     >
+      <img src="/logo.png" alt="Bag & Cartons Ltd" class="h-8 w-auto shrink-0 object-contain" />
       <strong class="font-display text-sm">{{ pos.selectedStore?.name ?? 'Store' }}</strong>
 
       <span class="flex items-center gap-1.5">

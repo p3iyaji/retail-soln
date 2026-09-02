@@ -57,7 +57,7 @@ onMounted(() => {
               <div class="mt-1 text-xs text-[var(--muted)]">{{ row.reasonLabel }}</div>
             </div>
             <div
-              class="inline-block rounded bg-[#F0F7F4] px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-[var(--brand)]"
+              class="inline-block rounded bg-[var(--brand-soft)] px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-[var(--brand)]"
             >
               {{ row.statusLabel }}
             </div>

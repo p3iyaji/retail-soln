@@ -4,6 +4,7 @@ namespace App\Services\Payments\Adapters;
 
 use App\Services\Payments\Contracts\PaymentGateway;
 use App\Services\Payments\PaymentIntentResult;
+use App\Services\Payments\PaymentRefundResult;
 use App\Services\Payments\WebhookEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -36,6 +37,22 @@ class ManualPaymentAdapter implements PaymentGateway
                 'confirmPath' => $confirmPath,
                 'confirmMethod' => 'POST',
             ],
+        );
+    }
+
+    public function refund(array $input): PaymentRefundResult
+    {
+        if (! (bool) config('payments.manual.enabled', true)) {
+            throw new RuntimeException('Manual payment provider is disabled.');
+        }
+
+        $reference = 'manual_refund_'.Str::lower(Str::random(16));
+
+        return new PaymentRefundResult(
+            provider: 'manual',
+            reference: $reference,
+            status: 'completed',
+            gatewayReference: $reference,
         );
     }
 

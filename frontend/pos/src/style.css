@@ -2,19 +2,19 @@
 
 :root {
   color-scheme: light;
-  --primary: #0b6e4f;
-  --primary-fg: #f5fff9;
-  --accent: #0b6e4f;
-  --accent-fg: #f5fff9;
+  --primary: #082848;
+  --primary-fg: #f5f8fc;
+  --accent: #b87828;
+  --accent-fg: #fffaf5;
   --ember: #c45c26;
-  --chrome: #1a2330;
+  --chrome: #081838;
   --chrome-fg: #e8eef4;
   --surface: #f4f6f8;
   --panel: #ffffff;
-  --line: #d5dce3;
-  --ink: #12181f;
+  --line: #dce4ea;
+  --ink: #061428;
   --muted: #5c6b7a;
-  --online: #0b6e4f;
+  --online: #082848;
   --offline: #c47a1a;
   --syncing: #1d6fb8;
   --sync-error: #b42318;

@@ -30,12 +30,12 @@ This manual explains how to run and operate **retail-soln** end to end using the
 
 retail-soln is a multi-store retail platform with three browser applications:
 
-| Application | URL (local dev) | Who uses it |
-|-------------|-----------------|-------------|
-| **Admin** | http://localhost:5173 | Managers, inventory, procurement, fulfilment, accountants |
-| **POS** | http://localhost:5174 | Cashiers and floor staff |
-| **Customer portal** | http://localhost:5175 | Shoppers (browse, cart, checkout, track orders) |
-| **API** | http://localhost:8001 or http://localhost:8080 | Used automatically by the apps (not opened directly) |
+| Application         | URL (local dev)                                | Who uses it                                               |
+| ------------------- | ---------------------------------------------- | --------------------------------------------------------- |
+| **Admin**           | http://localhost:5173                          | Managers, inventory, procurement, fulfilment, accountants |
+| **POS**             | http://localhost:5174                          | Cashiers and floor staff                                  |
+| **Customer portal** | http://localhost:5175                          | Shoppers (browse, cart, checkout, track orders)           |
+| **API**             | http://localhost:8001 or http://localhost:8080 | Used automatically by the apps (not opened directly)      |
 
 Admin and POS talk to the same backend API (`/api/v1`) with staff Sanctum tokens. The customer portal uses separate `/api/v1/portal/*` routes. POS also requires **selecting a store** after login.
 
@@ -65,12 +65,12 @@ docker compose up -d --build
 
 Services:
 
-| Service | Purpose |
-|---------|---------|
-| `mysql` | Database |
-| `redis` | Cache / queues |
-| `app` | Laravel API |
-| `nginx` | API gateway at **http://localhost:8080** |
+| Service | Purpose                                         |
+| ------- | ----------------------------------------------- |
+| `mysql` | Database                                        |
+| `redis` | Cache / queues                                  |
+| `app`   | Laravel API                                     |
+| `nginx` | API gateway at **http://localhost:8080**        |
 | `queue` | Background jobs (receipts, proforma email stub) |
 
 Verify the API:
@@ -126,24 +126,24 @@ This creates RBAC permissions, a default organization (on first API use), walk-i
 
 ### Development accounts (after `db:seed`)
 
-| Email | Password | Typical use |
-|-------|----------|-------------|
-| `admin@retail.local` | `password` | Full org admin — all modules |
-| `inventory@retail.local` | `password` | Products, inventory, receiving |
+| Email                      | Password   | Typical use                                   |
+| -------------------------- | ---------- | --------------------------------------------- |
+| `admin@retail.local`       | `password` | Full org admin — all modules                  |
+| `inventory@retail.local`   | `password` | Products, inventory, receiving                |
 | `procurement@retail.local` | `password` | Suppliers, purchase orders, supplier payments |
 
 **Change these passwords before any shared or production environment.**
 
 ### Role summary
 
-| Role | Admin highlights | POS highlights |
-|------|------------------|----------------|
-| **Org Admin (OA)** | Everything including org settings, users, pricing | Full POS if assigned to stores |
-| **Store Manager (SM)** | Store ops, proformas, approve POs, void/refund | Sessions, sales, installments, returns |
-| **Cashier (CA)** | Limited admin | Sales, collect installments, returns (if permitted) |
-| **Inventory Manager (IM)** | Products, stock, receive goods | View stock-related data |
-| **Procurement Officer (PO)** | Suppliers, POs, pay suppliers | — |
-| **Accountant (AC)** | Payments, invoices, audit, reconcile | View sales / collect installments |
+| Role                         | Admin highlights                                  | POS highlights                                      |
+| ---------------------------- | ------------------------------------------------- | --------------------------------------------------- |
+| **Org Admin (OA)**           | Everything including org settings, users, pricing | Full POS if assigned to stores                      |
+| **Store Manager (SM)**       | Store ops, proformas, approve POs, void/refund    | Sessions, sales, installments, returns              |
+| **Cashier (CA)**             | Limited admin                                     | Sales, collect installments, returns (if permitted) |
+| **Inventory Manager (IM)**   | Products, stock, receive goods                    | View stock-related data                             |
+| **Procurement Officer (PO)** | Suppliers, POs, pay suppliers                     | —                                                   |
+| **Accountant (AC)**          | Payments, invoices, audit, reconcile              | View sales / collect installments                   |
 
 Permissions are **store-scoped** where marked: a user only sees data for stores they are assigned to.
 
@@ -222,7 +222,7 @@ Landing page after login: a store-scoped operations snapshot for the store picke
 Store performance over a date range, for the store picked in the filter bar. Requires `reports.view` — the nav item is hidden without it and a deep link shows a permission notice.
 
 1. Pick the **store** and a **From** / **To** range (inclusive calendar days in the organization timezone).
-2. Optionally narrow by **payment method**, **cashier**, **category**, or a product (select a row in **Top products**; use *clear* to drop the filter).
+2. Optionally narrow by **payment method**, **cashier**, **category**, or a product (select a row in **Top products**; use _clear_ to drop the filter).
 3. **Run report** — summary tiles show sales total, sales count, and average order value; the table lists the completed sales, with cashier performance and top products beside it.
 4. **Export CSV** downloads exactly the filtered set (`sale_id`, `uuid`, `sold_at`, `cashier`, `total`, `payment_methods`).
 
@@ -285,9 +285,9 @@ See **[Products & variants](#products--variants)** below for how the parent prod
 
 The catalog uses a **parent / child** model. You never sell a “product” directly at the till — **sales, stock, purchase orders, and price lists all work on variants** (individual SKUs). The product is the shared grouping and catalog metadata.
 
-| Layer | What it is | Example |
-|-------|------------|---------|
-| **Product** | Shared catalog item — name, category, brand, supplier, stock thresholds | “T‑Shirt” |
+| Layer       | What it is                                                                              | Example                 |
+| ----------- | --------------------------------------------------------------------------------------- | ----------------------- |
+| **Product** | Shared catalog item — name, category, brand, supplier, stock thresholds                 | “T‑Shirt”               |
 | **Variant** | Sellable SKU under that product — size, colour, or any distinct item you stock and scan | “T‑Shirt — Red / Large” |
 
 #### What belongs on the product
@@ -367,13 +367,13 @@ Product: "Bottled Water"
 
 Full procurement cycle:
 
-| Status | Meaning | Actions |
-|--------|---------|---------|
-| Draft / Rejected | Editable | Submit for approval |
-| Pending approval | Awaiting manager | Approve or reject |
-| Approved | Ready to receive | **Receive goods** |
+| Status             | Meaning                  | Actions                              |
+| ------------------ | ------------------------ | ------------------------------------ |
+| Draft / Rejected   | Editable                 | Submit for approval                  |
+| Pending approval   | Awaiting manager         | Approve or reject                    |
+| Approved           | Ready to receive         | **Receive goods**                    |
 | Partial / Received | Stock in transit or done | Receive more, **return** to supplier |
-| Closed | Complete | — |
+| Closed             | Complete                 | —                                    |
 
 - Create PO: pick store, supplier, lines (variant, qty, unit cost)
 - **Receive** — Posts inventory via goods receipt (partial receipts supported)
@@ -403,14 +403,14 @@ For a full explanation of **cost vs selling price** and **where discounts are se
 
 Non-fiscal **quotes** for registered customers only.
 
-| Status | Meaning |
-|--------|---------|
-| Draft | Editable, no document number |
-| Issued | Number assigned (`PF-{store}-{seq}`), PDF available |
-| Accepted | Customer accepted (optional workflow) |
-| Converted | Linked to resulting sale and/or tax invoice |
-| Expired | Past `valid_until` date |
-| Cancelled | Voided quote |
+| Status    | Meaning                                             |
+| --------- | --------------------------------------------------- |
+| Draft     | Editable, no document number                        |
+| Issued    | Number assigned (`PF-{store}-{seq}`), PDF available |
+| Accepted  | Customer accepted (optional workflow)               |
+| Converted | Linked to resulting sale and/or tax invoice         |
+| Expired   | Past `valid_until` date                             |
+| Cancelled | Voided quote                                        |
 
 **Actions:**
 
@@ -442,13 +442,13 @@ This section explains the difference between **what you paid** for a product and
 
 ### Cost vs selling price — quick reference
 
-| Field | Where to set it | Used at checkout? | Purpose |
-|-------|-----------------|-------------------|---------|
-| **Cost price** | Admin → **Products** → **Cost price** (product) or **Cost** (variant) | No | Internal reference — margin, reporting, catalog. Optional. |
-| **Selling price** | Admin → **Products** → **Selling price** (product) or variant **Selling price** | Yes (fallback) | What you charge customers. Product-level price seeds the default variant; variant price is used at POS when no price list overrides it. |
-| **Price list amount** | Admin → **Pricing** → price lists | Yes (preferred) | Store- or org-specific selling price. **Takes priority** over variant selling price at POS. |
-| **PO unit cost** | Admin → **Purchase orders** → line **Unit cost** | No | Cost on a specific purchase/receipt. Does **not** auto-update catalog cost price. |
-| **Supplier mapping cost** | Admin → **Suppliers** → product mapping **Cost** | No | Reference cost from that supplier when creating POs. |
+| Field                     | Where to set it                                                                 | Used at checkout? | Purpose                                                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cost price**            | Admin → **Products** → **Cost price** (product) or **Cost** (variant)           | No                | Internal reference — margin, reporting, catalog. Optional.                                                                              |
+| **Selling price**         | Admin → **Products** → **Selling price** (product) or variant **Selling price** | Yes (fallback)    | What you charge customers. Product-level price seeds the default variant; variant price is used at POS when no price list overrides it. |
+| **Price list amount**     | Admin → **Pricing** → price lists                                               | Yes (preferred)   | Store- or org-specific selling price. **Takes priority** over variant selling price at POS.                                             |
+| **PO unit cost**          | Admin → **Purchase orders** → line **Unit cost**                                | No                | Cost on a specific purchase/receipt. Does **not** auto-update catalog cost price.                                                       |
+| **Supplier mapping cost** | Admin → **Suppliers** → product mapping **Cost**                                | No                | Reference cost from that supplier when creating POs.                                                                                    |
 
 **Rule of thumb:** **Cost price** = what it cost you. **Selling price** = what the customer pays (from price list or variant price, minus promotions).
 
@@ -480,11 +480,11 @@ After changing prices, POS carts already open may need a quantity bump or re-add
 
 ### Setting cost
 
-| Method | When to use |
-|--------|-------------|
-| **Products → Cost price** | Set a standard cost when creating/editing the catalog |
-| **Variant → Cost** | Different cost per size/colour/SKU |
-| **CSV import** | Bulk load `costPrice` column with products |
+| Method                       | When to use                                                              |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| **Products → Cost price**    | Set a standard cost when creating/editing the catalog                    |
+| **Variant → Cost**           | Different cost per size/colour/SKU                                       |
+| **CSV import**               | Bulk load `costPrice` column with products                               |
 | **Purchase order unit cost** | Record what you actually paid on each buy; used for supplier AP, not POS |
 
 Catalog **cost price** and PO **unit cost** are separate fields today — receiving goods does not automatically rewrite the product’s cost price.
@@ -497,11 +497,11 @@ There are four distinct discount mechanisms:
 
 Configured by users with `promotions.manage` permission. Applied automatically when items are priced at POS (and when proformas are converted without honoring quoted prices).
 
-| Rule type | Example |
-|-----------|---------|
-| **Percent** | 10% off a variant or category |
-| **Fixed amount** | ₦500 off |
-| **BOGO** | Buy 2, get 1 at X% off |
+| Rule type        | Example                       |
+| ---------------- | ----------------------------- |
+| **Percent**      | 10% off a variant or category |
+| **Fixed amount** | ₦500 off                      |
+| **BOGO**         | Buy 2, get 1 at X% off        |
 
 Set **store scope** (all stores or one store), **start/end dates**, and **active** flag. The best matching promotion for the line is applied; the cart shows `disc …` on the line when a promo discount is present.
 
@@ -529,44 +529,44 @@ Permission `sales.discount` exists for cashiers and managers. Store-level discou
 
 ### Permissions summary
 
-| Permission | Who (typical) | Effect |
-|------------|---------------|--------|
-| `pricing.manage` | Org admin, store manager | Create price lists and set list prices |
-| `promotions.manage` | Org admin, store manager | Create and edit promotions |
-| `sales.price-override` | Org admin, store manager | Override unit price on POS cart lines |
-| `sales.discount` | Cashier+ | Reserved for future F8 line-discount UI |
+| Permission                       | Who (typical)            | Effect                                           |
+| -------------------------------- | ------------------------ | ------------------------------------------------ |
+| `pricing.manage`                 | Org admin, store manager | Create price lists and set list prices           |
+| `promotions.manage`              | Org admin, store manager | Create and edit promotions                       |
+| `sales.price-override`           | Org admin, store manager | Override unit price on POS cart lines            |
+| `sales.discount`                 | Cashier+                 | Reserved for future F8 line-discount UI          |
 | `invoices.proforma.honor-prices` | Org admin, store manager | Convert proforma keeping quoted prices/discounts |
 
 ### Examples
 
 **Example A — Standard retail**
 
-- Variant price: ₦1,000  
-- No price list, no promotion  
+- Variant price: ₦1,000
+- No price list, no promotion
 - **Customer pays:** ₦1,000 (+ tax per store config)
 
 **Example B — Store price list**
 
-- Variant price: ₦1,000  
-- Store price list: ₦950 for that variant  
+- Variant price: ₦1,000
+- Store price list: ₦950 for that variant
 - **Customer pays:** ₦950 (+ tax)
 
 **Example C — Promotion**
 
-- List price: ₦1,000  
-- Active promotion: 10% off  
+- List price: ₦1,000
+- Active promotion: 10% off
 - **Customer pays:** ₦900 (+ tax); line shows `disc 100.00`
 
 **Example D — Manager override**
 
-- List price: ₦1,000  
-- Manager overrides to ₦850  
+- List price: ₦1,000
+- Manager overrides to ₦850
 - **Customer pays:** ₦850 (+ tax); promotion not applied on that line
 
 **Example E — Margin check (internal)**
 
-- Cost price on variant: ₦600  
-- Selling price (resolved): ₦1,000  
+- Cost price on variant: ₦600
+- Selling price (resolved): ₦1,000
 - **Gross margin:** ₦400 per unit (before tax; cost is not shown to cashiers at POS)
 
 ---
@@ -584,11 +584,11 @@ Use **Change store** in the header to switch locations (clears the current cart 
 
 ### Header indicators
 
-| Indicator | Meaning |
-|-----------|---------|
+| Indicator                  | Meaning                                                       |
+| -------------------------- | ------------------------------------------------------------- |
 | **Session: Open / Closed** | Green = register session open; red = must open before payment |
-| **ONLINE** | Connected to API (offline mode is Epic 5) |
-| **Installment / Return** | Buttons appear when your role has permission |
+| **ONLINE**                 | Connected to API (offline mode is Epic 5)                     |
+| **Installment / Return**   | Buttons appear when your role has permission                  |
 
 ### Register session (required for sales)
 
@@ -620,11 +620,11 @@ Each cashier should use their **own** open session for sales and installment col
 
 ### Hold, resume, void
 
-| Action | When to use |
-|--------|-------------|
-| **Hold** | Customer steps away; cart saved as held sale |
-| **Held** (panel) | List and **resume** a held sale into the cart |
-| **Void** | Cancel current held sale or clear an in-progress cart |
+| Action           | When to use                                           |
+| ---------------- | ----------------------------------------------------- |
+| **Hold**         | Customer steps away; cart saved as held sale          |
+| **Held** (panel) | List and **resume** a held sale into the cart         |
+| **Void**         | Cancel current held sale or clear an in-progress cart |
 
 Voiding a **completed** sale from POS is not exposed in the UI; managers use **returns** or admin/API void with `sales.void` permission.
 
@@ -669,56 +669,57 @@ flowchart LR
   C --> D[Ready for sales]
 ```
 
-1. Sign in → select store  
-2. Open session with opening float  
-3. Verify search finds products and stock is available  
+1. Sign in → select store
+2. Open session with opening float
+3. Verify search finds products and stock is available
 
 ### Standard sale
 
-1. Open session (if not already open)  
-2. Scan/search items into cart  
-3. Optional: attach customer (F4)  
-4. Pay (F9) — cash/card for full amount  
-5. Give receipt summary to customer  
+1. Open session (if not already open)
+2. Scan/search items into cart
+3. Optional: attach customer (F4)
+4. Pay (F9) — cash/card for full amount
+5. Give receipt summary to customer
 
 **Result:** Stock decreases, sale completed, tax invoice created, receipt queued.
 
 ### Sale with installment plan (manager)
 
-1. Attach **registered** customer (not walk-in)  
-2. Add items to cart  
-3. Pay (F9) — enter **deposit** (cash/card)  
-4. Enable **installment plan** — set number of installments and due dates  
-5. Complete — verify installments sum to balance after deposit  
+1. Attach **registered** customer (not walk-in)
+2. Add items to cart
+3. Pay (F9) — enter **deposit** (cash/card)
+4. Enable **installment plan** — set number of installments and due dates
+5. Complete — verify installments sum to balance after deposit
 
 **Result:** Sale completed; plan open; customer balance increased by financed principal.
 
 ### Collect later installment payment
 
-1. Customer returns to pay installment  
-2. POS → **Installment** → find plan  
-3. Collect due amount (same or next open session)  
+1. Customer returns to pay installment
+2. POS → **Installment** → find plan
+3. Collect due amount (same or next open session)
 
 ### Hold and resume
 
-1. Build cart → **Hold**  
-2. Later: **Held** panel → tap sale → cart restored with customer if present  
-3. Complete payment normally  
+1. Build cart → **Hold**
+2. Later: **Held** panel → tap sale → cart restored with customer if present
+3. Complete payment normally
 
 ### Return after sale
 
-1. POS → **Return** → enter sale ID  
-2. Select items/qty → confirm refund  
-3. Stock returns to store inventory  
+1. POS → **Return** → enter sale ID
+2. Select items/qty → confirm refund
+3. Stock returns to store inventory
 
 ### Online order (customer portal → Admin fulfilment)
 
-1. Customer browses **http://localhost:5175**, registers/verifies, adds to cart, checks out (home delivery, store pickup, or click & collect).  
-2. Place-order **reserves** stock. Customer pays (manual confirm or webhook).  
-3. Staff: **Admin → Fulfilment** → pack → then ship/deliver **or** ready/collect (see [Fulfilment](#fulfilment-online-orders)).  
-4. Customer tracks status under portal **Orders**; after delivered/collected they may submit a **return request** (staff completion later).  
+1. Customer browses **http://localhost:5175**, registers/verifies, adds to cart, checks out (home delivery, store pickup, or click & collect).
+2. Place-order **reserves** stock. Customer pays (manual confirm or webhook).
+3. Staff: **Admin → Fulfilment** → pack → then ship/deliver **or** ready/collect (see [Fulfilment](#fulfilment-online-orders)).
+4. Customer tracks status under portal **Orders**; after delivered/collected they may submit a **return request** (staff completion later).
 
 Unpaid holds expire on the scheduler; customers can cancel unpaid pending orders to release stock sooner.
+
 ### Procurement: receive stock and pay suppliers
 
 ```mermaid
@@ -730,43 +731,43 @@ flowchart TD
   E --> F[Supplier payment]
 ```
 
-1. **Admin → Purchase orders** — Create PO for supplier  
-2. Manager **approves**  
-3. **Receive** — Enter quantities received (partial OK)  
-4. **Admin → Payments** — Record supplier invoice and payment  
+1. **Admin → Purchase orders** — Create PO for supplier
+2. Manager **approves**
+3. **Receive** — Enter quantities received (partial OK)
+4. **Admin → Payments** — Record supplier invoice and payment
 
 ### Proforma quote to sale (manager)
 
-1. **Admin → Proforma invoices** — New draft for customer + lines  
-2. **Issue** — Send/download PDF quote  
+1. **Admin → Proforma invoices** — New draft for customer + lines
+2. **Issue** — Send/download PDF quote
 3. When customer confirms: **Convert**
-   - Target: **Sale** (stock + payment) or **Tax invoice only** (no stock)  
-   - For sale: provide session ID and payment  
-4. Proforma status becomes **Converted** with links to sale/invoice  
+   - Target: **Sale** (stock + payment) or **Tax invoice only** (no stock)
+   - For sale: provide session ID and payment
+4. Proforma status becomes **Converted** with links to sale/invoice
 
 ### Inventory adjustment (stock correction)
 
-1. **Admin → Inventory**  
-2. New adjustment — variant, signed quantity (+/-), store  
-3. Confirm — ledger posts movement  
+1. **Admin → Inventory**
+2. New adjustment — variant, signed quantity (+/-), store
+3. Confirm — ledger posts movement
 
 ### Stock transfer between stores
 
-1. **Admin → Inventory → Transfers** — Create transfer from Store A  
-2. At Store B — **Receive transfer**  
-3. Stock leaves A and enters B  
+1. **Admin → Inventory → Transfers** — Create transfer from Store A
+2. At Store B — **Receive transfer**
+3. Stock leaves A and enters B
 
 ---
 
 ## 9. Keyboard shortcuts (POS)
 
-| Key | Action |
-|-----|--------|
-| **F2** | Focus product search |
-| **F4** | Customer lookup panel |
-| **F8** | Discount panel (placeholder) |
-| **F9** | Payment panel (or session if closed) |
-| **Esc** | Close open panel / cancel price override |
+| Key       | Action                                      |
+| --------- | ------------------------------------------- |
+| **F2**    | Focus product search                        |
+| **F4**    | Customer lookup panel                       |
+| **F8**    | Discount panel (placeholder)                |
+| **F9**    | Payment panel (or session if closed)        |
+| **Esc**   | Close open panel / cancel price override    |
 | **Enter** | In search — add first search result to cart |
 
 Footer reminder on POS floor: `F2 search · F4 customer · F8 discount · F9 pay · Esc cancel`
@@ -784,31 +785,31 @@ Footer reminder on POS floor: `F2 search · F4 customer · F8 discount · F9 pay
 
 ### POS: “Open a register session before taking payment”
 
-- Click **Session: Closed** → **Open session** with opening float  
+- Click **Session: Closed** → **Open session** with opening float
 - Only one open session per cashier/terminal pattern applies — use your own session
 
 ### “Payment total must equal sale total”
 
-- Ensure cash + card amounts sum **exactly** to the cart total (2 dp)  
-- For installments, deposit + schedule must match total  
+- Ensure cash + card amounts sum **exactly** to the cart total (2 dp)
+- For installments, deposit + schedule must match total
 
 ### “Insufficient available stock for sale”
 
-- Check **Admin → Inventory** balances for that store  
-- Receive PO or post adjustment to add stock  
+- Check **Admin → Inventory** balances for that store
+- Receive PO or post adjustment to add stock
 
 ### “Installment plans require a registered customer”
 
-- Press **F4** and select a non-walk-in customer before paying with installments  
+- Press **F4** and select a non-walk-in customer before paying with installments
 
 ### Proforma convert fails on session
 
-- An **open cashier session** at the proforma’s store is required for sale conversion  
-- Open POS at that store first, or use **Tax invoice only** target if no stock movement is needed  
+- An **open cashier session** at the proforma’s store is required for sale conversion
+- Open POS at that store first, or use **Tax invoice only** target if no stock movement is needed
 
 ### User cannot see a store in POS
 
-- **Admin → Users** — assign store access to that user  
+- **Admin → Users** — assign store access to that user
 
 ### Inventory or purchase orders look empty, or return “This action is unauthorized”
 
@@ -825,7 +826,6 @@ Footer reminder on POS floor: `F2 search · F4 customer · F8 discount · F9 pay
 - `GET /api/v1/health` is deliberately exempt, so it stays usable for liveness checks during a flood.
 
 ### Performance (database indexes and search)
-
 
 - Hot-path composite indexes cover sales reporting windows, product/customer/price sync watermarks,
   fulfilment queue counts, and payment-method report filters. Apply migrations after deploy.
@@ -862,15 +862,6 @@ Full runbook: [`docs/disaster-recovery.md`](disaster-recovery.md).
 - **Load tests:** install [k6](https://k6.io/) and run `k6 run load-tests/k6/smoke.js` against a seeded
   stack. Thresholds match Story 9.2 (`SEARCH_P95_MS`, health latency). See `load-tests/README.md`.
 
-### E2E and offline-sync regression
-
-- **Server scenarios:** `cd backend && php artisan test --filter=OfflineSync` — concurrent oversell,
-  device disable mid-queue, clock skew, retry idempotency, store-scoped sync APIs.
-- **POS unit/integration:** `cd frontend/pos && npm test` — Dexie queue, push/pull, reconnect drain
-  (`offlineReconnect.test.ts`), sync badge UX.
-- **Browser E2E:** `cd e2e && npm test` — Playwright login smoke + sign-in → store → floor flow. See
-  `e2e/README.md`; run `php artisan db:seed --class=E2ePlaywrightSeeder` before the critical path.
-
 ### Migrations / empty database
 
 ```bash
@@ -885,60 +876,60 @@ php artisan db:seed
 
 Features **not yet available** or intentionally thin in Epics 1–8:
 
-| Feature | Status |
-|---------|--------|
-| SMS notifications | Adapter is a logging stub; no provider wired |
-| Push / real-time notifications | Not built; the inbox refreshes on load |
-| Notification preferences / opt-out | Always-on for the wired triggers; no per-user settings |
-| Customer-facing notification inbox | Portal shoppers receive email only |
-| Stripe / Paystack live card capture | Adapters stub redirects without live keys; manual portal pay works |
-| F8 line discount UI | Stub; use promotions or price override |
-| Void completed sale from POS UI | Use returns; API void exists for managers |
-| Warehouse admin UI | API only |
-| Cashier session reconciliation screen | API only (`registers.reconcile`) |
-| Loyalty points/rules | AD-11 deferred |
-| Staff approve/complete portal return requests | Shopper request only today |
-| ESC/POS receipt printer driver | Receipt print job queued; hardware adapter pending |
-| Gift cards | Deferred |
+| Feature                                       | Status                                                             |
+| --------------------------------------------- | ------------------------------------------------------------------ |
+| SMS notifications                             | Adapter is a logging stub; no provider wired                       |
+| Push / real-time notifications                | Not built; the inbox refreshes on load                             |
+| Notification preferences / opt-out            | Always-on for the wired triggers; no per-user settings             |
+| Customer-facing notification inbox            | Portal shoppers receive email only                                 |
+| Stripe / Paystack live card capture           | Adapters stub redirects without live keys; manual portal pay works |
+| F8 line discount UI                           | Stub; use promotions or price override                             |
+| Void completed sale from POS UI               | Use returns; API void exists for managers                          |
+| Warehouse admin UI                            | API only                                                           |
+| Cashier session reconciliation screen         | API only (`registers.reconcile`)                                   |
+| Loyalty points/rules                          | AD-11 deferred                                                     |
+| Staff approve/complete portal return requests | Shopper request only today                                         |
+| ESC/POS receipt printer driver                | Receipt print job queued; hardware adapter pending                 |
+| Gift cards                                    | Deferred                                                           |
 
 ---
 
 ## Quick reference — Admin navigation
 
-| Menu | Primary tasks |
-|------|----------------|
-| Dashboard | Store KPI snapshot, low stock, needs-attention queues |
-| Reports | Store sales performance by date range, cashier/product breakdowns, CSV export |
-| Notifications | Personal in-app alert inbox (low stock), mark read |
-| Organization | Business profile |
-| Stores | Locations, tax config |
-| Products | Catalog, variants, selling price & cost, import — see [Products & variants](#products--variants) |
-| Suppliers | Vendor master data |
-| Purchase orders | Buy stock, receive, return |
-| Payments | Pay suppliers |
-| Inventory | Stock, adjustments, transfers |
-| Fulfilment | Pack, ship/deliver, or ready/collect online orders |
-| Pricing | Lists, promotions, price resolve preview (see [§6](#6-pricing-cost-and-discounts)) |
-| Customers | Accounts, credit, history |
-| Proforma invoices | Quotes, issue, convert |
-| Devices | POS device registration / sync |
-| Users | Staff accounts, store access |
-| Audit logs | Compliance trail |
-| Settings | Org configuration |
+| Menu              | Primary tasks                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| Dashboard         | Store KPI snapshot, low stock, needs-attention queues                                            |
+| Reports           | Store sales performance by date range, cashier/product breakdowns, CSV export                    |
+| Notifications     | Personal in-app alert inbox (low stock), mark read                                               |
+| Organization      | Business profile                                                                                 |
+| Stores            | Locations, tax config                                                                            |
+| Products          | Catalog, variants, selling price & cost, import — see [Products & variants](#products--variants) |
+| Suppliers         | Vendor master data                                                                               |
+| Purchase orders   | Buy stock, receive, return                                                                       |
+| Payments          | Pay suppliers                                                                                    |
+| Inventory         | Stock, adjustments, transfers                                                                    |
+| Fulfilment        | Pack, ship/deliver, or ready/collect online orders                                               |
+| Pricing           | Lists, promotions, price resolve preview (see [§6](#6-pricing-cost-and-discounts))               |
+| Customers         | Accounts, credit, history                                                                        |
+| Proforma invoices | Quotes, issue, convert                                                                           |
+| Devices           | POS device registration / sync                                                                   |
+| Users             | Staff accounts, store access                                                                     |
+| Audit logs        | Compliance trail                                                                                 |
+| Settings          | Org configuration                                                                                |
 
 ## Quick reference — POS actions
 
-| UI | Task |
-|----|------|
-| Search bar | Add products |
-| Customer F4 | Attach account |
-| Session | Open / close register |
-| Hold / Held | Suspend and resume sales |
-| Pay F9 | Checkout |
-| Installment | Collect AR payment |
-| Return | Refund completed sale |
-| Change store | Switch location |
+| UI           | Task                     |
+| ------------ | ------------------------ |
+| Search bar   | Add products             |
+| Customer F4  | Attach account           |
+| Session      | Open / close register    |
+| Hold / Held  | Suspend and resume sales |
+| Pay F9       | Checkout                 |
+| Installment  | Collect AR payment       |
+| Return       | Refund completed sale    |
+| Change store | Switch location          |
 
 ---
 
-*For technical architecture, API contracts, and development setup, see `AGENTS.md` and `_bmad-output/planning-artifacts/` in the repository.*
+_For technical architecture, API contracts, and development setup, see `AGENTS.md` and `_bmad-output/planning-artifacts/` in the repository._

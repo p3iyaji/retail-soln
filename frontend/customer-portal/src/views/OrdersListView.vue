@@ -61,7 +61,7 @@ function fulfilmentLabel(mode: string): string {
             </div>
             <div class="text-right">
               <div
-                class="inline-block rounded bg-[#F0F7F4] px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-[var(--brand)]"
+                class="inline-block rounded bg-[var(--brand-soft)] px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-[var(--brand)]"
               >
                 {{ order.statusLabel || order.status }}
               </div>

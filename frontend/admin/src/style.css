@@ -4,26 +4,29 @@
 
 :root {
   color-scheme: light;
-  --brand: #0d9488;
-  --brand-ink: #0f766e;
-  --brand-soft: #ccfbf1;
-  --surface: #f1f5f4;
+  --brand: #082848;
+  --brand-ink: #061428;
+  --brand-soft: #e8edf5;
+  --accent: #b87828;
+  --accent-ink: #966820;
+  --accent-soft: #f5ebe0;
+  --surface: #f4f6f8;
   --panel: #ffffff;
-  --line: #e2e8e6;
-  --ink: #0f172a;
-  --muted: #64748b;
-  --ember: #ea580c;
+  --line: #dce4ea;
+  --ink: #061428;
+  --muted: #5c6b7a;
+  --ember: #c45c26;
   --danger: #dc2626;
   --success: #059669;
-  --sidebar-bg: #0f172a;
-  --sidebar-border: #1e293b;
+  --sidebar-bg: #081838;
+  --sidebar-border: #0a2040;
   --sidebar-text: #cbd5e1;
   --sidebar-muted: #64748b;
   --sidebar-heading: #ffffff;
   --sidebar-hover-bg: rgb(255 255 255 / 0.05);
-  --sidebar-active-bg: rgb(13 148 136 / 0.16);
-  --sidebar-active-text: #5eead4;
-  --sidebar-accent: #2dd4bf;
+  --sidebar-active-bg: rgb(184 120 40 / 0.18);
+  --sidebar-active-text: #e8c078;
+  --sidebar-accent: #b87828;
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
@@ -38,9 +41,36 @@
   --line: #1f2937;
   --ink: #f1f5f9;
   --muted: #94a3b8;
-  --brand-soft: rgb(13 148 136 / 0.18);
+  --brand-soft: rgb(8 40 72 / 0.18);
+  --accent-soft: rgb(184 120 40 / 0.18);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.25);
   --shadow-md: 0 4px 12px rgb(0 0 0 / 0.35);
+}
+
+:root[data-theme='navy'] {
+  --brand: #082848;
+  --brand-ink: #061428;
+  --brand-soft: #e8edf5;
+  --sidebar-active-bg: rgb(184 120 40 / 0.18);
+  --sidebar-active-text: #e8c078;
+  --sidebar-accent: #b87828;
+}
+
+.dark[data-theme='navy'] {
+  --brand-soft: rgb(8 40 72 / 0.18);
+}
+
+:root[data-theme='gold'] {
+  --brand: #b87828;
+  --brand-ink: #966820;
+  --brand-soft: #f5ebe0;
+  --sidebar-active-bg: rgb(184 120 40 / 0.22);
+  --sidebar-active-text: #f5d89a;
+  --sidebar-accent: #d89848;
+}
+
+.dark[data-theme='gold'] {
+  --brand-soft: rgb(184 120 40 / 0.18);
 }
 
 :root[data-theme='blue'] {
@@ -183,19 +213,27 @@ body {
 }
 
 .dark .border-teal-200 {
-  border-color: rgb(45 212 191 / 0.35);
+  border-color: rgb(184 120 40 / 0.35);
 }
 
 .dark .bg-teal-50 {
-  background-color: rgb(13 148 136 / 0.15);
+  background-color: rgb(8 40 72 / 0.2);
 }
 
 .dark .text-teal-900 {
-  color: #99f6e4;
+  color: #b8cce0;
+}
+
+.dark .text-teal-800 {
+  color: #c8d8e8;
 }
 
 .dark .hover\:border-teal-200:hover {
-  border-color: rgb(45 212 191 / 0.35);
+  border-color: rgb(184 120 40 / 0.35);
+}
+
+.dark .hover\:bg-teal-100:hover {
+  background-color: rgb(8 40 72 / 0.28);
 }
 
 .dark .disabled\:bg-stone-50:disabled {

@@ -111,9 +111,7 @@ function closeMobileNav() {
       class="flex items-center justify-between border-b border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] px-4 py-3 lg:hidden"
     >
       <div>
-        <p class="text-[0.65rem] font-semibold tracking-[0.18em] text-[var(--sidebar-accent)] uppercase">
-          Retail Soln
-        </p>
+        <img src="/logo.png" alt="Bag & Cartons Ltd" class="h-8 w-auto object-contain" />
         <p class="text-sm font-medium text-[var(--sidebar-heading)]">Admin</p>
       </div>
       <button
@@ -134,15 +132,10 @@ function closeMobileNav() {
     >
       <div class="hidden px-5 pt-6 pb-4 lg:block">
         <div class="flex items-center gap-3">
-          <div
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-[var(--sidebar-active-text)]"
-            style="background: var(--sidebar-active-bg)"
-          >
-            RS
-          </div>
+          <img src="/logo.png" alt="Bag & Cartons Ltd" class="h-10 w-auto shrink-0 object-contain" />
           <div class="min-w-0">
-            <p class="truncate text-sm font-semibold text-[var(--sidebar-heading)]">Retail Soln</p>
-            <p class="text-xs text-[var(--sidebar-muted)]">Admin console</p>
+            <p class="truncate text-sm font-semibold text-[var(--sidebar-heading)]">Admin console</p>
+            <p class="text-xs text-[var(--sidebar-muted)]">Bag & Cartons Ltd</p>
           </div>
         </div>
       </div>

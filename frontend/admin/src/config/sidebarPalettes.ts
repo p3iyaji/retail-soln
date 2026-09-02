@@ -26,9 +26,9 @@ export const sidebarPalettes = {
   },
   navy: {
     label: 'Navy',
-    swatch: '#0a1628',
-    bg: '#0a1628',
-    border: '#152238',
+    swatch: '#081838',
+    bg: '#081838',
+    border: '#0a2040',
     text: '#cbd5e1',
     muted: '#64748b',
     heading: '#ffffff',

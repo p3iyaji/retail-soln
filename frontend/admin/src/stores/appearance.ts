@@ -13,7 +13,7 @@ export {
   sidebarLightColorOptions,
 } from '@/config/sidebarPalettes'
 
-export type ThemeColor = 'teal' | 'blue' | 'indigo' | 'violet' | 'emerald' | 'slate'
+export type ThemeColor = 'navy' | 'gold' | 'blue' | 'indigo' | 'violet' | 'emerald' | 'slate'
 export type AppearanceMode = 'light' | 'dark' | 'system'
 export type TextSize = 'sm' | 'md' | 'lg'
 
@@ -27,15 +27,16 @@ type AppearanceState = {
 
 const STORAGE_PREFIX = 'retail_soln_admin_appearance'
 const DEFAULT_STATE: AppearanceState = {
-  themeColor: 'teal',
-  sidebarColor: 'slate',
+  themeColor: 'navy',
+  sidebarColor: 'navy',
   appearanceMode: 'system',
   textSize: 'md',
   openNavGroups: [],
 }
 
 export const themeColorOptions: Array<{ id: ThemeColor; label: string; swatch: string }> = [
-  { id: 'teal', label: 'Teal', swatch: '#0d9488' },
+  { id: 'navy', label: 'Navy', swatch: '#082848' },
+  { id: 'gold', label: 'Gold', swatch: '#b87828' },
   { id: 'blue', label: 'Blue', swatch: '#2563eb' },
   { id: 'indigo', label: 'Indigo', swatch: '#4f46e5' },
   { id: 'violet', label: 'Violet', swatch: '#7c3aed' },
@@ -67,10 +68,12 @@ function readState(userId?: number | null): AppearanceState {
   try {
     const raw = localStorage.getItem(storageKey(userId))
     if (!raw) return { ...DEFAULT_STATE }
-    const parsed = JSON.parse(raw) as Partial<AppearanceState>
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    const storedTheme = typeof parsed.themeColor === 'string' ? parsed.themeColor : undefined
+    const legacyTheme = storedTheme === 'teal' ? 'navy' : storedTheme
     return {
-      themeColor: themeColorOptions.some((o) => o.id === parsed.themeColor)
-        ? (parsed.themeColor as ThemeColor)
+      themeColor: themeColorOptions.some((o) => o.id === legacyTheme)
+        ? (legacyTheme as ThemeColor)
         : DEFAULT_STATE.themeColor,
       sidebarColor: isSidebarColor(parsed.sidebarColor)
         ? parsed.sidebarColor

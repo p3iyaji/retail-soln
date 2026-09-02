@@ -30,6 +30,7 @@ type DashboardSummary = {
     pendingOversellApprovals: number | null
     readyForPickupOrders: number
     heldSalesCount: number | null
+    openReturnRequests: number | null
   }
 }
 
@@ -70,6 +71,12 @@ const attentionItems = computed(() => {
       label: 'Orders ready for pickup',
       count: needs.readyForPickupOrders,
       to: '/fulfilment',
+    },
+    {
+      key: 'returns',
+      label: 'Open return requests',
+      count: needs.openReturnRequests,
+      to: '/return-requests',
     },
   ].filter((item) => (item.count ?? 0) > 0)
 })

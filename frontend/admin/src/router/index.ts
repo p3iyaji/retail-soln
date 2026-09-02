@@ -103,9 +103,14 @@ const router = createRouter({
           component: () => import('@/views/OversellExceptionsView.vue'),
         },
         {
-          path: 'fulfilment',
           name: 'fulfilment',
+          path: 'fulfilment',
           component: () => import('@/views/FulfilmentView.vue'),
+        },
+        {
+          path: 'return-requests',
+          name: 'return-requests',
+          component: () => import('@/views/ReturnRequestsView.vue'),
         },
         {
           path: 'carriers',
