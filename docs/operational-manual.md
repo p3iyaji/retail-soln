@@ -219,14 +219,26 @@ Landing page after login: a store-scoped operations snapshot for the store picke
 
 ### Reports
 
-Store performance over a date range, for the store picked in the filter bar. Requires `reports.view` — the nav item is hidden without it and a deep link shows a permission notice.
+Store and inventory reports for the store picked in the filter bar. Requires `reports.view` — the nav item is hidden without it and a deep link shows a permission notice.
 
-1. Pick the **store** and a **From** / **To** range (inclusive calendar days in the organization timezone).
-2. Optionally narrow by **payment method**, **cashier**, **category**, or a product (select a row in **Top products**; use _clear_ to drop the filter).
-3. **Run report** — summary tiles show sales total, sales count, and average order value; the table lists the completed sales, with cashier performance and top products beside it.
-4. **Export CSV** downloads exactly the filtered set (`sale_id`, `uuid`, `sold_at`, `cashier`, `total`, `payment_methods`).
+#### Store performance
+
+1. Open the **Store performance** tab.
+2. Pick the **store** and a **From** / **To** range (inclusive calendar days in the organization timezone).
+3. Optionally narrow by **payment method**, **cashier**, **category**, or a product (select a row in **Top products**; use _clear_ to drop the filter).
+4. **Run report** — summary tiles show sales total, sales count, and average order value; the table lists the completed sales, with cashier performance and top products beside it.
+5. **Export CSV** downloads exactly the filtered set (`sale_id`, `uuid`, `sold_at`, `cashier`, `total`, `payment_methods`).
 
 Only **completed** POS sales count; held, voided, and other-store sales are excluded. Totals are **gross** sale amounts — POS returns/refunds are not netted off. Date range is inclusive calendar days in the **organization timezone** (set under Organization); the browser’s local calendar may differ if you are not in that timezone. Exports are synchronous and capped at 10,000 sales — narrow the range or filters if you hit the limit. Like the dashboard, this is an operational read, not the books of record.
+
+#### Inventory stock period
+
+1. Open the **Inventory** tab.
+2. Pick the **store**, a **period** preset (**Day** / **Week** / **Month** / **Year**), and an **anchor date**.
+3. **Run report** — summary shows SKU count and on-hand total; in-period movement aggregates by type (and bucket when a type posts to more than one bucket); the table lists period-end position per variant (`available`, `reserved`, `damaged`, `in_transit`, derived `on_hand = available + reserved`).
+4. **Export CSV** downloads the same position population (`product_variant_id`, `sku`, `name`, `available`, `reserved`, `damaged`, `in_transit`, `on_hand`).
+
+Period bounds are inclusive calendar days in the **organization timezone**, then stored as `[start, endExclusive)` in app time (same pattern as sales reports). **Week** is Monday–Sunday containing the anchor date. **Day** for “today” means as-of end of that calendar day (exclusive next midnight), not “last closed business day.” Position is reconstructed as current balance minus movements posted on or after the period end — quantities only (no unit-cost valuation). **On hand** = available + reserved (damaged and in transit are reported separately). Reserve/release appear as typed/bucketed movement lines and do not invent physical inbound/outbound. Store scope only (`location_type=store`); warehouses are not rolled up. Sync CSV is capped at 10,000 **position** rows (store balance population — narrowing the period does not shrink the row count).
 
 ### Notifications
 
@@ -899,7 +911,7 @@ Features **not yet available** or intentionally thin in Epics 1–8:
 | Menu              | Primary tasks                                                                                    |
 | ----------------- | ------------------------------------------------------------------------------------------------ |
 | Dashboard         | Store KPI snapshot, low stock, needs-attention queues                                            |
-| Reports           | Store sales performance by date range, cashier/product breakdowns, CSV export                    |
+| Reports           | Store sales performance and inventory stock period reports, CSV export                           |
 | Notifications     | Personal in-app alert inbox (low stock), mark read                                               |
 | Organization      | Business profile                                                                                 |
 | Stores            | Locations, tax config                                                                            |
