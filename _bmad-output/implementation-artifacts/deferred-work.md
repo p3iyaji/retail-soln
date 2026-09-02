@@ -407,3 +407,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-9-1-security-review.md`
   summary: Enforce store access on purchase-order and proforma invoice creation (write-side twin of read scoping).
   evidence: `POST /api/v1/purchase-orders` and proforma create still accept any org `storeId` without `canAccessStore`; procurement officer can create for a store they cannot list.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-inventory-stock-period-reports.md`
+  summary: Cap or paginate-at-source the JSON inventory position load so large stores do not reconstruct every balance in memory on each page request.
+  evidence: buildReport loads all store balances then slices; only CSV has a 10k guard.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-inventory-stock-period-reports.md`
+  summary: Snapshot-consistent as-of reads (transaction / lock) under concurrent ledger posts.
+  evidence: Balance read and post-end movement scan are separate queries; concurrent posts can skew period-end position.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-inventory-stock-period-reports.md`
+  summary: CSV formula-injection escaping for SKU/name cells (= + - @ prefixes).
+  evidence: Same sync fputcsv pattern as sales export; spreadsheet clients may treat leading operators as formulas.
