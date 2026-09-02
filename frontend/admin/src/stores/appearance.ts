@@ -154,7 +154,12 @@ export const useAppearanceStore = defineStore('appearance', () => {
     sidebarColor.value = state.sidebarColor
     appearanceMode.value = state.appearanceMode
     textSize.value = state.textSize
-    openNavGroups.value = state.openNavGroups
+    // Ignore stored openNavGroups — start collapsed; active section opens in the shell.
+    openNavGroups.value = []
+    // Drop stale persisted expand state so refresh no longer reopens every section.
+    if (state.openNavGroups.length > 0) {
+      writeState({ ...state, openNavGroups: [] }, activeUserId.value)
+    }
     apply()
   }
 
@@ -198,7 +203,8 @@ export const useAppearanceStore = defineStore('appearance', () => {
 
   function setOpenNavGroups(groups: string[]): void {
     openNavGroups.value = [...groups]
-    persist()
+    // Session-only — do not persist. Persisting auto-opened groups made
+    // nearly every sidebar section expand again after refresh.
   }
 
   function toggleNavGroup(groupId: string): void {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { allNavItems, navGroups, personalNavItems, type NavGroup, type NavItem } from '@/config/navigation'
 import { userHasPermission } from '@/lib/rbac'
@@ -72,31 +72,19 @@ function toggleGroup(groupId: string): void {
   appearance.toggleNavGroup(groupId)
 }
 
-function syncOpenGroupsForRoute(): void {
-  visibleNavGroups.value.forEach((group) => {
-    if (groupHasActive(group)) {
-      appearance.ensureNavGroupOpen(group.id)
-    }
-  })
+function syncOpenGroupForRoute(): void {
+  const active = visibleNavGroups.value.find((group) => groupHasActive(group))
+  appearance.setOpenNavGroups(active ? [active.id] : [])
 }
 
 watch(
-  () => route.name,
+  () => [route.name, route.query.tab, visibleNavGroups.value.map((g) => g.id).join(',')] as const,
   () => {
-    syncOpenGroupsForRoute()
+    mobileNavOpen.value = false
+    syncOpenGroupForRoute()
   },
   { immediate: true },
 )
-
-watch(visibleNavGroups, () => {
-  syncOpenGroupsForRoute()
-})
-
-onMounted(() => {
-  appearance.ensureNavGroupOpen('operations')
-  appearance.ensureNavGroupOpen('insights')
-  appearance.ensureNavGroupOpen('catalog')
-})
 
 async function onLogout() {
   loggingOut.value = true
