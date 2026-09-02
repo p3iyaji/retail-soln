@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { api, ApiError } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 
@@ -95,9 +96,11 @@ const PERIOD_PRESETS = [
 const PER_PAGE = 25
 
 const auth = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 const canViewReports = computed(() => auth.user?.permissions?.includes('reports.view') ?? false)
 
-const tab = ref<Tab>('sales')
+const tab = ref<Tab>(route.query.tab === 'inventory' ? 'inventory' : 'sales')
 const stores = ref<Store[]>([])
 const categories = ref<Category[]>([])
 const storeId = ref<number | ''>('')
@@ -406,8 +409,24 @@ function selectTab(next: Tab) {
   tab.value = next
   error.value = ''
   denied.value = false
+  void router.replace({
+    name: 'reports',
+    query: next === 'inventory' ? { tab: 'inventory' } : {},
+  })
   loadActiveReport()
 }
+
+watch(
+  () => route.query.tab,
+  (value) => {
+    const next: Tab = value === 'inventory' ? 'inventory' : 'sales'
+    if (tab.value === next) return
+    tab.value = next
+    error.value = ''
+    denied.value = false
+    if (ready.value) loadActiveReport()
+  },
+)
 
 watch(storeId, () => {
   if (!ready.value) return
@@ -431,7 +450,7 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-  await loadSalesReport()
+  loadActiveReport()
   ready.value = true
 })
 </script>

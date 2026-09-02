@@ -36,12 +36,19 @@ const title = computed(() => {
 const loggingOut = ref(false)
 const mobileNavOpen = ref(false)
 
-function isActive(name: string): boolean {
+function isActive(item: NavItem | string): boolean {
+  const name = typeof item === 'string' ? item : item.name
+  if (name === 'stock-report') {
+    return route.name === 'reports' && route.query.tab === 'inventory'
+  }
+  if (name === 'reports') {
+    return route.name === 'reports' && route.query.tab !== 'inventory'
+  }
   return route.name === name
 }
 
 function groupHasActive(group: NavGroup): boolean {
-  return group.items.some((item) => isActive(item.name))
+  return group.items.some((item) => isActive(item))
 }
 
 function isGroupOpen(groupId: string): boolean {
@@ -87,6 +94,8 @@ watch(visibleNavGroups, () => {
 
 onMounted(() => {
   appearance.ensureNavGroupOpen('operations')
+  appearance.ensureNavGroupOpen('insights')
+  appearance.ensureNavGroupOpen('catalog')
 })
 
 async function onLogout() {
