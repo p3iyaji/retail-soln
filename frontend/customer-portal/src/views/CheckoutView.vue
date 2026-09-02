@@ -162,7 +162,7 @@ const displayTotals = computed(() => previewTotals.value ?? cart.totals)
             class="mb-2 flex cursor-pointer gap-3 rounded-[var(--radius)] border p-3"
             :class="
               fulfilmentMode === 'home_delivery'
-                ? 'border-[var(--brand)] bg-[#F0F7F4]'
+                ? 'border-[var(--brand)] bg-[var(--brand-soft)]'
                 : 'border-[var(--line)]'
             "
           >
@@ -176,7 +176,7 @@ const displayTotals = computed(() => previewTotals.value ?? cart.totals)
             class="mb-2 flex cursor-pointer gap-3 rounded-[var(--radius)] border p-3"
             :class="
               fulfilmentMode === 'click_collect'
-                ? 'border-[var(--brand)] bg-[#F0F7F4]'
+                ? 'border-[var(--brand)] bg-[var(--brand-soft)]'
                 : 'border-[var(--line)]'
             "
           >
@@ -190,7 +190,7 @@ const displayTotals = computed(() => previewTotals.value ?? cart.totals)
             class="flex cursor-pointer gap-3 rounded-[var(--radius)] border p-3"
             :class="
               fulfilmentMode === 'store_pickup'
-                ? 'border-[var(--brand)] bg-[#F0F7F4]'
+                ? 'border-[var(--brand)] bg-[var(--brand-soft)]'
                 : 'border-[var(--line)]'
             "
           >
@@ -264,7 +264,7 @@ const displayTotals = computed(() => previewTotals.value ?? cart.totals)
               class="rounded-[var(--radius)] border px-3.5 py-2.5 text-[13px] font-semibold capitalize"
               :class="
                 paymentProvider === provider
-                  ? 'border-[var(--brand)] bg-[#F0F7F4] text-[var(--brand)]'
+                  ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]'
                   : 'border-[var(--line)]'
               "
               @click="paymentProvider = provider"

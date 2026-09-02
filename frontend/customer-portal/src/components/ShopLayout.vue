@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { hasToken } from '@/api/client'
+import UserProfileMenu from '@/components/UserProfileMenu.vue'
 import { useCartStore } from '@/stores/cart'
 
 const route = useRoute()
@@ -18,7 +19,6 @@ watch(
   { immediate: true },
 )
 
-const accountHref = computed(() => (hasToken() ? { name: 'account' as const } : { name: 'login' as const }))
 const cartLabel = computed(() => {
   const n = cart.itemCount
   return n > 0 ? `Cart (${n})` : 'Cart'
@@ -47,12 +47,12 @@ function onSearchSubmit() {
 <template>
   <div class="min-h-screen bg-[var(--surface)]">
     <header class="border-b border-[var(--line)] bg-[var(--panel)]">
-      <div class="mx-auto flex max-w-[1100px] flex-wrap items-center gap-4 px-7 py-3.5">
+      <div class="mx-auto flex max-w-[1100px] flex-wrap items-center gap-4 px-7 py-4">
         <RouterLink
           :to="{ name: 'shop' }"
-          class="brand shrink-0 text-xl font-bold tracking-tight text-[var(--brand)] no-underline"
+          class="brand shrink-0 no-underline"
         >
-          retail-soln
+          <img src="/logo.png" alt="Bag & Cartons Ltd" class="h-20 w-auto object-contain sm:h-[5.5rem]" />
         </RouterLink>
         <form class="min-w-[200px] flex-1" @submit.prevent="onSearchSubmit">
           <input
@@ -64,25 +64,21 @@ function onSearchSubmit() {
           />
         </form>
         <nav class="flex items-center gap-4 text-sm text-[var(--muted)]">
-          <RouterLink class="hover:text-[var(--ink)]" :to="accountHref">Account</RouterLink>
           <RouterLink
-            :to="hasToken() ? { name: 'orders' } : { name: 'login', query: { redirect: '/shop/orders' } }"
             class="hover:text-[var(--ink)] no-underline"
+            :class="{ 'font-semibold text-[var(--ink)]': route.name === 'shop' || route.name === 'shop-product' }"
+            :to="{ name: 'shop' }"
           >
-            Orders
+            Shop
           </RouterLink>
-          <RouterLink
-            :to="hasToken() ? { name: 'returns' } : { name: 'login', query: { redirect: '/shop/returns' } }"
-            class="hover:text-[var(--ink)] no-underline"
-          >
-            Returns
-          </RouterLink>
+          <RouterLink class="hover:text-[var(--ink)] no-underline" :to="{ name: 'contact' }">Contact</RouterLink>
           <RouterLink
             :to="hasToken() ? { name: 'cart' } : { name: 'login', query: { redirect: '/shop/cart' } }"
-            class="font-semibold text-[var(--brand)] no-underline hover:underline"
+            class="font-semibold text-[var(--accent)] no-underline hover:underline"
           >
             {{ cartLabel }}
           </RouterLink>
+          <UserProfileMenu />
         </nav>
       </div>
     </header>

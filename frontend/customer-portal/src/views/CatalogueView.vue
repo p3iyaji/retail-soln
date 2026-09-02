@@ -1,56 +1,58 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import {
   catalogueApi,
   formatPortalMoney,
   type CatalogueCategory,
   type CatalogueProductCard,
-} from '@/api/client'
+} from "@/api/client";
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const categories = ref<CatalogueCategory[]>([])
-const products = ref<CatalogueProductCard[]>([])
-const total = ref(0)
-const currentPage = ref(1)
-const lastPage = ref(1)
-const loading = ref(true)
-const error = ref<string | null>(null)
+const categories = ref<CatalogueCategory[]>([]);
+const products = ref<CatalogueProductCard[]>([]);
+const total = ref(0);
+const currentPage = ref(1);
+const lastPage = ref(1);
+const loading = ref(true);
+const error = ref<string | null>(null);
 
-let productsAbort: AbortController | null = null
+let productsAbort: AbortController | null = null;
 
 const selectedCategoryId = computed(() => {
-  const raw = route.query.categoryId
-  if (typeof raw !== 'string' || raw === '') return null
-  const n = Number(raw)
-  return Number.isFinite(n) ? n : null
-})
+  const raw = route.query.categoryId;
+  if (typeof raw !== "string" || raw === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+});
 
-const searchQ = computed(() => (typeof route.query.q === 'string' ? route.query.q : ''))
+const searchQ = computed(() =>
+  typeof route.query.q === "string" ? route.query.q : "",
+);
 
 const pageFromRoute = computed(() => {
-  const raw = route.query.page
-  if (typeof raw !== 'string' || raw === '') return 1
-  const n = Number(raw)
-  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1
-})
+  const raw = route.query.page;
+  if (typeof raw !== "string" || raw === "") return 1;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+});
 
-const showPager = computed(() => lastPage.value > 1)
+const showPager = computed(() => lastPage.value > 1);
 
 async function loadCategories() {
-  const res = await catalogueApi.categories()
-  categories.value = res.data
+  const res = await catalogueApi.categories();
+  categories.value = res.data;
 }
 
 async function loadProducts() {
-  productsAbort?.abort()
-  const controller = new AbortController()
-  productsAbort = controller
+  productsAbort?.abort();
+  const controller = new AbortController();
+  productsAbort = controller;
 
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
   try {
     const res = await catalogueApi.products(
       {
@@ -59,80 +61,96 @@ async function loadProducts() {
         page: pageFromRoute.value,
       },
       { signal: controller.signal },
-    )
-    if (controller.signal.aborted) return
-    products.value = res.data
-    total.value = res.meta.total
-    currentPage.value = res.meta.currentPage
-    lastPage.value = res.meta.lastPage
+    );
+    if (controller.signal.aborted) return;
+    products.value = res.data;
+    total.value = res.meta.total;
+    currentPage.value = res.meta.currentPage;
+    lastPage.value = res.meta.lastPage;
   } catch (err) {
-    if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
-      return
+    if (
+      controller.signal.aborted ||
+      (err instanceof DOMException && err.name === "AbortError")
+    ) {
+      return;
     }
-    error.value = err instanceof Error ? err.message : 'Failed to load catalogue'
-    products.value = []
-    total.value = 0
-    currentPage.value = 1
-    lastPage.value = 1
+    error.value =
+      err instanceof Error ? err.message : "Failed to load catalogue";
+    products.value = [];
+    total.value = 0;
+    currentPage.value = 1;
+    lastPage.value = 1;
   } finally {
     if (!controller.signal.aborted) {
-      loading.value = false
+      loading.value = false;
     }
   }
 }
 
 function setCategory(id: number | null) {
   void router.push({
-    name: 'shop',
+    name: "shop",
     query: {
       ...(searchQ.value ? { q: searchQ.value } : {}),
       ...(id != null ? { categoryId: String(id) } : {}),
     },
-  })
+  });
 }
 
 function goToPage(page: number) {
-  const next = Math.max(1, Math.min(page, lastPage.value))
+  const next = Math.max(1, Math.min(page, lastPage.value));
   void router.push({
-    name: 'shop',
+    name: "shop",
     query: {
       ...(searchQ.value ? { q: searchQ.value } : {}),
-      ...(selectedCategoryId.value != null ? { categoryId: String(selectedCategoryId.value) } : {}),
+      ...(selectedCategoryId.value != null
+        ? { categoryId: String(selectedCategoryId.value) }
+        : {}),
       ...(next > 1 ? { page: String(next) } : {}),
     },
-  })
+  });
 }
 
 onMounted(async () => {
   try {
-    await loadCategories()
+    await loadCategories();
   } catch {
     // categories optional for listing
   }
-  await loadProducts()
-})
+  await loadProducts();
+});
 
 onBeforeUnmount(() => {
-  productsAbort?.abort()
-})
+  productsAbort?.abort();
+});
 
 watch(
   () => [route.query.q, route.query.categoryId, route.query.page],
   () => {
-    void loadProducts()
+    void loadProducts();
   },
-)
+);
 </script>
 
 <template>
-  <section class="bg-[linear-gradient(120deg,#0B6E4F_0%,#1A2330_100%)] px-7 py-12 text-center text-[var(--brand-fg)]">
-    <h1 class="brand m-0 text-4xl font-semibold tracking-tight">Shop our catalogue</h1>
-    <p class="m-0 mt-2 text-base opacity-90">Browse all products across our stores</p>
+  <section
+    class="bg-[linear-gradient(120deg,var(--chrome)_0%,var(--brand)_100%)] px-7 py-12 text-center text-[var(--brand-fg)]"
+  >
+    <h1 class="brand m-0 mt-6 text-4xl font-semibold tracking-tight">
+      Shop our catalogue
+    </h1>
+    <p class="m-0 mt-2 text-base opacity-90">
+      Browse all products across our stores
+    </p>
   </section>
 
-  <div class="mx-auto grid max-w-[1100px] gap-6 px-7 py-7 md:grid-cols-[200px_1fr]">
+  <div
+    class="mx-auto grid max-w-[1100px] gap-6 px-7 py-7 md:grid-cols-[200px_1fr]"
+  >
     <aside>
-      <h2 class="brand m-0 mb-3 text-[13px] font-semibold tracking-[0.04em] text-[var(--muted)] uppercase">
+      <h2
+        class="brand m-0 mb-3 text-[13px] font-semibold tracking-[0.04em] text-[var(--muted)] uppercase"
+      >
         Category
       </h2>
       <div class="flex flex-col gap-2" role="radiogroup" aria-label="Category">
@@ -166,20 +184,29 @@ watch(
         >
           {{ cat.name }}
         </button>
-        <p v-if="categories.length === 0" class="text-sm text-[var(--muted)]">No categories yet.</p>
+        <p v-if="categories.length === 0" class="text-sm text-[var(--muted)]">
+          No categories yet.
+        </p>
       </div>
     </aside>
 
     <div>
-      <div class="mb-4 flex items-center justify-between text-sm text-[var(--muted)]">
-        <span>{{ total }} product{{ total === 1 ? '' : 's' }}</span>
+      <div
+        class="mb-4 flex items-center justify-between text-sm text-[var(--muted)]"
+      >
+        <span>{{ total }} product{{ total === 1 ? "" : "s" }}</span>
         <span v-if="searchQ">Results for “{{ searchQ }}”</span>
       </div>
 
       <p v-if="error" class="text-sm text-[var(--danger)]">{{ error }}</p>
       <p v-else-if="loading" class="text-sm text-[var(--muted)]">Loading…</p>
 
-      <div v-else-if="products.length === 0" class="text-sm text-[var(--muted)]">No products found.</div>
+      <div
+        v-else-if="products.length === 0"
+        class="text-sm text-[var(--muted)]"
+      >
+        No products found.
+      </div>
 
       <template v-else>
         <div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
@@ -201,14 +228,22 @@ watch(
               <span v-else>Product image</span>
             </div>
             <div class="p-3">
-              <div class="font-mono text-[11px] text-[var(--muted)]">{{ product.sku }}</div>
-              <div class="mt-1 mb-2 text-sm font-semibold">{{ product.name }}</div>
+              <div class="font-mono text-[11px] text-[var(--muted)]">
+                {{ product.sku }}
+              </div>
+              <div class="mt-1 mb-2 text-sm font-semibold">
+                {{ product.name }}
+              </div>
               <div class="font-mono text-sm font-semibold text-[var(--brand)]">
                 {{ formatPortalMoney(product.price?.amount) }}
               </div>
               <div
                 class="mt-1 text-xs font-semibold"
-                :class="product.stock.inStock ? 'text-[var(--brand)]' : 'text-[var(--muted)]'"
+                :class="
+                  product.stock.inStock
+                    ? 'text-[var(--brand)]'
+                    : 'text-[var(--muted)]'
+                "
               >
                 {{ product.stock.label }}
               </div>
@@ -228,7 +263,9 @@ watch(
           >
             Previous
           </button>
-          <span class="text-[var(--muted)]">Page {{ currentPage }} of {{ lastPage }}</span>
+          <span class="text-[var(--muted)]"
+            >Page {{ currentPage }} of {{ lastPage }}</span
+          >
           <button
             type="button"
             class="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] px-3 py-2 disabled:opacity-40"

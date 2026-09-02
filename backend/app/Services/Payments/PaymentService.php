@@ -114,4 +114,21 @@ class PaymentService
             ];
         });
     }
+
+    /**
+     * @param  array{
+     *   provider: string,
+     *   originalReference: string,
+     *   amount: string,
+     *   currency?: string,
+     *   reason?: ?string,
+     *   metadata?: array<string, mixed>,
+     * }  $input
+     */
+    public function refund(array $input): PaymentRefundResult
+    {
+        $provider = strtolower($input['provider']);
+
+        return $this->gateway($provider)->refund($input);
+    }
 }

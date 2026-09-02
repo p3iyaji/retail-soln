@@ -28,6 +28,7 @@ async function signOut() {
     <header
       class="flex items-center gap-4 bg-[var(--chrome)] px-4 py-3 text-sm text-[var(--chrome-fg)]"
     >
+      <img src="/logo.png" alt="Bag & Cartons Ltd" class="h-8 w-auto shrink-0 object-contain" />
       <strong class="font-display">Select store</strong>
       <span class="flex-1" />
       <span>{{ auth.displayName }}</span>

@@ -17,9 +17,9 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         // Keep existing public/manifest.webmanifest; plugin injects SW only.
         manifest: false,
-        includeAssets: ['favicon.svg', 'icon-192.svg', 'icon-512.svg', 'manifest.webmanifest'],
+        includeAssets: ['favicon.ico', 'favicon.png', 'apple-touch-icon.png', 'favicon-192.png', 'favicon-512.png', 'logo.png', 'manifest.webmanifest'],
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,svg,woff2,webmanifest}'],
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webmanifest}'],
           navigateFallback: '/index.html',
           navigateFallbackDenylist: [/^\/api/],
           // Never cache API responses — online sale paths stay network-authoritative.

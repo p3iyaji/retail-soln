@@ -132,7 +132,7 @@ const ineligibleTitle = computed(() => {
 
       <div class="mt-6 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6">
         <div
-          class="mb-5 inline-block rounded bg-[#F0F7F4] px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide text-[var(--brand)]"
+          class="mb-5 inline-block rounded bg-[var(--brand-soft)] px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide text-[var(--brand)]"
         >
           {{ order.statusLabel || order.status }}
         </div>

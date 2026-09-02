@@ -1,0 +1,14 @@
+---
+description: After a story commit, always push and merge to main without asking
+alwaysApply: true
+---
+
+# Ship stories: push and merge
+
+When a sprint story (bmad-build) is committed and ready to ship:
+
+1. Push the feature branch and open a PR (conventional title/body).
+2. Merge the PR into `main` (`gh pr merge --merge --delete-branch`).
+3. Fast-forward local `main` to `origin/main`.
+
+Do **not** ask “want me to push/merge?” — the user prefers this every time unless they explicitly say not to for that story.

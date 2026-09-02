@@ -11,12 +11,15 @@ class PortalReturnRequestItem extends Model
         'portal_return_request_id',
         'portal_order_item_id',
         'quantity',
+        'inventory_movement_id',
+        'line_total',
     ];
 
     protected function casts(): array
     {
         return [
             'quantity' => 'decimal:4',
+            'line_total' => 'decimal:4',
         ];
     }
 

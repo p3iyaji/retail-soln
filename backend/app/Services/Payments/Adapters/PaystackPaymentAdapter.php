@@ -4,6 +4,7 @@ namespace App\Services\Payments\Adapters;
 
 use App\Services\Payments\Contracts\PaymentGateway;
 use App\Services\Payments\PaymentIntentResult;
+use App\Services\Payments\PaymentRefundResult;
 use App\Services\Payments\WebhookEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -51,6 +52,35 @@ class PaystackPaymentAdapter implements PaymentGateway
         );
     }
 
+    public function refund(array $input): PaymentRefundResult
+    {
+        $secret = (string) config('payments.paystack.secret_key', '');
+        $reference = 'paystack_refund_'.Str::lower(Str::random(16));
+        $original = (string) ($input['originalReference'] ?? '');
+
+        if ($secret === '') {
+            if (app()->environment('production')) {
+                throw new RuntimeException('Paystack is not configured.');
+            }
+
+            return new PaymentRefundResult(
+                provider: 'paystack',
+                reference: $reference,
+                status: 'completed',
+                gatewayReference: $reference,
+                meta: ['mode' => 'placeholder', 'originalReference' => $original],
+            );
+        }
+
+        return new PaymentRefundResult(
+            provider: 'paystack',
+            reference: $reference,
+            status: 'pending',
+            gatewayReference: $reference,
+            meta: ['mode' => 'configured_stub', 'originalReference' => $original],
+        );
+    }
+
     public function verifyWebhook(Request $request): WebhookEvent
     {
         $secret = (string) config('payments.paystack.webhook_secret', config('payments.paystack.secret_key', ''));
@@ -69,11 +99,13 @@ class PaystackPaymentAdapter implements PaymentGateway
         $event = (string) ($payload['event'] ?? '');
         $data = $payload['data'] ?? [];
         $eventId = (string) ($payload['id'] ?? $data['id'] ?? $request->header('X-Paystack-Event-Id', ''));
-        $reference = (string) ($data['reference'] ?? $payload['reference'] ?? '');
+        $reference = (string) ($data['reference'] ?? $data['transaction_reference'] ?? $payload['reference'] ?? '');
 
         $status = match ($event) {
             'charge.success' => 'paid',
             'charge.failed' => 'failed',
+            'refund.processed', 'refund.success' => 'refunded',
+            'refund.failed' => 'refund_failed',
             default => (string) ($data['status'] ?? $payload['status'] ?? 'awaiting_payment'),
         };
 

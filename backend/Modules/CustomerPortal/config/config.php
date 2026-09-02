@@ -49,4 +49,13 @@ return [
     |
     */
     'reservation_ttl_minutes' => (int) env('CUSTOMER_PORTAL_RESERVATION_TTL', 60),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Customer-facing support details (contact page + chat helper)
+    |--------------------------------------------------------------------------
+    */
+    'support_email' => env('CUSTOMER_PORTAL_SUPPORT_EMAIL'),
+    'support_phone' => env('CUSTOMER_PORTAL_SUPPORT_PHONE'),
+    'business_hours' => env('CUSTOMER_PORTAL_BUSINESS_HOURS', 'Mon–Sat 9:00–18:00'),
 ];

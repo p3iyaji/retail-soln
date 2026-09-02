@@ -9,7 +9,9 @@ use Modules\CustomerPortal\Http\Controllers\Api\PortalCheckoutController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalOrderController;
 use Modules\CustomerPortal\Http\Controllers\Api\CarrierController;
 use Modules\CustomerPortal\Http\Controllers\Api\PortalReturnRequestController;
+use Modules\CustomerPortal\Http\Controllers\Api\PortalSupportController;
 use Modules\CustomerPortal\Http\Controllers\Api\StaffFulfilmentController;
+use Modules\CustomerPortal\Http\Controllers\Api\StaffReturnRequestController;
 
 Route::prefix('v1')->middleware(['auth:sanctum', 'staff'])->group(function (): void {
     Route::get('/carriers', [CarrierController::class, 'index']);
@@ -32,6 +34,14 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'staff'])->group(function (): v
         ->whereNumber('order');
     Route::post('/fulfilment/orders/{order}/collect', [StaffFulfilmentController::class, 'collect'])
         ->whereNumber('order');
+
+    Route::get('/fulfilment/return-requests', [StaffReturnRequestController::class, 'index']);
+    Route::get('/fulfilment/return-requests/{returnRequest}', [StaffReturnRequestController::class, 'show'])
+        ->whereNumber('returnRequest');
+    Route::patch('/fulfilment/return-requests/{returnRequest}', [StaffReturnRequestController::class, 'update'])
+        ->whereNumber('returnRequest');
+    Route::post('/fulfilment/return-requests/{returnRequest}/complete', [StaffReturnRequestController::class, 'complete'])
+        ->whereNumber('returnRequest');
 });
 
 Route::prefix('v1/portal')->group(function (): void {
@@ -65,6 +75,10 @@ Route::prefix('v1/portal')->group(function (): void {
     });
 
     Route::middleware('throttle:portal-catalogue')->get('/stores', [PortalCheckoutController::class, 'stores']);
+
+    Route::middleware('throttle:portal-catalogue')->get('/support/info', [PortalSupportController::class, 'info']);
+    Route::middleware('throttle:portal-contact')->post('/contact', [PortalSupportController::class, 'contact']);
+    Route::middleware('throttle:portal-chat')->post('/chat', [PortalSupportController::class, 'chat']);
 
     Route::middleware(['auth:sanctum', 'portal', 'portal.verified', 'throttle:portal-cart'])->group(function (): void {
         Route::get('/cart', [PortalCartController::class, 'show']);

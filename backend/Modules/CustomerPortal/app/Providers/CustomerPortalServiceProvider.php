@@ -63,5 +63,18 @@ class CustomerPortalServiceProvider extends ModuleServiceProvider
 
             return Limit::perMinute(30)->by('portal-returns|'.$key);
         });
+
+        RateLimiter::for('portal-contact', function (Request $request) {
+            $email = Str::transliterate(Str::lower((string) $request->input('email', '')));
+
+            return Limit::perMinute(5)->by('portal-contact|'.$email.'|'.$request->ip());
+        });
+
+        RateLimiter::for('portal-chat', function (Request $request) {
+            $user = $request->user();
+            $key = $user?->getAuthIdentifier() ?? $request->ip();
+
+            return Limit::perMinute(30)->by('portal-chat|'.$key);
+        });
     }
 }

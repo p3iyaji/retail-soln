@@ -33,9 +33,10 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_#dceae6,_#f4f6f5_45%)] px-4">
+  <div class="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_#dce4ea,_#f4f6f8_45%)] px-4">
     <div class="w-full max-w-md border border-[var(--line)] bg-[var(--panel)] p-8 shadow-sm">
-      <p class="brand text-xs font-semibold tracking-[0.18em] text-[var(--brand)] uppercase">Retail Soln</p>
+      <img src="/logo.png" alt="Bag & Cartons Ltd" class="mx-auto h-28 w-auto object-contain sm:h-32" />
+      <p class="brand mt-4 text-xs font-semibold tracking-[0.18em] text-[var(--brand)] uppercase">Shop</p>
       <h1 class="mt-2 text-2xl font-semibold tracking-tight">Verify email</h1>
       <p class="mt-2 text-sm text-[var(--muted)]">
         Enter the verification token from your registration email. In local/testing the API returns the token in the

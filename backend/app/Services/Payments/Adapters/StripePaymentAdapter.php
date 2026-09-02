@@ -4,6 +4,7 @@ namespace App\Services\Payments\Adapters;
 
 use App\Services\Payments\Contracts\PaymentGateway;
 use App\Services\Payments\PaymentIntentResult;
+use App\Services\Payments\PaymentRefundResult;
 use App\Services\Payments\WebhookEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -51,6 +52,35 @@ class StripePaymentAdapter implements PaymentGateway
         );
     }
 
+    public function refund(array $input): PaymentRefundResult
+    {
+        $secret = (string) config('payments.stripe.secret_key', '');
+        $reference = 'stripe_refund_'.Str::lower(Str::random(16));
+        $original = (string) ($input['originalReference'] ?? '');
+
+        if ($secret === '') {
+            if (app()->environment('production')) {
+                throw new RuntimeException('Stripe is not configured.');
+            }
+
+            return new PaymentRefundResult(
+                provider: 'stripe',
+                reference: $reference,
+                status: 'completed',
+                gatewayReference: $reference,
+                meta: ['mode' => 'placeholder', 'originalReference' => $original],
+            );
+        }
+
+        return new PaymentRefundResult(
+            provider: 'stripe',
+            reference: $reference,
+            status: 'pending',
+            gatewayReference: $reference,
+            meta: ['mode' => 'configured_stub', 'originalReference' => $original],
+        );
+    }
+
     public function verifyWebhook(Request $request): WebhookEvent
     {
         $secret = (string) config('payments.stripe.webhook_secret', '');
@@ -70,14 +100,23 @@ class StripePaymentAdapter implements PaymentGateway
         $dataObject = $payload['data']['object'] ?? [];
         $reference = (string) ($dataObject['client_reference_id']
             ?? $dataObject['metadata']['reference']
+            ?? $dataObject['id']
             ?? $payload['reference']
             ?? '');
         $type = (string) ($payload['type'] ?? '');
         $status = match ($type) {
             'checkout.session.completed', 'payment_intent.succeeded' => 'paid',
             'payment_intent.payment_failed', 'checkout.session.expired' => 'failed',
+            'charge.refunded', 'refund.updated' => 'refunded',
             default => (string) ($payload['status'] ?? 'awaiting_payment'),
         };
+
+        if ($type === 'refund.updated') {
+            $refundStatus = (string) ($dataObject['status'] ?? '');
+            if ($refundStatus !== '' && $refundStatus !== 'succeeded') {
+                $status = $refundStatus === 'failed' ? 'refund_failed' : 'refund_pending';
+            }
+        }
 
         if ($eventId === '' || $reference === '') {
             throw new RuntimeException('Stripe webhook missing event id or payment reference.');
