@@ -225,15 +225,17 @@ class ReportingInventoryStockApiTest extends TestCase
         $this->postMovement($this->store, $this->variantA, MovementType::Reserve, '-1.0000', BalanceBucket::Available, '2026-03-09 11:00:00');
         $this->postMovement($this->store, $this->variantA, MovementType::Reserve, '1.0000', BalanceBucket::Reserved, '2026-03-09 11:00:01');
 
-        // Post-end ledger noise on multiple buckets.
+        // Post-end ledger noise on multiple buckets (incl. in_transit).
         $this->postMovement($this->store, $this->variantA, MovementType::Sale, '-2.0000', at: '2026-03-11 01:00:00');
         $this->postMovement($this->store, $this->variantA, MovementType::Release, '-1.0000', BalanceBucket::Reserved, '2026-03-11 02:00:00');
         $this->postMovement($this->store, $this->variantA, MovementType::Release, '1.0000', BalanceBucket::Available, '2026-03-11 02:00:01');
         $this->postMovement($this->store, $this->variantA, MovementType::Damage, '-1.0000', BalanceBucket::Available, '2026-03-11 03:00:00');
         $this->postMovement($this->store, $this->variantA, MovementType::Damage, '1.0000', BalanceBucket::Damaged, '2026-03-11 03:00:01');
+        $this->postMovement($this->store, $this->variantA, MovementType::TransferOut, '-1.0000', BalanceBucket::Available, '2026-03-11 04:00:00');
+        $this->postMovement($this->store, $this->variantA, MovementType::TransferOut, '1.0000', BalanceBucket::InTransit, '2026-03-11 04:00:01');
 
-        // Current ends at available 7, reserved 0, damaged 1.
-        // As-of undoes post-end → available 9, reserved 1, damaged 0.
+        // Current: available 6, reserved 0, damaged 1, in_transit 1.
+        // As-of undoes post-end → available 9, reserved 1, damaged 0, in_transit 0.
         Sanctum::actingAs($this->manager, ['staff']);
         $row = $this->getJson($this->reportUrl(['period' => 'day', 'anchorDate' => '2026-03-10']), $this->headers())
             ->assertOk()
@@ -242,6 +244,7 @@ class ReportingInventoryStockApiTest extends TestCase
         $this->assertSame('9.0000', $row['available']);
         $this->assertSame('1.0000', $row['reserved']);
         $this->assertSame('0.0000', $row['damaged']);
+        $this->assertSame('0.0000', $row['inTransit']);
         $this->assertSame('10.0000', $row['onHand']);
         $this->assertSame([], $this->getJson($this->reportUrl(['period' => 'day', 'anchorDate' => '2026-03-10']), $this->headers())->json('data.summary.movements'));
     }
@@ -313,13 +316,17 @@ class ReportingInventoryStockApiTest extends TestCase
             ->assertJsonPath('meta.currentPage', 1)
             ->assertJsonPath('meta.lastPage', 3)
             ->assertJsonPath('meta.perPage', 1)
-            ->assertJsonPath('meta.total', 3);
+            ->assertJsonPath('meta.total', 3)
+            ->assertJsonPath('data.summary.positionSkuCount', 3)
+            ->assertJsonPath('data.summary.onHandTotal', '6.0000');
         $this->assertCount(1, $page1->json('data.rows'));
         $firstId = $page1->json('data.rows.0.productVariantId');
 
         $page2 = $this->getJson($this->reportUrl(['per_page' => 1, 'page' => 2]), $this->headers())
             ->assertOk()
-            ->assertJsonPath('meta.currentPage', 2);
+            ->assertJsonPath('meta.currentPage', 2)
+            ->assertJsonPath('data.summary.positionSkuCount', 3)
+            ->assertJsonPath('data.summary.onHandTotal', '6.0000');
         $this->assertCount(1, $page2->json('data.rows'));
         $this->assertNotSame($firstId, $page2->json('data.rows.0.productVariantId'));
     }
@@ -382,11 +389,17 @@ class ReportingInventoryStockApiTest extends TestCase
             trim($lines[0]),
         );
         $this->assertCount(3, $lines);
-        // Current available is 10 after the post-end sale; as-of EOD subtracts that −2 → 12.
-        $this->assertSame('12.0000', $json[0]['available']);
-        $this->assertSame('5.0000', $json[1]['available']);
-        $this->assertStringContainsString('12.0000', $lines[1]);
-        $this->assertStringContainsString('5.0000', $lines[2]);
+        $this->assertCount(2, $json);
+
+        foreach ($json as $index => $row) {
+            $csv = str_getcsv(trim($lines[$index + 1]));
+            $this->assertSame((string) $row['productVariantId'], $csv[0]);
+            $this->assertSame($row['available'], $csv[3]);
+            $this->assertSame($row['reserved'], $csv[4]);
+            $this->assertSame($row['damaged'], $csv[5]);
+            $this->assertSame($row['inTransit'], $csv[6]);
+            $this->assertSame($row['onHand'], $csv[7]);
+        }
     }
 
     public function test_export_rejects_oversize_position_set(): void

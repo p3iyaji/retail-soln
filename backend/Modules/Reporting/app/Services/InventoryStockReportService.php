@@ -76,6 +76,7 @@ class InventoryStockReportService
         $positions = $this->positionRows($organization, $store, $bounds['endExclusive']);
         $movements = $this->movementAggregates($organization, $store, $bounds['start'], $bounds['endExclusive']);
 
+        $perPage = max(1, $perPage);
         $total = $positions->count();
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = max(1, min($page, $lastPage));
@@ -285,7 +286,10 @@ class InventoryStockReportService
             ->each(function (InventoryMovement $movement) use (&$byTypeBucket): void {
                 $type = $movement->type instanceof \BackedEnum
                     ? $movement->type->value
-                    : (string) $movement->type;
+                    : (string) ($movement->type ?? '');
+                if ($type === '') {
+                    return;
+                }
                 $bucket = $movement->bucket instanceof BalanceBucket
                     ? $movement->bucket->value
                     : (string) $movement->bucket;

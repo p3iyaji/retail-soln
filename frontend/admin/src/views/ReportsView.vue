@@ -809,6 +809,11 @@ onMounted(async () => {
           </button>
         </form>
 
+        <p class="text-xs text-[var(--muted)]">
+          Day = end of that calendar day; Week = Mon–Sun containing the anchor; Month/Year = the
+          calendar period containing the anchor. Bounds use the organization timezone.
+        </p>
+
         <div class="grid gap-3 sm:grid-cols-3">
           <div
             v-for="tile in invSummaryTiles"
