@@ -38,6 +38,12 @@ export const navGroups: NavGroup[] = [
       },
       { name: 'pricing', label: 'Pricing', to: '/pricing' },
       { name: 'inventory', label: 'Inventory', to: '/inventory' },
+      {
+        name: 'stock-report',
+        label: 'Stock report',
+        to: '/reports?tab=inventory',
+        permission: 'reports.view',
+      },
       { name: 'oversell-exceptions', label: 'Oversells', to: '/oversell-exceptions' },
     ],
   },

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { api, ApiError } from '@/api/client'
+import { useAuthStore } from '@/stores/auth'
 
 type Store = { id: number; name: string }
 type VariantOption = { id: number; label: string }
@@ -34,6 +36,8 @@ const transfers = ref<Transfer[]>([])
 const loading = ref(true)
 const error = ref('')
 const saving = ref(false)
+const auth = useAuthStore()
+const canViewStockReport = () => auth.user?.permissions?.includes('reports.view') === true
 
 const adjustForm = reactive({
   storeId: '' as string | number,
@@ -214,6 +218,15 @@ onMounted(refresh)
       <h2 class="text-xl font-semibold tracking-tight">Inventory</h2>
       <p class="mt-1 text-sm text-[var(--muted)]">
         Adjust stock, complete counts, and transfer between stores. All quantity changes post through the inventory ledger.
+      </p>
+      <p v-if="canViewStockReport()" class="mt-2 text-sm">
+        <RouterLink
+          :to="{ name: 'reports', query: { tab: 'inventory' } }"
+          class="font-medium text-[var(--brand)] hover:underline"
+        >
+          Open stock period report
+        </RouterLink>
+        <span class="text-[var(--muted)]"> — day / week / month / year position and movements.</span>
       </p>
     </div>
 
