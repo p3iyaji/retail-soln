@@ -123,6 +123,11 @@ const router = createRouter({
           component: () => import('@/views/DevicesView.vue'),
         },
         {
+          path: 'attendance',
+          name: 'attendance',
+          component: () => import('@/views/AttendanceView.vue'),
+        },
+        {
           path: 'pricing',
           name: 'pricing',
           component: () => import('@/views/PricingView.vue'),

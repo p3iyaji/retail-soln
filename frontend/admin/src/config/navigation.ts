@@ -90,6 +90,18 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    id: 'workforce',
+    label: 'Workforce',
+    items: [
+      {
+        name: 'attendance',
+        label: 'Time clock',
+        to: '/attendance',
+        permission: ['attendance.manage', 'attendance.clock'],
+      },
+    ],
+  },
+  {
     id: 'organization',
     label: 'Organization',
     items: [
