@@ -113,6 +113,8 @@ final class PermissionMatrix
             'fulfilment.pickup' => ['SA', 'OA', 'SM', 'IM', 'DS'],
             'carriers.view' => ['SA', 'OA', 'SM', 'IM', 'DS'],
             'carriers.manage' => ['SA', 'OA', 'SM'],
+            'attendance.manage' => ['SA', 'OA', 'SM'],
+            'attendance.clock' => ['SA', 'OA', 'SM', 'CA', 'IM', 'PO', 'AC', 'DS'],
         ];
 
         $storeScoped = [
@@ -130,6 +132,7 @@ final class PermissionMatrix
             'payments.manual', 'payments.stripe', 'payments.paystack',
             'registers.reconcile', 'devices.manage', 'reports.view',
             'fulfilment.pick', 'fulfilment.ship', 'fulfilment.pickup',
+            'attendance.manage',
         ];
 
         $permissions = [];

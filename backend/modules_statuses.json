@@ -12,5 +12,6 @@
   "Sync": true,
   "CustomerPortal": true,
   "Reporting": true,
-  "Notifications": true
+  "Notifications": true,
+  "Attendance": true
 }
